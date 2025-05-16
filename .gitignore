@@ -1,4 +1,5 @@
 venv/*
 proj/automodeler/__pycache__/*
 proj/modelworx/__pycache__/*
+proj/automodeler/migrations/__pycache__/*
 
