@@ -1,0 +1,4 @@
+venv/*
+proj/automodeler/__pycache__/*
+proj/modelworx/__pycache__/*
+
