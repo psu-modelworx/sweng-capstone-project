@@ -21,6 +21,8 @@ python -m venv venv
   
   Windows Users: ./venv/bin/activate.ps1
 
+pip install -r requirements.txt
+
 cd proj
 
 python manage.py runserver
