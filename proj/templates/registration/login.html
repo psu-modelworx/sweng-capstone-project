@@ -1,0 +1,19 @@
+{% include "base/header.html" %}
+
+<h2>Log In</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <div
+    <div class="mb-3">
+        <label for="id_username">Username</label>
+        <input type="text" class="form-control" name="username" autofocus autocapitalize="none" autocomplete="username" maxlength="150" required id="id_username">
+    </div>
+    <div class="mb-3">
+        <label for="id_password">Username</label>
+        <input type="password" class="form-control" name="password" autocomplete="current-password" maxlength="150" required id="id_password">
+    </div>
+    <button type="submit" class="btn btn-primary">Log In</button>
+</form>
+
+{% include "base/footer.html" %}

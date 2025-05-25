@@ -124,3 +124,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 CSRF_TRUSTED_ORIGINS = ["https://8000--main--python-ws--hanbrolo.coder.leviathanworks.net"]
+
+LOGIN_REDIRECT_URL = "/" # Redirect to root url upon login
