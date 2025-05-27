@@ -1,5 +1,12 @@
 {% include "base/header.html" %}
+{% include "base/navbar.html" %}
 
 <h1>Hello world!  This is the index template file!</h1>
+
+{% if user.is_authenticated %}
+<h2>User is authenticated!</h2>
+{% else %}
+<h3>Not logged in</h3>
+{% endif %}
 
 {% include "base/footer.html" %}

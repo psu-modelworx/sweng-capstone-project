@@ -13,6 +13,7 @@
           <a class="nav-link" href="#">Link</a>
         </li>
 
+        {% if not user.is_authenticated %}
         <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 Login
@@ -42,8 +43,17 @@
               <a class="dropdown-item" href="#">New around here? Sign up</a>
               <a class="dropdown-item" href="#">Forgot password?</a>
             </div>
-            
         </li>
+        {% else %}
+        <li class="nav-item">
+            <form action="/accounts/logout/" method="post">
+                {% csrf_token %}
+                <button class="nav-link" type="submit" aria-current="page">Logout</a>
+            </form>
+        </li>
+         {% endif %}
+
+        
       </ul>
       <form class="d-flex" role="search">
         <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
