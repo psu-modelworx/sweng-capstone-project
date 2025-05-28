@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts', # Custom accounts project to create custom views; Works alongside the auth middleware
+    'modelworx',
 ]
 
 MIDDLEWARE = [
