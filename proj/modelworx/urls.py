@@ -20,5 +20,6 @@ from django.urls import path, include
 urlpatterns = [
     path("automodeler/", include("automodeler.urls")),
     path('admin/', admin.site.urls),
+    path('accounts/', include("accounts.urls")), # Used with middleware below
     path('accounts/', include("django.contrib.auth.urls")),
 ]

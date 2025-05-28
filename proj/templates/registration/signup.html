@@ -1,0 +1,34 @@
+{% include "base/header.html" %}
+
+{% include "base/navbar.html" %}
+
+
+<h2>Sign up</h2>
+<div class="container">
+    <form method="post">
+        {% csrf_token %}
+    
+        <div class="col-md-3 mb-3">
+            <label for="id_username">Username</label>
+            <input type="text" class="form-control" name="username" autofocus autocapitalize="none" maxlength="150" required id="id_username">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="id_password1">Password</label>
+            <input type="password" class="form-control" name="password1" autocomplete="current-password" maxlength="150" required id="id_password1" aria-describedby="id_password_helptext">
+            <div class="form-text" id="id_password_helptext">
+              <li>"Your password can't be too similar to your other personal information."</li>
+              <li>"Your password must contain at least 8 characters."</li>
+              <li>"Your password must can't be a commonly used password."</li>
+              <li>"Your password must contain a mix of alphanumeric characters and symbols"</li>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="id_password2">Password Confirmation</label>
+            <input type="password" class="form-control" name="password2" autocomplete="current-password" maxlength="150" required id="id_password2" aria-describedby="id_password2_helptext">
+            <div class="form-text" id="id_password2_helptext">Please enter your password for confirmation</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Sign up!</button>
+    </form>    
+</div>
+
+{% include "base/footer.html" %}
