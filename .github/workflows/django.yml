@@ -29,5 +29,4 @@ jobs:
         DJANGO_SETTINGS_MODULE: modelworx.settings
         PYTHONPATH: ${{ github.workspace }}/proj
       run: |
-        cd proj
-        python manage.py test
+        pytest
