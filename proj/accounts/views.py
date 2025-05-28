@@ -16,15 +16,25 @@ def signup(request):
     if request.method == 'GET':
         return render(request, "registration/signup.html", {})
     elif request.method == 'POST':
-        print("Received POST request!")
-        for key, value in request.POST.items():
-            print(f'{key}: {value}')
         user_form = UserCreationForm(request.POST)
+        username = user_form['username']
         if user_form.is_valid():
-            #print("Valid form!")
+            #if not User.objects.filter(username=username).exists:
+                #print("Valid form!")
             user_form.save()
             return render(request, "registration/login.html", {})
+            #else:
+            #    print("User exists!")
+            #    return render(request, "registration/signup.html", {}) # Return errors here and display as error text
         else:
-            return render(request, "registration/signup.html", {})
+            #print(user_form)
+            errors_dict = {}
+            for field, errors in user_form.errors.items():
+                errs = []
+                for error in errors:
+                    errs.append(error)
+                    print(f"Error in field' {field}': {error}")
+                errors_dict[field] = errs
+            return render(request, "registration/signup.html", {'form_errors': errors_dict})
     else:
         return HttpResponseNotAllowed()

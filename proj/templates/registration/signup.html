@@ -31,4 +31,12 @@
     </form>    
 </div>
 
+<br/>
+{% if form_errors %}
+<h2>Errors</h2>
+{% for key, value in form_errors.items %}
+<li>{{ key }}: {{ value.text }}</li>
+{% endfor %}
+{% endif %}
+
 {% include "base/footer.html" %}
