@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 #from django.views.generic import CreateView
 
 from django.shortcuts import render
+from django.shortcuts import redirect
 from django.http import HttpResponse
 
 
@@ -10,8 +11,8 @@ from django.http import HttpResponse
 #    form_class = UserCreationForm
 #    success_url = reverse_lazy("login")
 #    template_name = "registration/signup.html"
-#
-#
+
+
 def signup(request):
     if request.method == 'GET':
         return render(request, "registration/signup.html", {})
@@ -20,7 +21,9 @@ def signup(request):
         username = user_form['username']
         if user_form.is_valid():
             user_form.save()
-            return render(request, "registration/login.html", {})
+            return redirect("registration/login.html")
+            #return render(request, "registration/login.html", {})
+            #return render(request, "automodeler/index.html", {})
         else:
             errors_dict = {}
             for field, errors in user_form.errors.items():
@@ -29,6 +32,7 @@ def signup(request):
                     errs.append(error)
                     print(f"Error in field '{field}': {error}")
                 errors_dict[field] = errs
-            return render(request, "registration/signup.html", { 'form_errors': errors_dict})
+            return HttpResponse(render(request, 'registration/signup.html', {'form_errors': errors_dict}).content, content_type='text/html', status=409)
+            #return render(request, "registration/signup.html", { 'form_errors': errors_dict})
     else:
         return HttpResponseNotAllowed()

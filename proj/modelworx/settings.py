@@ -129,3 +129,4 @@ CSRF_TRUSTED_ORIGINS = ["https://8000--main--python-ws--hanbrolo.coder.leviathan
 
 LOGIN_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon login
 LOGOUT_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon logout
+
