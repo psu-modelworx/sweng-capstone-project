@@ -9,7 +9,7 @@ from .models import *
 
 def index(request):
     if request.user.is_authenticated:
-        return render(request, "/automodeler/index.html", {})
+        return render(request, "automodeler/index.html", {})
     else:
         url = reverse("login")
         return HttpResponseRedirect(url)
