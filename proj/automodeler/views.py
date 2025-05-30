@@ -28,25 +28,25 @@ def upload(request):
             #print(request.FILES)
             if form.is_valid():
                 print("valid form")
-                url = reverse("parameters")
+                url = reverse("upload_stage_two")
                 col_headers = parameter_prep(request.FILES['csv_file'])
                 print(request.FILES['csv_file'])
-                return render(request, "automodeler/parameters.html", {'col_headers': col_headers}) # Get parameter information and send back
+                return render(request, "automodeler/upload2.html", {'col_headers': col_headers}) # Get parameter information and send back
             else:
                 print("form invalid!")
                 print(form.errors)
                 form = DatasetForm()
-                return render(request, "automodeler/upload.html", {"form": form}) # create context for error messages and send back here
+                return render(request, "automodeler/upload1.html", {"form": form}) # create context for error messages and send back here
         else:
             form = DatasetForm()
-            return render(request, "automodeler/upload.html", {"form": form})
+            return render(request, "automodeler/upload1.html", {"form": form})
     else:
         url = reverse("login")
         return HttpResponseRedirect(url)
 
-def parameter_selection(request):
+def upload_stage_two(request):
     #print(request.META)
-    return render(request, "automodeler/parameters.html", {})
+    return render(request, "automodeler/upload2.html", {})
 
 
 def save_dataset(request):
