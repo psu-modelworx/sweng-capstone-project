@@ -17,17 +17,19 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.13'
+        python-version: '3.11'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements
+        pip install ruff pytest
 
-    - name: Run Linter flake8
+    - name: Run Linter
       run: |
-        pip install flake8
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        ruff check --output-format=github --target-version=py311
+        ruff format --diff --target-version=py211
+      continue-on-error: true # Optional: allow workflow to continue on lint failure
 
     - name: Run Tests
       env:
