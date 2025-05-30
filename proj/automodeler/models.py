@@ -2,7 +2,8 @@ from django.db import models
 from django.conf import settings
 
 # Create your models here.
-class Dataset(models.Model):
+class Dataset(models.Model):    
+    id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=50)
     input_fields = models.JSONField(null=True)
     output_fields = models.JSONField(null=True)

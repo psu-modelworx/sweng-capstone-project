@@ -24,18 +24,18 @@ def upload(request):
         if request.method == 'POST':
             # Create form object with data from POST request
             form = DatasetForm(request.POST, request.FILES)
-            #print(request.POST)
-            #print(request.FILES)
             if form.is_valid():
                 print("valid form")
                 url = reverse("upload_stage_two")
+                file_name = request.POST.get('name')
                 csv_file = request.FILES['csv_file']
-                col_headers = parameter_prep(csv_file)
+                user_id = request.user.id
+                dataset_model = Dataset(name=file_name, csv_file=csv_file, user_id=user_id)
+                dataset_model.save()
                 
-                #print(request.FILES['csv_file'].name)
-                #return redirect(reverse('upload_stage_two'), kwargs={'prev_req': request, 'form_data': form})
-                #return redirect(reverse('upload_stage_two'), {'prev_req':request, 'form_data':form})
-                #return redirect(reverse('upload_stage_two'), request, form)
+                #print(request.POST.get("name"))
+                #col_headers = parameter_prep(csv_file)
+                col_headers = ['t1', 't2', 't3', 't4', 't5']
                 return render(request, "automodeler/upload2.html", {'col_headers': col_headers}) # Get parameter information and send back
             else:
                 print("form invalid!")
