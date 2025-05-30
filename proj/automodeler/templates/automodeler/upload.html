@@ -1,0 +1,12 @@
+{% include "base/header.html" %}
+{% include "base/navbar.html" %}
+
+<h1>Dataset Upload Page</h1>
+
+{% if user.is_authenticated %}
+{{ form.as_p }}
+{% else %}
+<h3>Not logged in</h3>
+{% endif %}
+
+{% include "base/footer.html" %}

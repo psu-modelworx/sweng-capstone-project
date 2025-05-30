@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 # Create your models here.
 class Dataset(models.Model):
@@ -6,4 +7,5 @@ class Dataset(models.Model):
     input_fields = models.JSONField()
     output_fields = models.JSONField()
     csv_file = models.FileField(upload_to='dataset_uploads/')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
