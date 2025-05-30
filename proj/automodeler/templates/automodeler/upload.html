@@ -3,16 +3,12 @@
 
 <h1>Dataset Upload Page</h1>
 
-{% if user.is_authenticated %}
-<form method="POST">
+
+<form method="POST" enctype="multipart/form-data">
     {% csrf_token %}
-    {{ form }}
-    <input type="submit" value="Upload">
+    {{ form.as_p }}
+    <input type="submit" value="Submit">
 </form>
 
-
-{% else %}
-<h3>Not logged in</h3>
-{% endif %}
 
 {% include "base/footer.html" %}
