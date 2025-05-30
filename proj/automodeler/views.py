@@ -44,10 +44,16 @@ def upload(request):
         url = reverse("login")
         return HttpResponseRedirect(url)
 
-
 def parameter_selection(request):
     #print(request.META)
     return render(request, "automodeler/parameters.html", {})
+
+
+def save_dataset(request):
+    print(request)
+    url = reverse("upload")
+    return redirect(url)
+    #return render(request, "automodelers/upload.html", {})
 
 def parameter_prep(dataset_file):
     #print(dataset_file)
@@ -66,5 +72,4 @@ def parameter_prep(dataset_file):
     return col_headers
 
 #def validate_dataset(request):
-
 
