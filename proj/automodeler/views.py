@@ -29,8 +29,13 @@ def upload(request):
             if form.is_valid():
                 print("valid form")
                 url = reverse("upload_stage_two")
-                col_headers = parameter_prep(request.FILES['csv_file'])
-                print(request.FILES['csv_file'])
+                csv_file = request.FILES['csv_file']
+                col_headers = parameter_prep(csv_file)
+                
+                #print(request.FILES['csv_file'].name)
+                #return redirect(reverse('upload_stage_two'), kwargs={'prev_req': request, 'form_data': form})
+                #return redirect(reverse('upload_stage_two'), {'prev_req':request, 'form_data':form})
+                #return redirect(reverse('upload_stage_two'), request, form)
                 return render(request, "automodeler/upload2.html", {'col_headers': col_headers}) # Get parameter information and send back
             else:
                 print("form invalid!")
@@ -44,16 +49,19 @@ def upload(request):
         url = reverse("login")
         return HttpResponseRedirect(url)
 
-def upload_stage_two(request):
+def upload_stage_two(request, prev_req, form_data):
     #print(request.META)
+    col_headers = parameter_prep(prev_req.FILES['csv_file'])
     return render(request, "automodeler/upload2.html", {})
 
 
 def save_dataset(request):
-    print(request)
-    url = reverse("upload")
-    return redirect(url)
-    #return render(request, "automodelers/upload.html", {})
+    if request.method == 'POST':
+        print(request)
+        url = reverse("upload")
+        return redirect(url)
+    else:
+        return render(request, "automodelers/upload.html", {})
 
 def parameter_prep(dataset_file):
     #print(dataset_file)
