@@ -4,8 +4,8 @@ from django.conf import settings
 # Create your models here.
 class Dataset(models.Model):
     name = models.CharField(max_length=50)
-    input_fields = models.JSONField()
-    output_fields = models.JSONField()
+    input_fields = models.JSONField(blank=True)
+    output_fields = models.JSONField(blank=True)
     csv_file = models.FileField(upload_to='dataset_uploads/')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
