@@ -35,14 +35,8 @@ def upload(request):
                 dataset_model = Dataset.objects.create(name=file_name, csv_file=csv_file, user_id=user_id)
                 dataset_model.save()
                 dataset_model_id = dataset_model.id
-                #return redirect(reverse('dataset'), dataset_id=dataset_model_id)
                 url = reverse('dataset', kwargs={'dataset_id': dataset_model_id})
                 return HttpResponseRedirect(url)
-
-                #print(request.POST.get("name"))
-                #col_headers = parameter_prep(csv_file)
-                #col_headers = ['t1', 't2', 't3', 't4', 't5']
-                #return render(request, "automodeler/upload2.html", {'col_headers': col_headers}) # Get parameter information and send back
             else:
                 print("form invalid!")
                 print(form.errors)
@@ -71,22 +65,11 @@ def dataset(request, dataset_id):
 
 
 def get_column_headers(dataset_fileName):
-    #print(dataset_file)
-    #print(dataset_file['csv_file'])
-    # Converts from InMemoryFile object to a list
-    #file_data = dataset_fileName.read().decode('utf-8').split()
     features = []
     with open(dataset_fileName, 'r') as file:
         csvFileReader = csv.reader(file)
         features = next(csvFileReader)
     print(features)
-    #print(file_data[0])
-
-    # Works if it's a file
-    #with open(dataset_file, newline='') as f:
-    #    reader = csv.reader(f)
-    #    row1 = next(reader)
-    #    print(row1)
     return features
 
 #def validate_dataset(request):
