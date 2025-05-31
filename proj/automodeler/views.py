@@ -7,6 +7,7 @@ from .models import Dataset
 from .forms import DatasetForm
 
 import csv
+import io
 
 # Create your views here.
 
@@ -30,10 +31,11 @@ def upload(request):
                 print("valid form")
                 file_name = request.POST.get('name')
                 csv_file = request.FILES['csv_file']
-                csv_file_name = csv_file
                 user_id = request.user.id
-                dataset_model = Dataset.objects.create(name=file_name, csv_file=csv_file, user_id=user_id)
+                features = extract_features_from_inMemoryUploadedFile(csv_file)
+                dataset_model = Dataset.objects.create(name=file_name, features=features, csv_file=csv_file, user_id=user_id)
                 dataset_model.save()
+                
                 dataset_model_id = dataset_model.id
                 url = reverse('dataset', kwargs={'dataset_id': dataset_model_id})
                 return HttpResponseRedirect(url)
@@ -55,16 +57,23 @@ def dataset(request, dataset_id):
         if request.user.id != dataset.user_id:
             return redirect(reverse("index"))
         if request.method == 'POST':
-            return render(request, "automodeler/dataset.html", {"dataset": dataset})
+            inputFeatures = {}
+            targetFeature = request.POST.get('target_radio')
+            for f in dataset.features:
+                f_val = 'nc_radio_{feature}'.format(feature=f)
+                inputFeatures[f] = request.POST.get(f_val)
+                
+            dataset.features = inputFeatures
+            dataset.target_feature = targetFeature
+            dataset.save()
+            return render(request, "automodeler/index.html", {})
         else:
-            dataset_fileName = dataset.csv_file.file.name
-            dataset_features  = get_column_headers(dataset_fileName)
-            return render(request, "automodeler/dataset.html", {"dataset": dataset, "dataset_features": dataset_features})
+            return render(request, "automodeler/dataset.html", {"dataset": dataset})
     else:
         return redirect(reverse('login'))
 
 
-def get_column_headers(dataset_fileName):
+def extract_features(dataset_fileName):
     features = []
     with open(dataset_fileName, 'r') as file:
         csvFileReader = csv.reader(file)
@@ -72,5 +81,11 @@ def get_column_headers(dataset_fileName):
     print(features)
     return features
 
-#def validate_dataset(request):
+def extract_features_from_inMemoryUploadedFile(in_mem_file):
+    file_data = in_mem_file.read().decode('utf-8')
+    csv_file = io.StringIO(file_data)
+    reader = csv.reader(csv_file)
+    features = next(reader)
+    return features
+
 
