@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts', # Custom accounts project to create custom views; Works alongside the auth middleware
     'modelworx',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -71,6 +72,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'modelworx.wsgi.application'
 
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+    ]    
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

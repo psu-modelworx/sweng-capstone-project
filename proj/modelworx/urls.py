@@ -16,10 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework import routers
+from automodeler.serializer import ModelWorxViewSet
+
+router = routers.DefaultRouter() # Defining a router from the default rest framework router.
+router.register('modelworx', ModelWorxViewSet) # Routing the serializer data to the modelworx path to be displayed.
 
 urlpatterns = [
     path("automodeler/", include("automodeler.urls")),
     path('admin/', admin.site.urls),
     path('accounts/', include("accounts.urls")), # Used with middleware below
     path('accounts/', include("django.contrib.auth.urls")),
+    path('', include(router.urls)),
 ]

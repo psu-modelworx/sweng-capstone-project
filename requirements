@@ -8,3 +8,6 @@ pytest==8.3.5
 pytest-cov==6.1.1
 pytest-django==4.11.1
 sqlparse==0.5.3
+djangorestframework==4.13.2
+markdown==3.8
+django-filter==4.13.2
