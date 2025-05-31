@@ -30,7 +30,10 @@ h11 @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/h11_172859
 httpcore @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/httpcore_1728599468020/work
 httpx @ file:///private/var/folders/c_/qfmhj66j0tn016nkx_th4hxm0000gp/T/abs_ee9brfzt3w/croot/httpx_1746747852371/work
 idna==3.10
+django-filter==25.1
+djangorestframework==3.16.0
 iniconfig==2.1.0
+Markdown==3.8
 ipykernel @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_6757k8pgf8/croot/ipykernel_1737662465787/work
 ipython @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/abs_be0wj_gdwv/croot/ipython_1744912974216/work
 ipython_pygments_lexers @ file:///private/var/folders/c_/qfmhj66j0tn016nkx_th4hxm0000gp/T/abs_c2ksl8pvkj/croot/ipython_pygments_lexers_1744753254606/work
@@ -118,3 +121,4 @@ webcolors==24.11.1
 webencodings @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/webencodings_1728595603046/work
 websocket-client @ file:///Users/builder/cbouss/perseverance-python-buildout/croot/websocket-client_1728598848605/work
 wheel==0.45.1
+ruff>=0.4.0

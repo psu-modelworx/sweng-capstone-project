@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'accounts', # Custom accounts project to create custom views; Works alongside the auth middleware
     'modelworx',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -56,7 +58,7 @@ ROOT_URLCONF = 'modelworx.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -70,6 +72,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'modelworx.wsgi.application'
 
+# Required permissions and authentication classes that are used with the API response.
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+    ],    
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ]
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -125,3 +137,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 CSRF_TRUSTED_ORIGINS = ["https://8000--main--python-ws--hanbrolo.coder.leviathanworks.net"]
+
+LOGIN_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon login
+LOGOUT_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon logout
+

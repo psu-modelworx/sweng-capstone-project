@@ -2,4 +2,7 @@ venv/*
 proj/automodeler/__pycache__/*
 proj/modelworx/__pycache__/*
 proj/automodeler/migrations/__pycache__/*
+proj/*/__pycache__/*
+proj/*/migrations/__pycache__/*
+proj/db.sqlite3
 
