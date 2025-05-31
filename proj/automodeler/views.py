@@ -36,7 +36,6 @@ def upload(request):
     form.  If it is valid, they are redirected to the dataset's appropriate details page.  
 
     :param request: Django HTTP Request object with HTTP request information
-
     """
     if request.user.is_authenticated:
         if request.method == 'POST':
@@ -67,6 +66,13 @@ def upload(request):
         return HttpResponseRedirect(url)
 
 def dataset(request, dataset_id):
+    """
+    dataset is the details page of the requested dataset. Requires authentication.  POSTing to this page allows modification of
+    Target Feature for the dataset as well as Type for each Feature.
+
+    :param request: Django HTTP Request object containing request data
+    :param dataset_id: Integer ID of the dataset to be retrieved
+    """
     if request.user.is_authenticated:
         dataset = get_object_or_404(Dataset, pk=dataset_id)
         if request.user.id != dataset.user_id:
@@ -89,6 +95,11 @@ def dataset(request, dataset_id):
 
 
 def extract_features(dataset_fileName):
+    """
+    extract_features opens and reads the file at the path given and extracts features from the first row.
+
+    :param dataset_fileName: Full-path filename of file to open and read
+    """
     features = []
     with open(dataset_fileName, 'r') as file:
         csvFileReader = csv.reader(file)
@@ -97,6 +108,12 @@ def extract_features(dataset_fileName):
     return features
 
 def extract_features_from_inMemoryUploadedFile(in_mem_file):
+    """
+    extract_features_from_inMemoryUploadedFile reads the in-memory file object and extracts the feature names from 
+    the first row.
+
+    :param in_mem_file: InMemoryFile object to read
+    """
     file_data = in_mem_file.read().decode('utf-8')
     csv_file = io.StringIO(file_data)
     reader = csv.reader(csv_file)
