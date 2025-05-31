@@ -71,6 +71,8 @@ def save_dataset(request):
 def dataset(request, dataset_id):
     if request.user.is_authenticated:
         dataset = get_object_or_404(Dataset, pk=dataset_id)
+        if request.user.id != dataset.user_id:
+            return redirect(reverse("index"))
         if request.method == 'POST':
             return render(request, "automodeler/dataset.html", {"dataset": dataset})
         else:
