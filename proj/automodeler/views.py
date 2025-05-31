@@ -57,10 +57,10 @@ def upload(request):
                 print("form invalid!")
                 print(form.errors)
                 form = DatasetForm()
-                return render(request, "automodeler/upload1.html", {"form": form}) # create context for error messages and send back here
+                return render(request, "automodeler/upload.html", {"form": form}) # create context for error messages and send back here
         else:
             form = DatasetForm()
-            return render(request, "automodeler/upload1.html", {"form": form})
+            return render(request, "automodeler/upload.html", {"form": form})
     else:
         url = reverse("login")
         return HttpResponseRedirect(url)
