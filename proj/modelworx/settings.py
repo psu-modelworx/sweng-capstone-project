@@ -72,10 +72,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'modelworx.wsgi.application'
 
+# Required permissions and authentication classes that are used with the API response.
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-    ]    
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+    ],    
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ]
 }
 
 # Database
