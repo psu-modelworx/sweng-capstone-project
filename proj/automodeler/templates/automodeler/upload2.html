@@ -4,7 +4,7 @@
 <h1>Parameter Selection</h1>
 <br />
 
-<form method="POST" action="{% url 'save_dataset' %}">
+<form method="POST" action="{% url 'save_dataset' %}" enctype="multipart/form-data">
     {% csrf_token %}
     <table class="table" id="id_dataset_cols_table" name="dataset_cols_table">
         <thead>
@@ -38,6 +38,8 @@
             {% endfor %}        
         </tbody>
     </table>
+    <input type="hidden" id="id_file_name" name="file_name">
+    <input type="hidden" id="id_csv_file" name="csv_file">
     <input type="Submit" value="Submit"/>
 </form>
 

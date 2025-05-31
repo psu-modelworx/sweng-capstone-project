@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 
 from .models import Dataset
 from .forms import DatasetForm
@@ -29,14 +29,19 @@ def upload(request):
                 url = reverse("upload_stage_two")
                 file_name = request.POST.get('name')
                 csv_file = request.FILES['csv_file']
+                csv_file_name = csv_file
                 user_id = request.user.id
-                dataset_model = Dataset(name=file_name, csv_file=csv_file, user_id=user_id)
+                dataset_model = Dataset.objects.create(name=file_name, csv_file=csv_file, user_id=user_id)
                 dataset_model.save()
-                
+                dataset_model_id = dataset_model.id
+                #return redirect(reverse('dataset'), dataset_id=dataset_model_id)
+                url = reverse('dataset', kwargs={'dataset_id': dataset_model_id})
+                return HttpResponseRedirect(url)
+
                 #print(request.POST.get("name"))
                 #col_headers = parameter_prep(csv_file)
-                col_headers = ['t1', 't2', 't3', 't4', 't5']
-                return render(request, "automodeler/upload2.html", {'col_headers': col_headers}) # Get parameter information and send back
+                #col_headers = ['t1', 't2', 't3', 't4', 't5']
+                #return render(request, "automodeler/upload2.html", {'col_headers': col_headers}) # Get parameter information and send back
             else:
                 print("form invalid!")
                 print(form.errors)
@@ -61,7 +66,18 @@ def save_dataset(request):
         url = reverse("upload")
         return redirect(url)
     else:
-        return render(request, "automodelers/upload.html", {})
+        return render(request, "automodeler/upload.html", {})
+
+def dataset(request, dataset_id):
+    if request.user.is_authenticated:
+        dataset = get_object_or_404(Dataset, pk=dataset_id)
+        if request.method == 'POST':
+            return render(request, "automodeler/dataset.html", {"dataset": dataset})
+        else:
+            return render(request, "automodeler/dataset.html", {"dataset": dataset})
+    else:
+        return redirect(reverse('login'))
+
 
 def parameter_prep(dataset_file):
     #print(dataset_file)
