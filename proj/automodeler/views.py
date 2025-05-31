@@ -6,6 +6,8 @@ from django.shortcuts import redirect, get_object_or_404
 from .models import Dataset
 from .forms import DatasetForm
 
+import csv
+
 # Create your views here.
 
 def index(request):
@@ -26,7 +28,6 @@ def upload(request):
             form = DatasetForm(request.POST, request.FILES)
             if form.is_valid():
                 print("valid form")
-                url = reverse("upload_stage_two")
                 file_name = request.POST.get('name')
                 csv_file = request.FILES['csv_file']
                 csv_file_name = csv_file
@@ -54,20 +55,6 @@ def upload(request):
         url = reverse("login")
         return HttpResponseRedirect(url)
 
-def upload_stage_two(request, prev_req, form_data):
-    #print(request.META)
-    col_headers = parameter_prep(prev_req.FILES['csv_file'])
-    return render(request, "automodeler/upload2.html", {})
-
-
-def save_dataset(request):
-    if request.method == 'POST':
-        print(request)
-        url = reverse("upload")
-        return redirect(url)
-    else:
-        return render(request, "automodeler/upload.html", {})
-
 def dataset(request, dataset_id):
     if request.user.is_authenticated:
         dataset = get_object_or_404(Dataset, pk=dataset_id)
@@ -76,18 +63,23 @@ def dataset(request, dataset_id):
         if request.method == 'POST':
             return render(request, "automodeler/dataset.html", {"dataset": dataset})
         else:
-            return render(request, "automodeler/dataset.html", {"dataset": dataset})
+            dataset_fileName = dataset.csv_file.file.name
+            dataset_features  = get_column_headers(dataset_fileName)
+            return render(request, "automodeler/dataset.html", {"dataset": dataset, "dataset_features": dataset_features})
     else:
         return redirect(reverse('login'))
 
 
-def parameter_prep(dataset_file):
+def get_column_headers(dataset_fileName):
     #print(dataset_file)
     #print(dataset_file['csv_file'])
     # Converts from InMemoryFile object to a list
-    file_data = dataset_file.read().decode('utf-8').split()
-    col_headers = file_data[0].split(',')
-    print(col_headers)
+    #file_data = dataset_fileName.read().decode('utf-8').split()
+    features = []
+    with open(dataset_fileName, 'r') as file:
+        csvFileReader = csv.reader(file)
+        features = next(csvFileReader)
+    print(features)
     #print(file_data[0])
 
     # Works if it's a file
@@ -95,7 +87,7 @@ def parameter_prep(dataset_file):
     #    reader = csv.reader(f)
     #    row1 = next(reader)
     #    print(row1)
-    return col_headers
+    return features
 
 #def validate_dataset(request):
 
