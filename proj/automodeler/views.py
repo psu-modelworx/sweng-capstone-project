@@ -12,6 +12,12 @@ import io
 # Create your views here.
 
 def index(request):
+    """
+    index is the default index.html page for the automodeler application.  If a user is not authenticated, they are
+    redirected to the login page.
+
+    :param request: This is the HTTP request object containing the HTTP request information
+    """
     if request.user.is_authenticated:
         auth_user = request.user
         #user_datasets = Dataset.objects.filter(auth_user == user)
@@ -23,6 +29,15 @@ def index(request):
 
 
 def upload(request):
+    """
+    upload is the page used to upload CSV Files.  This page requires authentication to access  The files are given a name, and the 
+    Features of the datasets are extracted from the first row of the CSV file.  From here, a Dataset object is created and saved 
+    to the database.  The file is stored under proj/media/dataset_uploads.  If the form is invalid users are returned to the upload 
+    form.  If it is valid, they are redirected to the dataset's appropriate details page.  
+
+    :param request: Django HTTP Request object with HTTP request information
+
+    """
     if request.user.is_authenticated:
         if request.method == 'POST':
             # Create form object with data from POST request
