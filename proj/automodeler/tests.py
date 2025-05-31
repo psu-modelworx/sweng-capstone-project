@@ -7,8 +7,16 @@ from django.contrib.auth.models import User
 def test_func():
     assert 0 == 0
 
+
 @pytest.mark.django_db
 def test_login_form(client):
+    """
+    test_login_form runs the test cases for modelworx/templates/registration/login.html
+
+    :param client: An HTTP client object provided by pytest's Django plugin
+
+    :Test Cases: TC-001, TC-002
+    """
     # Create test user
     user = User.objects.create_user(username='testuser', password='testpassword')
     assert not user.is_superuser
