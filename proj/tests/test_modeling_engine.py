@@ -19,14 +19,14 @@ def sample_data_regression():
 
 
 def test_modeling_engine_initialization():
-    """ Ensure ModelingEngine initializes correctly """
+    """ TC-01 Ensure ModelingEngine initializes correctly """
     engine = ModelingEngine(np.array([[1, 2]]), np.array([1]), np.array([[3, 4]]), np.array([0]), task_type="classification")
     assert engine.task_type == 'classification'
     assert isinstance(engine.models, dict)
 
 
 def test_model_selection():
-    """ Validate correct model selection based on task type """
+    """ TC-02 Validate correct model selection based on task type """
     engine_class = ModelingEngine(np.array([[1, 2]]), np.array([1]), np.array([[3, 4]]), np.array([0]), task_type="classification")
     engine_reg = ModelingEngine(np.array([[1, 2]]), np.array([1]), np.array([[3, 4]]), np.array([0]), task_type="regression")
 
@@ -35,7 +35,7 @@ def test_model_selection():
 
 
 def test_evaluate_models(sample_data_classification):
-    """ Verify cross-validation scores are computed correctly """
+    """ TC-03 Verify cross-validation scores are computed correctly """
     X_train, y_train, X_test, y_test = sample_data_classification
     engine = ModelingEngine(X_train, y_train, X_test,
                             y_test, task_type="classification")
@@ -46,7 +46,7 @@ def test_evaluate_models(sample_data_classification):
 
 
 def test_tune_best_model(sample_data_classification):
-    """ Ensure hyperparameter tuning selects optimal parameters """
+    """ TC-04 Ensure hyperparameter tuning selects optimal parameters """
     X_train, y_train, X_test, y_test = sample_data_classification
     engine = ModelingEngine(X_train, y_train, X_test,
                             y_test, task_type="classification")
@@ -58,7 +58,7 @@ def test_tune_best_model(sample_data_classification):
 
 
 def test_evaluate_final_model(sample_data_classification):
-    """ Validate final model evaluation computes scores """
+    """ TC-05 Validate final model evaluation computes scores """
     X_train, y_train, X_test, y_test = sample_data_classification
     engine = ModelingEngine(X_train, y_train, X_test,
                             y_test, task_type="classification")
