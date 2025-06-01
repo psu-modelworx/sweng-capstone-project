@@ -1,0 +1,37 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup SSH Keys
+      run: |
+        mkdir -p ~/.ssh
+        echo  "${{ secrets.KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~./ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.HOST }} >> ~./ssh/known_hosts
+    
+    - name: Upload project to VPS via rsync
+      run: |
+        rsync -az --delete ./ ${{ secrets.USERNAME}}@${{ secrets.HOST }}:/home/deploy/sweng-capstone-project
+    
+    - name: SSH into VPS and restart Gunicorn
+      run: |
+        ssh ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
+          cd /home/deploy/sweng-capstone-project
+          source venv/bin/activate
+          pip install -r requirements
+          cd proj/
+          python manage.py collectstatic
+          python manage.py migrate
+          sudo systemctl restart gunicorn
+        EOF
