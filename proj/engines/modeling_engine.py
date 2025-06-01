@@ -3,7 +3,6 @@ from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, RandomForestRegressor, GradientBoostingRegressor
 from sklearn.svm import SVC, SVR
 from sklearn.metrics import accuracy_score, r2_score
-import matplotlib.pyplot as plt
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
