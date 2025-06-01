@@ -26,7 +26,11 @@ SECRET_KEY = 'django-insecure-vv55ahja25qq(rq8_1&ph5=i$ii$o3t8ri%zsd8t-)6+%bscmo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+# ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['modelworx.leviathanworks.net',
+                 'localhost',
+                 '127.0.0.1',
+                ]
 
 
 # Application definition
