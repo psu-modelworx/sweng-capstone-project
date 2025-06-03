@@ -1,0 +1,47 @@
+{% include 'base/header.html' %}
+{% include 'base/navbar.html' %}
+
+<h1>Dataset template</h1>
+
+<br />
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <h3>Table of Features</h3>
+    <table class="table" id="id_dataset_cols_table" name="dataset_cols_table">
+        <thead>
+            <tr>
+                <th scope="col">Features</th>
+                <th scope="col">Target Variable</th>
+                <th scope="col">Numerical (N) / Categorical (C)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for feature in dataset.features %}
+            <tr>
+                <td>{{ feature }}</td>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" value="{{ feature }}" type="radio" name="target_radio" id="id_io_radio_{{ feature }}">
+                        <label class="form-check-label" for="id_io_radio_{{ feature }}"></label>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" value="N" name="nc_radio_{{ feature }}" id="id_nc_radio1_{{ feature }}" checked>
+                        <label class="form-check-label" for="id_nc_radio1_{{ feature }}">Numerical</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" value="C" name="nc_radio_{{ feature }}" id="id_nc_radio2_{{ feature }}">
+                        <label class="form-check-label" for="id_nc_radio2_{{ feature }}">Categorical</label>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}        
+        </tbody>
+    </table>
+    <input type="Submit" value="Submit"/>
+</form>
+
+
+{% include 'base/footer.html' %}

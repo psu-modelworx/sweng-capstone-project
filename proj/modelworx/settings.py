@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
+
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -141,3 +143,4 @@ CSRF_TRUSTED_ORIGINS = ["https://8000--main--python-ws--hanbrolo.coder.leviathan
 LOGIN_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon login
 LOGOUT_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon logout
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
