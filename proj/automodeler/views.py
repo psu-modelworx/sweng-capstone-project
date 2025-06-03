@@ -14,15 +14,15 @@ import io
 def index(request):
     """
     index is the default index.html page for the automodeler application.  If a user is not authenticated, they are
-    redirected to the login page.
+    redirected to the login page. It displays datasets that users have uploaded.  Only Datasets for current user.
 
     :param request: This is the HTTP request object containing the HTTP request information
     """
     if request.user.is_authenticated:
         auth_user = request.user
-        #user_datasets = Dataset.objects.filter(auth_user == user)
-        user_datasets = Dataset.objects.all()
-        return render(request, "automodeler/index.html", {})
+        user_datasets = Dataset.objects.filter(user = auth_user)
+        #user_datasets = Dataset.objects.all()
+        return render(request, "automodeler/index.html", {"datasets": user_datasets})
     else:
         url = reverse("login")
         return HttpResponseRedirect(url)
@@ -87,7 +87,9 @@ def dataset(request, dataset_id):
             dataset.features = inputFeatures
             dataset.target_feature = targetFeature
             dataset.save()
-            return render(request, "automodeler/index.html", {})
+            url = reverse("index")
+            return redirect(url)
+            #return render(request, "automodeler/index.html", {})
         else:
             return render(request, "automodeler/dataset.html", {"dataset": dataset})
     else:
