@@ -30,7 +30,7 @@ def test_login_form(client):
 def test_user_staff_permissions_request():
     # Creating a user and setting their staff value to be false.
     user = User.objects.create_user(username='testuser', password='testpassword')
-    user.is_staff = False;
+    user.is_staff = False
 
     # Defining a request to the modelworx path and assigning a user to it.
     request = APIRequestFactory().get('modelworx')
@@ -47,7 +47,7 @@ def test_user_staff_permissions_request():
 def test_user_no_staff_permissions_request():
     # Defining the user and making them a staff member.
     user = User.objects.create_user(username='testuser', password='testpassword')
-    user.is_staff = True;
+    user.is_staff = True
 
     # Creating the request and assigning the user to it.
     request = APIRequestFactory().get('modelworx')
