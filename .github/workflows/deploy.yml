@@ -3,6 +3,8 @@ name: Deploy to VPS
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   deploy:
@@ -22,7 +24,10 @@ jobs:
     
     - name: Upload project to VPS via rsync
       run: |
-        rsync -az --delete ./ ${{ secrets.USERNAME}}@${{ secrets.HOST }}:/home/deploy/sweng-capstone-project
+        rsync -az --delete \
+        --exclude='venv/' \
+        --exclude='proj/modelworx/.env.production' \
+        ./ ${{ secrets.USERNAME}}@${{ secrets.HOST }}:/home/deploy/sweng-capstone-project
     
     - name: SSH into VPS and restart Gunicorn
       run: |
