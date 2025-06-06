@@ -2,23 +2,32 @@ import pytest
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.models import User
 
-from . import views
+from accounts import views
 
 # Start unit tests here
-
+@pytest.mark.django_db
 def test_login_get(client):
     user = User.objects.create_user(username='testuser', password='testpassword')
     assert not user.is_superuser
     url = reverse("login")
     response = client.get(url)
     assert response.status_code == 200
-    assert response.url == url
+    assert response["Location"] == url
 
-    return False
-
+@pytest.mark.django_db
 def test_login_post(client):
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    assert not user.is_superuser
+    url = reverse("login")
     
-    return False
+    # Failed login
+    response = client.post(url, {"username": "", "password": ""})
+    
+    # Successful login
+    response = client.post(url, {"username": user.username, "password": user.password})
+    assert response.status_code == 200
+    assert response['Location'] == reverse("index")
+
 
 def test_logout():
     return False
