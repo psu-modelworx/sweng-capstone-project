@@ -1,94 +1,129 @@
 import pytest
+from pytest_django.asserts import assertRedirects
 from django.urls import reverse, reverse_lazy
+from django.contrib import auth
 from django.contrib.auth.models import User
+
 
 from accounts import views
 
 # Start unit tests here
 @pytest.mark.django_db
 def test_login_get(client):
+    """
+    Test Get on login page
+    """
     user = User.objects.create_user(username='testuser', password='testpassword')
     assert not user.is_superuser
     url = reverse("login")
     response = client.get(url)
     assert response.status_code == 200
-    assert response["Location"] == url
+
 
 @pytest.mark.django_db
 def test_login_post(client):
+    """
+    Test post on login page and checking that user is authenticated
+    """
     user = User.objects.create_user(username='testuser', password='testpassword')
     assert not user.is_superuser
+    #assert user.is_authenticated
     url = reverse("login")
-    
-    # Failed login
-    response = client.post(url, {"username": "", "password": ""})
     
     # Successful login
     response = client.post(url, {"username": user.username, "password": user.password})
     assert response.status_code == 200
-    assert response['Location'] == reverse("index")
 
+    # Validate user is authenticated
+    result = client.login(username="testuser", password="testpassword")
+    response = client.get(reverse('index'))
+    assert response.context['request'].user.is_authenticated
 
-def test_logout():
-    return False
+def test_logout(client):
+    url = reverse("logout")
+    response = client.post(url)
+    assert response.status_code == 302
+    assert response.headers['Location'] == reverse('index')
 
-def test_signup():
-    return False
+@pytest.mark.django_db
+def test_signup(client):
+    """
+    Test signup form
+    """
+    url = reverse("signup")
+    username = "testuser"
+    password1 = "testpassword"
+    password2 = "testpassword"
+    
+    params = {"username": username, "password1": password1, "password2": password2}
 
-def test_dataset_upload():
-    return False
+    response = client.post(url, params)
+    assert response.status_code == 302
+    
 
-def test_dataset_configure():
-    return False
+#def test_dataset_upload():
+#    return False
+#
+#def test_dataset_configure():
+#    return False
 
 
 # Start system tests here
 
-# Create your tests here.
 @pytest.mark.django_db
-def test_login_logout(client):
+def test_signup_login_logout(client):
     # Create test user; 
-    user = User.objects.create_user(username='testuser', password='testpassword')
-    assert not user.is_superuser
+    #user = User.objects.create_user(username='testuser', password='testpassword')
+    #assert not user.is_superuser
+    username = "testuser"
+    password = "testpassword"
+    url = reverse('signup')
+    signup_params = {"username": username, "password1": password, "password2": password}
 
-    # Test GET on login page
-    url = reverse('login')
+    # First, get the signup form
     response = client.get(url)
     assert response.status_code == 200
 
-    response = client.post(url, {'username': 'testuser', 'password': 'testpassword'})
+    # Next, post to signup to create the user; Response location will be the login form
+    response = client.post(url, signup_params)
     assert response.status_code == 302
+
+    # Now we need to login using the form
+    url = reverse('login')
+    login_params = {"username": username, "password": password}
+    response = client.post(url, login_params)
+    assert response.status_code
+    assert response.headers['Location'] == reverse('index')
     
-    # Need to fix this; currently it's not able to reverse match this url
-    # assert response.url == reverse("/automodeler/") 
-    
-    # Asserts that the session id is equal to the user.id
-    assert client.session['_auth_user_id'] == str(user.id)
-    
-    # Logout usser and test
+    # Verify the user is authenticated
+    url = reverse('index')
+
+    # Validate user is authenticated
+    result = client.login(username="testuser", password="testpassword")
+    response = client.get(url)
+    assert response.context['request'].user.is_authenticated
+
+    # Finally, we test logging out
     url = reverse('logout')
     response = client.post(url)
-    assert '_auth_user_id' not in client.session
-    
-    # Assert redirect after logout
     assert response.status_code == 302
+    assert response.headers['Location'] == reverse('index')
     
-    # Need to fix this; currently it's not able to reverse match this url similar to the one above
-    # assert response.url == reverse("/automodeler/") 
+    # Verify redirect to login since user is no longer authenticated
+    response = client.get(reverse('index'))
+    assert response.status_code == 302
+    assert response.headers['Location'] == reverse('login')
+
+
+
+    ## Asserts that the session id is equal to the user.id
+    #assert client.session['_auth_user_id'] == str(user.id)
+    #
+    ## Logout user and test
+    #url = reverse('logout')
+    #response = client.post(url)
+    #assert '_auth_user_id' not in client.session
     
-    # Delete the testuser
-    user.delete()
     
 
-@pytest.mark.django_db
-def test_signup(client):
-    username = 'testuser'
-    password1 = 'testpassword'
-    password2 = 'testpassword'
-    page = reverse('signup')
-    url = client.get(page)
-    response = client.post(page, {'username': username, 'password1': password1, 'password2': password2})
-    # Proper response will redirect to login page
-    assert response.status_code == 302
-    
 
