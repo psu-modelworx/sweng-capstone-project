@@ -1,12 +1,60 @@
 {% include "base/header.html" %}
+<!-- JQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/2.3.1/css/dataTables.dataTables.css" />
+<script src="https://cdn.datatables.net/2.3.1/js/dataTables.js"></script>
+
+
 {% include "base/navbar.html" %}
 
-<h1>Hello world!  This is the index template file!</h1>
 
 {% if user.is_authenticated %}
-<h2>User is authenticated!</h2>
+<h1>Hello {{ user.username }}</h1>
+
+{% if datasets %}
+<table class="table" id="id_datasets_table" name="datasets_table">
+        <thead>
+            <tr>
+                <th scope="col">Dataset Name</th>
+                <th scope="col">Dataset File Name</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ds in datasets %}
+            <tr>
+                <td>{{ ds.name }}</td>
+                <td>{{ ds.filename }}</td>
+                <td>
+                    <button class="btn btn-primary">Start modeling!</button>
+                </td>
+            </tr>
+            {% endfor %}        
+        </tbody>
+    </table>
+{% else %}
+
+<h2>User currently has no datasets</h2>
+
+{% endif %}
+
+
+<a href="{%url 'upload' %}" class="btn btn-primary">Upload dataset</a>
+
 {% else %}
 <h3>Not logged in</h3>
 {% endif %}
 
 {% include "base/footer.html" %}
+
+<script>
+
+$(document).ready( function () {
+    $('#id_datasets_table').DataTable({
+        searching: true
+    });
+} );
+
+</script>

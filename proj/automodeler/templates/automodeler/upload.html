@@ -1,0 +1,14 @@
+{% include "base/header.html" %}
+{% include "base/navbar.html" %}
+
+<h1>Dataset Upload Page</h1>
+
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Submit">
+</form>
+
+
+{% include "base/footer.html" %}

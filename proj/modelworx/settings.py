@@ -10,7 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
+
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +28,11 @@ SECRET_KEY = 'django-insecure-vv55ahja25qq(rq8_1&ph5=i$ii$o3t8ri%zsd8t-)6+%bscmo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+# ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ['modelworx.leviathanworks.net',
+                 'localhost',
+                 '127.0.0.1',
+                ]
 
 
 # Application definition
@@ -129,6 +136,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -141,3 +149,4 @@ CSRF_TRUSTED_ORIGINS = ["https://8000--main--python-ws--hanbrolo.coder.leviathan
 LOGIN_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon login
 LOGOUT_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon logout
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
