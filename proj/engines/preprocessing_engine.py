@@ -217,23 +217,29 @@ class PreprocessingEngine:
         logging.info(f"Scaled continuous features: {cont_features}")
 
     def one_hot_encode_categorical_features(self):
-        """ Applies one-hot encoding to categorical features in self.df, excluding the target column. """
+        """ Applies one-hot encoding to categorical features in self.df, excluding the target column and binaries. """
 
         self.df = self.df.copy()
 
-        categorical_cols_to_encode = [
+        binary_feat = [
+            col for col in self.categorical_columns
+            if col in self.df.columns and col != self.target_column and self.df[col].nunique() == 2
+        ]
+        multi_cat_feat = [
             col for col in self.categorical_columns
             if col in self.df.columns and col != self.target_column and self.df[col].nunique() > 2
         ]
+        for col in binary_feat:
+            self.df[col] = self.df[col].astype('category').cat.codes
 
-        if categorical_cols_to_encode:
-            self.df = pd.get_dummies(
-                self.df, columns=categorical_cols_to_encode, drop_first=True)
-            logging.info(
-                f"One-hot encoded categorical features: {categorical_cols_to_encode}")
+        if multi_cat_feat:
+            self.df = pd.get_dummies(self.df, columns=multi_cat_feat, drop_first=True)
+            logging.info(f"One-hot encoded features: {multi_cat_feat}")
+
+        if not binary_feat and not multi_cat_feat:
+            logging.warning("No categorical features found to encode.")
         else:
-            logging.warning(
-                "No categorical columns found in features to encode. Skipping one-hot encoding.")
+            logging.info(f"Label encoded binary columns: {binary_feat}")
 
     def train_test_split_data(self, X, y):
         """ Splits dataset into training and testing sets. """
