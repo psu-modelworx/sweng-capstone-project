@@ -253,17 +253,15 @@ class PreprocessingEngine:
         """ Runs the full preprocessing pipeline and saves final processed data. """
         logging.info("Running PreprocessingEngine...")
 
-        self.remove_unwanted_columns()
-        self.clean_text_columns()
-        self.detect_and_convert_categoricals()
-        self.clean_numeric_columns()
-        self.detect_and_convert_categoricals() # second pass after cleaning numeric columns
-        self.drop_missing_columns()
-        self.drop_missing_rows()
-        self.handle_missing_data()
-        self.verify_final_dataset()
+        self.remove_unwanted_columns() # drops columns specified for removal
+        self.clean_categorical_columns()
+        self.clean_continuous_columns()
+        self.drop_missing_columns() # drop columns with excessive missing values
+        self.drop_missing_rows() # drop rows with excessive missing values or missing target
+        self.handle_missing_data() # fill in missing values
+        self.verify_final_dataset() # print out of remaining missing values
         self.encode_target_column()
-        self.scale_numerical_columns()
+        self.scale_continuous_features()
         self.one_hot_encode_categorical_features()
         X, y = self.split_features_and_target()
         X_train, X_test, y_train, y_test = self.train_test_split_data(X, y)
