@@ -12,6 +12,8 @@ from accounts import views
 def test_login_get(client):
     """
     Test Get on login page
+
+    TC-25
     """
     user = User.objects.create_user(username='testuser', password='testpassword')
     assert not user.is_superuser
@@ -24,6 +26,8 @@ def test_login_get(client):
 def test_login_post(client):
     """
     Test post on login page and checking that user is authenticated
+    
+    TC-26
     """
     user = User.objects.create_user(username='testuser', password='testpassword')
     assert not user.is_superuser
@@ -40,6 +44,11 @@ def test_login_post(client):
     assert response.context['request'].user.is_authenticated
 
 def test_logout(client):
+    """
+    Test Logout Functionality.  Verifies redirect from logout
+
+    TC-27
+    """
     url = reverse("logout")
     response = client.post(url)
     assert response.status_code == 302
@@ -49,6 +58,8 @@ def test_logout(client):
 def test_signup(client):
     """
     Test signup form
+
+    TC-28
     """
     url = reverse("signup")
     username = "testuser"
@@ -61,9 +72,6 @@ def test_signup(client):
     assert response.status_code == 302
     
 
-#def test_dataset_upload():
-#    return False
-#
 #def test_dataset_configure():
 #    return False
 
@@ -72,9 +80,13 @@ def test_signup(client):
 
 @pytest.mark.django_db
 def test_signup_login_logout(client):
+    """
+    System test that will check if a user can signup, login,
+    access the index, then logout.
+
+    TC-29
+    """
     # Create test user; 
-    #user = User.objects.create_user(username='testuser', password='testpassword')
-    #assert not user.is_superuser
     username = "testuser"
     password = "testpassword"
     url = reverse('signup')
@@ -92,7 +104,7 @@ def test_signup_login_logout(client):
     url = reverse('login')
     login_params = {"username": username, "password": password}
     response = client.post(url, login_params)
-    assert response.status_code
+    assert response.status_code == 302
     assert response.headers['Location'] == reverse('index')
     
     # Verify the user is authenticated
@@ -115,15 +127,6 @@ def test_signup_login_logout(client):
     assert response.headers['Location'] == reverse('login')
 
 
-
-    ## Asserts that the session id is equal to the user.id
-    #assert client.session['_auth_user_id'] == str(user.id)
-    #
-    ## Logout user and test
-    #url = reverse('logout')
-    #response = client.post(url)
-    #assert '_auth_user_id' not in client.session
-    
     
 
 
