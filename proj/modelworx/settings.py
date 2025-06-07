@@ -14,6 +14,7 @@ import os
 
 from pathlib import Path
 import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,15 +26,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-vv55ahja25qq(rq8_1&ph5=i$ii$o3t8ri%zsd8t-)6+%bscmo'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
 
-# ALLOWED_HOSTS = ["*"]
-ALLOWED_HOSTS = ['modelworx.leviathanworks.net',
-                 'localhost',
-                 '127.0.0.1',
-                ]
-
+ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", default="localhost").split(",")
 
 # Application definition
 
