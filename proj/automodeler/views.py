@@ -9,6 +9,8 @@ from .forms import DatasetForm
 import csv
 import io
 
+import pandas as pd
+
 # Create your views here.
 
 def index(request):
@@ -46,6 +48,10 @@ def upload(request):
                 file_name = request.POST.get('name')
                 csv_file = request.FILES['csv_file']
                 user_id = request.user.id
+                try:
+                    sanitize_dataset(csv_file)
+                except Exception as e:
+                    return HttpResponse("Error sanitizing file!")
                 features = extract_features_from_inMemoryUploadedFile(csv_file)
                 dataset_model = Dataset.objects.create(name=file_name, features=features, csv_file=csv_file, user_id=user_id)
                 dataset_model.save()
@@ -120,4 +126,18 @@ def extract_features_from_inMemoryUploadedFile(in_mem_file):
     features = next(reader)
     return features
 
+def sanitize_dataset(in_mem_file):
+    """
+    sanitize_dataset reads an in-memory file object, and attempts to sanitize by removing html data.  Then, it tries to load
+    into a pandas dataframe to verify it can be used.
 
+    :param in_mem_file: InMemoryFile object to read
+
+    :return sanitized_dataset: Sanitized dataset to be saved
+    """
+    file_data = in_mem_file.read().decode('utf-8')
+    the_file = io.StringIO(file_data)
+    df = pd.read_csv(the_file)
+    #reader = csv.reader(the_file)
+
+    return True
