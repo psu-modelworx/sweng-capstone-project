@@ -113,18 +113,15 @@ class PreprocessingEngine:
 
     def drop_missing_rows(self, threshold=0.4):
         """Drops rows missing the target or with excessive missing values."""
-        import numpy as np
 
         initial_row_count = len(self.df)
 
         # Handle target
-        self.df[self.target_column] = self.df[self.target_column].astype(str).str.strip().str.lower()
-        self.df[self.target_column] = self.df[self.target_column].replace(list(self.MISSING_INDICATORS), np.nan)
         self.df.dropna(subset=[self.target_column], inplace=True)
         target_dropped = initial_row_count - len(self.df)
 
         # Handle rest
-        row_missing_percentage = self.df.isnull().mean(axis=1)
+        row_missing_percentage = self.df.drop(columns=[self.target_column]).isnull().mean(axis=1)
         self.df = self.df.loc[row_missing_percentage < threshold]
         excessive_missing_dropped = initial_row_count - target_dropped - len(self.df)
 
