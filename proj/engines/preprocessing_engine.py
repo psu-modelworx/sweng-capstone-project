@@ -50,70 +50,52 @@ class PreprocessingEngine:
         else:
             logging.info("No columns specified for removal.")
 
-    def detect_and_convert_categoricals(self):
-        """Detects categorical columns based on unique value counts and converts them."""
+    def clean_categorical_columns(self):
+        """ Cleans categorical columns by stripping whitespace, converting to lowercase, and handling missing indicators. """
+        if not self.categorical_columns:
+            logging.info("No categorical columns in data set.")
+            return
 
-        # convert explicitly labeled categorical columns
-        self.df = self.df.copy()
-        for col in self.categorical_columns:
-            if col in self.df:
-                self.df[col] = self.df[col].astype(str).str.strip().str.lower().astype("category")
+        valid_cols = [col for col in self.categorical_columns if col in self.df.columns]
+        if not valid_cols:
+            logging.info("No input categorical columns found in data set.")
+            return
 
-        # Detect additional categorical columns
-        unique_counts = self.df.nunique()
-        detected_categorical_columns = [
-            col for col in unique_counts.index
-            if col not in self.categorical_columns
-            and unique_counts[col] < self.MAX_UNIQUE_CATEGORICAL_VALUES
-            and self.df[col].dtype != "object"
-        ]
+        for col in valid_cols:
+            self.df[col] = self.df[col].astype(str).str.strip().str.lower()
+            self.df[col] = self.df[col].replace(self.MISSING_INDICATORS, pd.NA)
 
-        if detected_categorical_columns:
-            self.categorical_columns = list(set(self.categorical_columns + detected_categorical_columns))
-            for col in detected_categorical_columns:
-                self.df[col] = self.df[col].astype("category")
-            logging.info(f"Detected and converted categorical columns: {', '.join(detected_categorical_columns)}")
-        else:
-            logging.info("No categorical columns detected.")
+        logging.info(f"Cleaned categorical columns: {', '.join(valid_cols)}")
 
-    def clean_text_columns(self):
-        text_columns = [col for col in self.df.columns if self.df[col].dtype in ['object', 'category']]
-        if text_columns:
-            for col in text_columns:
-                # Convert all to string, lowercase, strip
-                self.df[col] = self.df[col].astype(str).str.strip().str.lower()
-                self.df.loc[self.df[col].isin(self.MISSING_INDICATORS), col] = pd.NA
-            logging.info(f"Cleaned all text columns: {', '.join(text_columns)}")
-        else:
-            logging.info("No text columns detected.")
-
-    def clean_numeric_columns(self):
+        
+    def clean_continuous_columns(self):
         """Cleans and converts numeric-like columns stored as text."""
-        self.df = self.df.copy()
         fixed_columns = []
 
-        for col in self.df.columns:
-            if col not in self.categorical_columns:
-                # Preserve original values
-                original_values = self.df[col].copy()
+        continuous_columns = [
+            col for col in self.df.columns if col not in self.categorical_columns
+        ]
 
-                self.df[col] = (
-                    self.df[col]
-                    .astype(str)
-                    .str.strip()
-                    .str.replace(r"[^\d\.\-]", "", regex=True)
-                    .apply(pd.to_numeric, errors="coerce")
-                )
+        for col in continuous_columns:
+            original_values = self.df[col].copy()
 
-                # Check if values changed after processing
-                if not original_values.equals(self.df[col]):
-                    fixed_columns.append(col)
+            # convert to str for easy manipulation
+            self.df[col] = (
+                self.df[col]
+                .astype(str)
+                .str.strip()
+                .str.replace(r"[^\d\.\-]", "", regex=True)
+                .apply(pd.to_numeric, errors="coerce")
+            )
+
+            # Check if anything changed
+            if not original_values.equals(self.df[col]):
+                fixed_columns.append(col)
 
         if fixed_columns:
-            logging.info(
-                f"Fixed non-numeric values in columns: {', '.join(fixed_columns)}")
+            logging.info(f"Cleaned continuous columns: {', '.join(fixed_columns)}")
         else:
-            logging.info("No non-numeric values found in numeric columns.")
+            logging.info("No continuous columns required cleaning.")
 
     def drop_missing_columns(self, threshold=0.6):
         """Drops columns that have more than the given threshold of missing values."""
