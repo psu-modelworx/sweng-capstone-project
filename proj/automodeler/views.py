@@ -51,7 +51,9 @@ def upload(request):
                 try:
                     sanitize_dataset(csv_file)
                 except Exception as e:
-                    return HttpResponse("Error sanitizing file!")
+                    url = reverse('upload')
+                    return render(request, url, {"form": form, "err_msg": "CSV File failed sanitation!"})
+                    #return HttpResponse("Error sanitizing file!")
                 features = extract_features_from_inMemoryUploadedFile(csv_file)
                 dataset_model = Dataset.objects.create(name=file_name, features=features, csv_file=csv_file, user_id=user_id)
                 dataset_model.save()
@@ -124,6 +126,10 @@ def extract_features_from_inMemoryUploadedFile(in_mem_file):
     csv_file = io.StringIO(file_data)
     reader = csv.reader(csv_file)
     features = next(reader)
+
+    # Return reading pointer to beginning of memory array
+    in_mem_file.seek(0)
+    
     return features
 
 def sanitize_dataset(in_mem_file):
@@ -138,6 +144,8 @@ def sanitize_dataset(in_mem_file):
     file_data = in_mem_file.read().decode('utf-8')
     the_file = io.StringIO(file_data)
     df = pd.read_csv(the_file)
-    #reader = csv.reader(the_file)
+    
+    # Return reading pointer to beginning of memory array
+    in_mem_file.seek(0)
 
     return True
