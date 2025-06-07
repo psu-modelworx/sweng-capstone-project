@@ -222,21 +222,20 @@ class PreprocessingEngine:
         logging.info(f"Split dataset. Using '{self.target_column}' as target.")
         return X, y
 
-    def scale_numerical_columns(self):
-        """ Scales all numerical features using StandardScaler, excluding categorical and target columns. """
+    def scale_continuous_features(self):
+        """ Scales all continuous features using StandardScaler, excluding possible continuous target columns. """
         self.df = self.df.copy()
-        original_numerical_columns = [
+        cont_features = [
             col for col in self.df.columns
             if col not in self.categorical_columns and col != self.target_column
         ]
 
-        if original_numerical_columns:
-            self.df[original_numerical_columns] = self.scaler.fit_transform(
-                self.df[original_numerical_columns])
-            logging.info(
-                f"Scaled numerical columns: {original_numerical_columns}")
-        else:
-            logging.warning("No numerical columns found to scale.")
+        if not cont_features:
+            logging.warning("No continuous features found to scale.")
+            return
+
+        self.df[cont_features] = self.scaler.fit_transform(self.df[cont_features])
+        logging.info(f"Scaled continuous features: {cont_features}")
 
     def one_hot_encode_categorical_features(self):
         """ Applies one-hot encoding to categorical features in self.df, excluding the target column. """
