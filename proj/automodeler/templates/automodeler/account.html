@@ -1,0 +1,12 @@
+{% include "base/header.html" %}
+{% include "base/navbar.html" %}
+
+<h1>Account Page - {{ user.username }}</h1>
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <p> {{ token }} </p>
+    <input type="submit" value="Receive Token">
+</form>
+
+{% include "base/footer.html" %}
