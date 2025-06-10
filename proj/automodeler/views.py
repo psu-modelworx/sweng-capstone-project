@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 
 from .models import Dataset
 from .forms import DatasetForm
@@ -18,14 +19,8 @@ def index(request):
 
     :param request: This is the HTTP request object containing the HTTP request information
     """
-    if request.user.is_authenticated:
-        auth_user = request.user
-        user_datasets = Dataset.objects.filter(user = auth_user)
-        #user_datasets = Dataset.objects.all()
-        return render(request, "automodeler/index.html", {"datasets": user_datasets})
-    else:
-        url = reverse("login")
-        return HttpResponseRedirect(url)
+    return render(request, "automodeler/index.html")
+    
 
 
 def upload(request):
@@ -87,7 +82,7 @@ def dataset(request, dataset_id):
             dataset.features = inputFeatures
             dataset.target_feature = targetFeature
             dataset.save()
-            url = reverse("index")
+            url = reverse("dataset_collection")
             return redirect(url)
             #return render(request, "automodeler/index.html", {})
         else:
@@ -95,6 +90,34 @@ def dataset(request, dataset_id):
     else:
         return redirect(reverse('login'))
 
+
+@login_required
+def dataset_collection(request):
+    auth_user = request.user
+    user_datasets = Dataset.objects.filter(user = auth_user)
+    return render(request, "automodeler/dataset_collection.html", {"datasets": user_datasets})
+
+@login_required
+def dataset_delete(request):
+    if request.method != 'POST':
+        return HttpResponse("Invalid request method")
+    else:
+        dataset_id = request.POST.get('dataset_id')
+        dataset = Dataset.objects.filter(id = dataset_id)
+        print(dataset)
+        return HttpResponse("Found dataset: " + dataset.name)
+
+@login_required
+def model_collection(request):
+    auth_user = request.user
+    # user_models = ...
+    return render(request, "automodeler/model_collection.html")
+
+@login_required
+def task_collection(request):
+    auth_user = request.user
+    # user_models = ...
+    return render(request, "automodeler/task_collection.html")
 
 def extract_features(dataset_fileName):
     """
