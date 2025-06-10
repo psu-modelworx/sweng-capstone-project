@@ -9,6 +9,7 @@ from .forms import DatasetForm
 
 import csv
 import io
+import os
 
 # Create your views here.
 
@@ -98,14 +99,17 @@ def dataset_collection(request):
     return render(request, "automodeler/dataset_collection.html", {"datasets": user_datasets})
 
 @login_required
-def dataset_delete(request):
+def dataset_delete(request, dataset_id):
     if request.method != 'POST':
         return HttpResponse("Invalid request method")
     else:
-        dataset_id = request.POST.get('dataset_id')
-        dataset = Dataset.objects.filter(id = dataset_id)
-        print(dataset)
-        return HttpResponse("Found dataset: " + dataset.name)
+        dataset = Dataset.objects.get(id = dataset_id)
+        dataset_filepath = dataset.csv_file.path
+        if os.path.exists(dataset_filepath):
+            os.remove(dataset_filepath)
+        dataset.delete()
+        url = reverse("dataset_collection")
+        return redirect(url)
 
 @login_required
 def model_collection(request):
