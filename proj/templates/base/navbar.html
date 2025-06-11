@@ -9,9 +9,6 @@
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="{% url 'index' %}">Home</a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Link</a>
-        </li>
 
         {% if not user.is_authenticated %}
         <li class="nav-item dropdown">
@@ -45,6 +42,18 @@
             </div>
         </li>
         {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'upload' %}">Upload</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'dataset_collection' %}">Datasets</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'model_collection' %}">Models</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'task_collection' %}">Tasks</a>
+        </li>
         <li class="nav-item">
             <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}
