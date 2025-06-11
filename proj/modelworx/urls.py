@@ -20,7 +20,7 @@ from rest_framework import routers
 from automodeler.serializer import ModelWorxViewSet
 
 router = routers.DefaultRouter() # Defining a router from the default rest framework router.
-router.register('modelworx', ModelWorxViewSet) # Routing the serializer data to the modelworx path to be displayed.
+router.register('modelworx', ModelWorxViewSet, basename='modelworx') # Routing the serializer data to the modelworx path to be displayed.
 
 urlpatterns = [
     path("automodeler/", include("automodeler.urls")),

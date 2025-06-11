@@ -10,5 +10,6 @@ urlpatterns = [
     path("dataset_collection/", views.dataset_collection, name="dataset_collection"),
     path("model_collection/", views.model_collection, name="model_collection"),
     path("task_collection/", views.task_collection, name="task_collection"),
+    path("account/", views.account, name="account"),
 
 ]
