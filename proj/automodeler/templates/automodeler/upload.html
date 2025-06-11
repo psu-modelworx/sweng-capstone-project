@@ -10,5 +10,9 @@
     <input type="submit" value="Submit">
 </form>
 
+<br/>
+{% if err_msg %}
+<h3>{{ err_msg }}</h3>
+{% endif %}
 
 {% include "base/footer.html" %}
