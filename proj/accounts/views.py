@@ -21,7 +21,8 @@ def signup(request):
         username = user_form['username']
         if user_form.is_valid():
             user_form.save()
-            return redirect("registration/login.html")
+            url = reverse('login')
+            return redirect(url)
             #return render(request, "registration/login.html", {})
             #return render(request, "automodeler/index.html", {})
         else:
