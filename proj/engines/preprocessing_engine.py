@@ -1,6 +1,6 @@
 import pandas as pd
 import logging
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 from sklearn.model_selection import train_test_split
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -34,6 +34,8 @@ class PreprocessingEngine:
         self.test_size = test_size
         self.random_state = random_state
         self.scaler = StandardScaler()
+        self.feature_encoder = OneHotEncoder(drop='first', sparse=False, handle_unknown='ignore')
+        self.target_encoder = LabelEncoder()
         # Default to empty list
         self.columns_to_remove = columns_to_remove if columns_to_remove else []
         self.X, self.y = None, None  # Placeholders for features and target
