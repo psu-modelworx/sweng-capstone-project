@@ -19,7 +19,7 @@
                 Login
             </a>
             <div class="dropdown-menu">
-              <form class="px-4 py-3" action="/accounts/login/" method="post">
+              <form class="px-4 py-3" action="{% url 'login' %}" method="post">
                 {% csrf_token %}
                 <div class="mb-3">
                   <label for="id_username" class="form-label">Username</label>
@@ -46,15 +46,12 @@
         </li>
         {% else %}
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'account' %}">Account</a>
-        </li>
-        <li class="nav-item">
-            <form action="/accounts/logout/" method="post">
+            <form action="{% url 'logout' %}" method="post">
                 {% csrf_token %}
                 <button class="nav-link" type="submit" aria-current="page">Logout</a>
             </form>
         </li>
-         {% endif %}
+        {% endif %}
         
       </ul>
       <form class="d-flex" role="search">

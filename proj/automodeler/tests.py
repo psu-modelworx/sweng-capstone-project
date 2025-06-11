@@ -19,7 +19,7 @@ def test_login_form(client):
 
     :param client: An HTTP client object provided by pytest's Django plugin
 
-    :Test Cases: TC-001, TC-002
+    :Test Cases: TC-006
     """
     # Create test user
     user = User.objects.create_user(username='testuser', password='testpassword')
