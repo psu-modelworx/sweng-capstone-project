@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404
+from rest_framework.authtoken.models import Token
 
 from .models import Dataset
 from .forms import DatasetForm
@@ -95,6 +96,34 @@ def dataset(request, dataset_id):
     else:
         return redirect(reverse('login'))
 
+def account(request):
+    """
+    Ensuring a user is logged in before giving them access to the account page.
+    When the "Receive Token" button is pressed, give or assign a token to a user.
+    Displaying a user's token on their account page so they know it was successfully created.
+    """
+    if request.user.is_authenticated:
+        # Tokens are stored in the session so they can be displayed after the redirect.
+        token = request.session.get("token", "Token: ")
+        
+        # Called when the "Receive Token" button is pressed.
+        if request.method == 'POST':
+            # Getting the path of this page to refresh it after getting the token.
+            url = reverse("account")
+            
+            # Getting or creating a token and storing it in the session.
+            userToken, tokenExists = Token.objects.get_or_create(user=request.user)
+            request.session["token"] = "Token: " + userToken.key
+            
+            # Redirecting the url to refresh it and show the token.
+            return redirect(url)
+        else:
+            # When navigating to the page, render the account html file.
+            return render(request, "automodeler/account.html", {"token": token})
+    else:
+        # If a user isn't authenticated, navigate to the login page.
+        url = reverse("login")
+        return HttpResponseRedirect(url)
 
 def extract_features(dataset_fileName):
     """

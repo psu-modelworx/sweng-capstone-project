@@ -46,13 +46,15 @@
         </li>
         {% else %}
         <li class="nav-item">
+          <a class="nav-link" href="{% url 'account' %}">Account</a>
+        </li>
+        <li class="nav-item">
             <form action="/accounts/logout/" method="post">
                 {% csrf_token %}
                 <button class="nav-link" type="submit" aria-current="page">Logout</a>
             </form>
         </li>
          {% endif %}
-
         
       </ul>
       <form class="d-flex" role="search">
