@@ -43,55 +43,58 @@ class PreprocessingEngine:
         logging.info(
             f"Initialized PreprocessingEngine with task type: {self.task_type}")
 
-    def remove_unwanted_columns(self):
-        """ Removes specified columns from the dataset before further processing. """
+    def remove_unwanted_columns(self, df):
+        """Removes specified columns from the input DataFrame and returns the cleaned DataFrame."""
         if self.columns_to_remove:
-            self.df.drop(columns=self.columns_to_remove,
-                         errors="ignore", inplace=True)
+            df_cleaned = df.drop(columns=self.columns_to_remove, errors="ignore")
             logging.info(f"Removed unwanted columns: {self.columns_to_remove}")
         else:
+            df_cleaned = df.copy()
             logging.info("No columns specified for removal.")
 
-    def clean_categorical_columns(self):
-        """ Cleans categorical columns by stripping whitespace, converting to lowercase, and handling missing indicators. """
+    return df_cleaned
+
+    def clean_categorical_columns(self, df):
+        """Cleans categorical columns in the input DataFrame and returns the cleaned DataFrame."""
         if not self.categorical_columns:
-            logging.info("No categorical columns in data set.")
-            return
+            logging.info("No categorical columns specified.")
+            return df.copy()
 
-        valid_cols = [col for col in self.categorical_columns if col in self.df.columns]
+        valid_cols = [col for col in self.categorical_columns if col in df.columns]
         if not valid_cols:
-            logging.info("No input categorical columns found in data set.")
-            return
+            logging.info("No valid categorical columns found in the input DataFrame.")
+            return df.copy()
 
+        df_cleaned = df.copy()
         for col in valid_cols:
-            self.df[col] = self.df[col].astype(str).str.strip().str.lower()
-            self.df[col] = self.df[col].replace(self.MISSING_INDICATORS, pd.NA)
+            df_cleaned[col] = df_cleaned[col].astype(str).str.strip().str.lower()
+            df_cleaned[col] = df_cleaned[col].replace(self.MISSING_INDICATORS, pd.NA)
 
         logging.info(f"Cleaned categorical columns: {', '.join(valid_cols)}")
+        return df_cleaned
 
         
-    def clean_continuous_columns(self):
-        """Cleans and converts numeric-like columns stored as text."""
+    def clean_continuous_columns(self, df):
+        """Cleans and converts continuous columns stored as text in the input DataFrame."""
+        df_cleaned = df.copy()
         fixed_columns = []
 
         continuous_columns = [
-            col for col in self.df.columns if col not in self.categorical_columns
+            col for col in df_cleaned.columns if col not in self.categorical_columns
         ]
 
         for col in continuous_columns:
-            original_values = self.df[col].copy()
+            original_values = df_cleaned[col].copy()
 
-            # convert to str for easy manipulation
-            self.df[col] = (
-                self.df[col]
+            df_cleaned[col] = (
+                df_cleaned[col]
                 .astype(str)
                 .str.strip()
                 .str.replace(r"[^\d\.\-]", "", regex=True)
                 .apply(pd.to_numeric, errors="coerce")
             )
 
-            # Check if anything changed
-            if not original_values.equals(self.df[col]):
+            if not original_values.equals(df_cleaned[col]):
                 fixed_columns.append(col)
 
         if fixed_columns:
@@ -99,33 +102,35 @@ class PreprocessingEngine:
         else:
             logging.info("No continuous columns required cleaning.")
 
-    def drop_missing_columns(self, threshold=0.6):
-        """Drops columns that have more than the given threshold of missing values."""
+        return df_cleaned
 
-        missing_percentage = self.df.isnull().mean()
-        columns_to_drop = missing_percentage[missing_percentage > threshold].index.tolist(
-        )
+    def drop_missing_columns(self, df, threshold=0.6):
+        """ Drops columns in the input DataFrame that have more than the given threshold of missing values. """
+        df_cleaned = df.copy()
+        missing_percentage = df_cleaned.isnull().mean()
+        columns_to_drop = missing_percentage[missing_percentage > threshold].index.tolist()
 
         if columns_to_drop:
-            self.df.drop(columns=columns_to_drop, inplace=True)
-            logging.info(
-                f"Dropped columns with excessive missing values: {columns_to_drop}")
+            df_cleaned.drop(columns=columns_to_drop, inplace=True)
+            logging.info(f"Dropped columns with excessive missing values: {columns_to_drop}")
         else:
             logging.info("No columns dropped due to missing values.")
 
-    def drop_missing_rows(self, threshold=0.4):
-        """Drops rows missing the target or with excessive missing values."""
+        return df_cleaned, columns_to_drop
 
-        initial_row_count = len(self.df)
+    def drop_missing_rows(self, df, threshold=0.4):
+        """ Drops rows from the input DataFrame that are missing the target or have excessive missing values. """
+        df_cleaned = df.copy()
+        initial_row_count = len(df_cleaned)
 
-        # Handle target
-        self.df.dropna(subset=[self.target_column], inplace=True)
-        target_dropped = initial_row_count - len(self.df)
+        # Drop rows missing the target
+        df_cleaned.dropna(subset=[self.target_column], inplace=True)
+        target_dropped = initial_row_count - len(df_cleaned)
 
-        # Handle rest
-        row_missing_percentage = self.df.drop(columns=[self.target_column]).isnull().mean(axis=1)
-        self.df = self.df.loc[row_missing_percentage < threshold]
-        excessive_missing_dropped = initial_row_count - target_dropped - len(self.df)
+        # Drop rows with excessive missing data (excluding target)
+        row_missing_percentage = df_cleaned.drop(columns=[self.target_column]).isnull().mean(axis=1)
+        df_cleaned = df_cleaned.loc[row_missing_percentage < threshold]
+        excessive_missing_dropped = initial_row_count - target_dropped - len(df_cleaned)
 
         if target_dropped > 0:
             logging.info(f"Dropped {target_dropped} rows missing the target variable ({self.target_column}).")
@@ -134,32 +139,43 @@ class PreprocessingEngine:
         if target_dropped == 0 and excessive_missing_dropped == 0:
             logging.info("No rows dropped due to missing values.")
 
-    def handle_missing_data(self):
-        """Handles missing values by imputing numerical features with mean and categorical features with mode."""
+        return df_cleaned
 
+    def handle_missing_data(self, df):
+        """
+        Handles missing values in the input DataFrame by:
+        - Imputing numeric columns with the mean
+        - Imputing categorical columns with the mode
+
+        Returns the cleaned DataFrame and a dictionary with lists of columns that were imputed.
+        """
+        df_cleaned = df.copy()
         numeric_missing_handled = []
         categorical_missing_handled = []
 
-        for col in self.df.columns:
+        for col in df_cleaned.columns:
             if col in self.categorical_columns:
-                if self.df[col].isnull().any():
-                    self.df[col] = self.df[col].fillna(self.df[col].mode()[0])
-                    categorical_missing_handled.append(col)
+                if df_cleaned[col].isnull().any():
+                    mode_val = df_cleaned[col].mode(dropna=True)
+                    if not mode_val.empty:
+                        df_cleaned[col] = df_cleaned[col].fillna(mode_val[0])
+                        categorical_missing_handled.append(col)
             else:
-                if self.df[col].isnull().any():
-                    self.df[col] = self.df[col].fillna(self.df[col].mean())
-                    numeric_missing_handled.append(col)
+                if df_cleaned[col].isnull().any():
+                    mean_val = df_cleaned[col].mean()
+                    if pd.notnull(mean_val):
+                        df_cleaned[col] = df_cleaned[col].fillna(mean_val)
+                        numeric_missing_handled.append(col)
 
         if numeric_missing_handled or categorical_missing_handled:
             if numeric_missing_handled:
-                logging.info(
-                    f"Imputed missing values in numeric columns using mean: {numeric_missing_handled}")
+                logging.info(f"Imputed missing values in numeric columns using mean: {numeric_missing_handled}")
             if categorical_missing_handled:
-                logging.info(
-                    f"Imputed missing values in categorical columns using mode: {categorical_missing_handled}")
+                logging.info(f"Imputed missing values in categorical columns using mode: {categorical_missing_handled}")
         else:
             logging.info("No missing data to handle.")
 
+        return df_cleaned
     def verify_final_dataset(self):
         """Logs remaining missing data counts after cleaning."""
 
