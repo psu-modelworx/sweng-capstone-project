@@ -2,12 +2,15 @@ from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404
+from rest_framework.authtoken.models import Token
 
 from .models import Dataset
 from .forms import DatasetForm
 
 import csv
 import io
+
+import pandas as pd
 
 # Create your views here.
 
@@ -46,6 +49,12 @@ def upload(request):
                 file_name = request.POST.get('name')
                 csv_file = request.FILES['csv_file']
                 user_id = request.user.id
+                try:
+                    sanitize_dataset(csv_file)
+                except Exception as e:
+                    url = reverse('upload')
+                    return render(request, url, {"form": form, "err_msg": "CSV File failed sanitation!"})
+                    #return HttpResponse("Error sanitizing file!")
                 features = extract_features_from_inMemoryUploadedFile(csv_file)
                 dataset_model = Dataset.objects.create(name=file_name, features=features, csv_file=csv_file, user_id=user_id)
                 dataset_model.save()
@@ -95,6 +104,34 @@ def dataset(request, dataset_id):
     else:
         return redirect(reverse('login'))
 
+def account(request):
+    """
+    Ensuring a user is logged in before giving them access to the account page.
+    When the "Receive Token" button is pressed, give or assign a token to a user.
+    Displaying a user's token on their account page so they know it was successfully created.
+    """
+    if request.user.is_authenticated:
+        # Tokens are stored in the session so they can be displayed after the redirect.
+        token = request.session.get("token", "Token: ")
+        
+        # Called when the "Receive Token" button is pressed.
+        if request.method == 'POST':
+            # Getting the path of this page to refresh it after getting the token.
+            url = reverse("account")
+            
+            # Getting or creating a token and storing it in the session.
+            userToken, tokenExists = Token.objects.get_or_create(user=request.user)
+            request.session["token"] = "Token: " + userToken.key
+            
+            # Redirecting the url to refresh it and show the token.
+            return redirect(url)
+        else:
+            # When navigating to the page, render the account html file.
+            return render(request, "automodeler/account.html", {"token": token})
+    else:
+        # If a user isn't authenticated, navigate to the login page.
+        url = reverse("login")
+        return HttpResponseRedirect(url)
 
 def extract_features(dataset_fileName):
     """
@@ -120,6 +157,26 @@ def extract_features_from_inMemoryUploadedFile(in_mem_file):
     csv_file = io.StringIO(file_data)
     reader = csv.reader(csv_file)
     features = next(reader)
+
+    # Return reading pointer to beginning of memory array
+    in_mem_file.seek(0)
+    
     return features
 
+def sanitize_dataset(in_mem_file):
+    """
+    sanitize_dataset reads an in-memory file object, and attempts to sanitize by removing html data.  Then, it tries to load
+    into a pandas dataframe to verify it can be used.
 
+    :param in_mem_file: InMemoryFile object to read
+
+    :return sanitized_dataset: Sanitized dataset to be saved
+    """
+    file_data = in_mem_file.read().decode('utf-8')
+    the_file = io.StringIO(file_data)
+    df = pd.read_csv(the_file)
+    
+    # Return reading pointer to beginning of memory array
+    in_mem_file.seek(0)
+
+    return True

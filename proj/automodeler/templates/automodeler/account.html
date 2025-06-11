@@ -1,18 +1,12 @@
 {% include "base/header.html" %}
 {% include "base/navbar.html" %}
 
-<h1>Dataset Upload Page</h1>
-
+<h1>Account Page - {{ user.username }}</h1>
 
 <form method="POST" enctype="multipart/form-data">
     {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" value="Submit">
+    <p> {{ token }} </p>
+    <input type="submit" value="Receive Token">
 </form>
-
-<br/>
-{% if err_msg %}
-<h3>{{ err_msg }}</h3>
-{% endif %}
 
 {% include "base/footer.html" %}

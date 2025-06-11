@@ -17,12 +17,15 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         echo  "${{ secrets.KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~./ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.HOST }} >> ~./ssh/known_hosts
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
     
     - name: Upload project to VPS via rsync
       run: |
-        rsync -az --delete ./ ${{ secrets.USERNAME}}@${{ secrets.HOST }}:/home/deploy/sweng-capstone-project
+        rsync -az --delete \
+        --exclude='venv/' \
+        --exclude='proj/modelworx/.env.production' \
+        ./ ${{ secrets.USERNAME}}@${{ secrets.HOST }}:/home/deploy/sweng-capstone-project
     
     - name: SSH into VPS and restart Gunicorn
       run: |
