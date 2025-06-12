@@ -34,7 +34,7 @@ class PreprocessingEngine:
         self.test_size = test_size
         self.random_state = random_state
         self.scaler = StandardScaler()
-        self.feature_encoder = OneHotEncoder(drop='first', sparse=False, handle_unknown='ignore')
+        self.feature_encoder = OneHotEncoder(drop='first', sparse_output=False, handle_unknown='ignore')
         self.target_encoder = LabelEncoder()
         # Default to empty list
         self.columns_to_remove = columns_to_remove if columns_to_remove else []
@@ -52,7 +52,7 @@ class PreprocessingEngine:
             df_cleaned = df.copy()
             logging.info("No columns specified for removal.")
 
-    return df_cleaned
+        return df_cleaned
 
     def clean_categorical_columns(self, df):
         """Cleans categorical columns in the input DataFrame and returns the cleaned DataFrame."""
@@ -176,48 +176,52 @@ class PreprocessingEngine:
             logging.info("No missing data to handle.")
 
         return df_cleaned
-    def verify_final_dataset(self):
-        """Logs remaining missing data counts after cleaning."""
-
-        remaining_missing = self.df.isnull().sum()
-        logging.info(f"Final dataset missing values:\n{remaining_missing}")
 
     def encode_target_column(self):
-        """ Encodes a categorical target column if applicable. """
+        """Encodes a categorical target column and saves the mapping for reuse."""
         if not self.target_is_categorical:
             logging.info("Skipping target encoding (not categorical).")
             return
 
-        # Save original target column name for decoding
         self.original_target_column = self.target_column
+        self.label_encoder = LabelEncoder()
+        self.df[f"{self.target_column}_encoded"] = self.label_encoder.fit_transform(self.df[self.target_column])
 
-        encoded_col = f"{self.target_column}_encoded"
-        self.df[encoded_col] = self.df[self.target_column].astype('category').cat.codes
-
-        self.label_mapping_df = (
-            self.df[[self.target_column, encoded_col]]
-            .drop_duplicates()
-            .sort_values(encoded_col)
-            .reset_index(drop=True)
-        )
-
-        if encoded_col not in self.categorical_columns:
-            self.categorical_columns.append(encoded_col)
+        if f"{self.target_column}_encoded" not in self.categorical_columns:
+            self.categorical_columns.append(f"{self.target_column}_encoded")
 
         self.df.drop(columns=[self.target_column], inplace=True)
-        self.target_column = encoded_col
+        self.target_column = f"{self.target_column}_encoded"
 
-        logging.info(f"Encoded target column '{self.target_column}'.")
+        logging.info(f"Encoded target column '{self.target_column}' with classes: {list(self.label_encoder.classes_)}")
 
-    def split_features_and_target(self):
-        """ Splits data into features (X) and target (y)"""
-        X = self.df.drop(columns=self.target_column, errors="ignore")
-        y = self.df[self.target_column]
+    def decode_target(self, values):
+        return self.label_encoder.inverse_transform(values)
 
-        self.X, self.y = X, y
+    def encode_target_in_new_df(self, new_df):
+        if not self.target_is_categorical:
+            logging.info("Skipping target encoding for new DataFrame, target not categorical.")
+            return new_df
 
-        logging.info(f"Split dataset. Using '{self.target_column}' as target.")
-        return X, y
+        if not hasattr(self, "label_encoder"):
+            raise ValueError("No saved label encoder found. Call encode_target_column first.")
+
+        target_col = self.original_target_column
+        if target_col not in new_df.columns:
+            raise ValueError(f"Target column '{target_col}' not found in new DataFrame.")
+
+        try:
+            new_df[f"{target_col}_encoded"] = self.label_encoder.transform(new_df[target_col])
+        except ValueError:
+            new_df[f"{target_col}_encoded"] = new_df[target_col].map(
+                {label: i for i, label in enumerate(self.label_encoder.classes_)}
+            ).fillna(-1).astype(int)
+
+        new_df.drop(columns=[target_col], inplace=True)
+
+        logging.info(f"Encoded target column in new DataFrame using saved label encoder.")
+        return new_df
+
 
     def scale_continuous_features(self):
         """ Scales all continuous features using StandardScaler, excluding possible continuous target columns. """
@@ -234,30 +238,93 @@ class PreprocessingEngine:
         self.df[cont_features] = self.scaler.fit_transform(self.df[cont_features])
         logging.info(f"Scaled continuous features: {cont_features}")
 
-    def one_hot_encode_categorical_features(self):
-        """ Applies one-hot encoding to categorical features in self.df, excluding the target column and binaries. """
-
-        self.df = self.df.copy()
-
-        binary_feat = [
-            col for col in self.categorical_columns
-            if col in self.df.columns and col != self.target_column and self.df[col].nunique() == 2
+    def scale_continuous_features_in_new_df(self, new_df):
+        """Applies the previously fitted StandardScaler to continuous features of a new dataframe."""
+        
+        cont_features = [
+            col for col in new_df.columns
+            if col not in self.categorical_columns and col != self.target_column
         ]
-        multi_cat_feat = [
+        
+        if not cont_features:
+            logging.warning("No continuous features found to scale in new DataFrame.")
+            return new_df
+        
+        if not hasattr(self, 'scaler'):
+            raise ValueError("Scaler not fitted. Call scale_continuous_features() on training data first.")
+        
+        new_df = new_df.copy()
+        new_df[cont_features] = self.scaler.transform(new_df[cont_features])
+        
+        logging.info(f"Scaled continuous features in new DataFrame: {cont_features}")
+        return new_df
+
+    
+    def fit_categorical_encoder(self):
+        """Fit OneHotEncoder on categorical columns excluding target, save the encoder, and transform self.df."""
+        
+        cols_to_encode = [
             col for col in self.categorical_columns
-            if col in self.df.columns and col != self.target_column and self.df[col].nunique() > 2
+            if col in self.df.columns and col != self.target_column
         ]
-        for col in binary_feat:
-            self.df[col] = self.df[col].astype('category').cat.codes
 
-        if multi_cat_feat:
-            self.df = pd.get_dummies(self.df, columns=multi_cat_feat, drop_first=True)
-            logging.info(f"One-hot encoded features: {multi_cat_feat}")
+        if not cols_to_encode:
+            logging.info("No categorical features found for one-hot encoding.")
+            return
 
-        if not binary_feat and not multi_cat_feat:
-            logging.warning("No categorical features found to encode.")
-        else:
-            logging.info(f"Label encoded binary columns: {binary_feat}")
+        self.feature_encoder.fit(self.df[cols_to_encode])
+
+        encoded_array = self.feature_encoder.transform(self.df[cols_to_encode])
+        encoded_df = pd.DataFrame(
+            encoded_array,
+            columns=self.feature_encoder.get_feature_names_out(cols_to_encode),
+            index=self.df.index
+        )
+
+        # Drop original categorical columns and add encoded
+        self.df.drop(columns=cols_to_encode, inplace=True)
+        self.df = pd.concat([self.df, encoded_df], axis=1)
+
+        logging.info(f"One-hot encoded columns: {cols_to_encode}")
+
+    def transform_new_categoricals(self, new_df):
+        """Apply the previously fitted OneHotEncoder to a new DataFrame."""
+        
+        if not hasattr(self, 'ohe'):
+            raise ValueError("OneHotEncoder not fitted yet. Call fit_one_hot_encoder first.")
+
+        cols_to_encode = [
+            col for col in self.categorical_columns
+            if col in new_df.columns and col != self.target_column
+        ]
+
+        if not cols_to_encode:
+            logging.info("No categorical features found in new data for one-hot encoding.")
+            return new_df
+
+        encoded_array = self.feature_encoder.transform(new_df[cols_to_encode])
+        encoded_df = pd.DataFrame(
+            encoded_array,
+            columns=self.feature_encoder.get_feature_names_out(cols_to_encode),
+            index=new_df.index
+        )
+
+        new_df = new_df.drop(columns=cols_to_encode)
+        new_df = pd.concat([new_df, encoded_df], axis=1)
+
+        logging.info(f"One-hot encoded categorical columns in new DataFrame: {cols_to_encode}")
+
+        return new_df
+
+    def split_features_and_target(self):
+        """ Splits data into features (X) and target (y)"""
+        X = self.df.drop(columns=self.target_column, errors="ignore")
+        y = self.df[self.target_column]
+
+        self.X, self.y = X, y
+
+        logging.info(f"Split dataset. Using '{self.target_column}' as target.")
+        return X, y
 
     def train_test_split_data(self, X, y):
         """ Splits dataset into training and testing sets. """
@@ -271,16 +338,15 @@ class PreprocessingEngine:
         """ Runs the full preprocessing pipeline and saves final processed data. """
         logging.info("Running PreprocessingEngine...")
 
-        self.remove_unwanted_columns() # drops columns specified for removal
-        self.clean_categorical_columns()
-        self.clean_continuous_columns()
-        self.drop_missing_columns() # drop columns with excessive missing values
-        self.drop_missing_rows() # drop rows with excessive missing values or missing target
-        self.handle_missing_data() # fill in missing values
-        self.verify_final_dataset() # print out of remaining missing values
+        self.df = self.remove_unwanted_columns(self.df) # remove unwanted columns
+        self.df = self.clean_categorical_columns(self.df)
+        self.df = self.clean_continuous_columns(self.df)
+        self.df, self.dropped_columns = self.drop_missing_columns(self.df) # drop columns with excessive missing values
+        self.df = self.drop_missing_rows(self.df)
+        self.df = self.handle_missing_data(self.df)
         self.encode_target_column()
         self.scale_continuous_features()
-        self.one_hot_encode_categorical_features()
+        self.fit_categorical_encoder()
         X, y = self.split_features_and_target()
         X_train, X_test, y_train, y_test = self.train_test_split_data(X, y)
 
@@ -291,6 +357,31 @@ class PreprocessingEngine:
 
         return X_train, X_test, y_train, y_test, self.task_type
 
+    def translate_new_data(self, new_data):
+        """ Applies the same preprocessing steps to new data as were applied to the original dataset. """
+        if self.final_df is None:
+            raise ValueError("Preprocessing not run yet. Please run 'run_preprocessing_engine' first.")
+
+        new_data = new_data.copy()
+
+        self.remove_unwanted_columns(new_data) # drops columns specified for removal
+        self.remove_dropped_columns(new_data) # drops columns that were dropped in the original dataset
+        self.clean_categorical_columns(new_data)
+        self.clean_continuous_columns(new_data)
+        self.encode_target_in_new_df(new_data)
+        self.scale_continuous_features_in_new_df(new_data)
+        self.transform_new_categoricals(new_data)
+
+
+
+
+
+
+
+
+
+
+
     def summary(self):
         return {
             "task_type": self.task_type,
@@ -299,22 +390,10 @@ class PreprocessingEngine:
             "label_mapping": self.label_mapping_df if self.label_mapping_df is not None else "N/A"
         }
 
-    def decode_target(self, encoded_values):
-        """ Maps encoded target values back to original labels. """
-        if not self.target_is_categorical:
-            logging.warning("Target is not categorical. skipping decoding.")
-            return encoded_values
+    def verify_final_dataset(self):
+        """Logs remaining missing data counts after cleaning."""
+
+        remaining_missing = self.df.isnull().sum()
+        logging.info(f"Final dataset missing values:\n{remaining_missing}")
     
-        if self.label_mapping_df is not None:
-            original_col = self.original_target_column
-            encoded_col = self.target_column
-
-            inverse_mapping = dict(zip(
-                self.label_mapping_df[encoded_col],
-                self.label_mapping_df[original_col]
-            ))
-
-            return [inverse_mapping.get(val, val) for val in encoded_values]
-        else:
-            return encoded_values
         
