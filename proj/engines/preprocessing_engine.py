@@ -1,4 +1,6 @@
 import pandas as pd
+import joblib
+import json
 import logging
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
 from sklearn.model_selection import train_test_split
@@ -17,8 +19,10 @@ class PreprocessingEngine:
     def __init__(self, df, target_column, categorical_columns=None, columns_to_remove=None, test_size=DEFAULT_TEST_SIZE, random_state=DEFAULT_RANDOM_STATE):
         """ Initializes the preprocessing engine with required properties. """
         self.original_df = df.copy()  # Stores the original dataset before preprocessing
+        self.original_columns = df.columns.tolist()  # Store original columns for reference
         self.df = df.copy()  # Working copy for transformations
         self.final_df = None  # Placeholder for final processed dataset
+        self.final_columns = []  # Placeholder for final columns after preprocessing
         if categorical_columns is None:
             self.categorical_columns = []
         elif isinstance(categorical_columns, str):
@@ -42,6 +46,35 @@ class PreprocessingEngine:
 
         logging.info(
             f"Initialized PreprocessingEngine with task type: {self.task_type}")
+
+    @classmethod
+    def load_from_files(cls, meta_path='preprocessing_meta.json'):
+        with open(meta_path) as f:
+            meta = json.load(f)
+
+        # Create placeholders for initializaiton
+        engine = cls(df=pd.DataFrame(), 
+                    target_column=meta['target_column'],
+                    categorical_columns=meta['categorical_columns'],
+                    columns_to_remove=meta['columns_to_remove'])
+
+        # fill in importatnt attributes from meta
+        engine.original_target_column = meta.get('original_target_column', meta['target_column'])
+        engine.target_is_categorical = meta.get('target_is_categorical', False)
+        engine.categorical_columns = meta.get('categorical_columns', [])
+        engine.columns_to_remove = meta.get('columns_to_remove', [])
+        engine.original_columns = meta.get('original_columns', [])
+        engine.final_columns = meta.get('final_columns', [])
+        engine.task_type = meta.get('task_type', 'regression')
+        engine.dropped_columns = meta.get('dropped_columns', [])
+        engine.final_columns = meta.get('final_columns', [])
+        engine.feature_encoder = joblib.load('feature_encoder.pkl')
+        engine.scaler = joblib.load('scaler.pkl')
+
+        if engine.target_is_categorical:
+            engine.label_encoder = joblib.load('label_encoder.pkl')
+
+        return engine
 
     def remove_unwanted_columns(self, df):
         """Removes specified columns from the input DataFrame and returns the cleaned DataFrame."""
@@ -184,7 +217,6 @@ class PreprocessingEngine:
             return
 
         self.original_target_column = self.target_column
-        self.label_encoder = LabelEncoder()
         self.df[f"{self.target_column}_encoded"] = self.label_encoder.fit_transform(self.df[self.target_column])
 
         if f"{self.target_column}_encoded" not in self.categorical_columns:
@@ -198,30 +230,7 @@ class PreprocessingEngine:
     def decode_target(self, values):
         return self.label_encoder.inverse_transform(values)
 
-    def encode_target_in_new_df(self, new_df):
-        if not self.target_is_categorical:
-            logging.info("Skipping target encoding for new DataFrame, target not categorical.")
-            return new_df
-
-        if not hasattr(self, "label_encoder"):
-            raise ValueError("No saved label encoder found. Call encode_target_column first.")
-
-        target_col = self.original_target_column
-        if target_col not in new_df.columns:
-            raise ValueError(f"Target column '{target_col}' not found in new DataFrame.")
-
-        try:
-            new_df[f"{target_col}_encoded"] = self.label_encoder.transform(new_df[target_col])
-        except ValueError:
-            new_df[f"{target_col}_encoded"] = new_df[target_col].map(
-                {label: i for i, label in enumerate(self.label_encoder.classes_)}
-            ).fillna(-1).astype(int)
-
-        new_df.drop(columns=[target_col], inplace=True)
-
-        logging.info(f"Encoded target column in new DataFrame using saved label encoder.")
-        return new_df
-
+    
 
     def scale_continuous_features(self):
         """ Scales all continuous features using StandardScaler, excluding possible continuous target columns. """
@@ -238,27 +247,7 @@ class PreprocessingEngine:
         self.df[cont_features] = self.scaler.fit_transform(self.df[cont_features])
         logging.info(f"Scaled continuous features: {cont_features}")
 
-    def scale_continuous_features_in_new_df(self, new_df):
-        """Applies the previously fitted StandardScaler to continuous features of a new dataframe."""
-        
-        cont_features = [
-            col for col in new_df.columns
-            if col not in self.categorical_columns and col != self.target_column
-        ]
-        
-        if not cont_features:
-            logging.warning("No continuous features found to scale in new DataFrame.")
-            return new_df
-        
-        if not hasattr(self, 'scaler'):
-            raise ValueError("Scaler not fitted. Call scale_continuous_features() on training data first.")
-        
-        new_df = new_df.copy()
-        new_df[cont_features] = self.scaler.transform(new_df[cont_features])
-        
-        logging.info(f"Scaled continuous features in new DataFrame: {cont_features}")
-        return new_df
-
+    
     
     def fit_categorical_encoder(self):
         """Fit OneHotEncoder on categorical columns excluding target, save the encoder, and transform self.df."""
@@ -287,35 +276,7 @@ class PreprocessingEngine:
 
         logging.info(f"One-hot encoded columns: {cols_to_encode}")
 
-    def transform_new_categoricals(self, new_df):
-        """Apply the previously fitted OneHotEncoder to a new DataFrame."""
-        
-        if not hasattr(self, 'ohe'):
-            raise ValueError("OneHotEncoder not fitted yet. Call fit_one_hot_encoder first.")
-
-        cols_to_encode = [
-            col for col in self.categorical_columns
-            if col in new_df.columns and col != self.target_column
-        ]
-
-        if not cols_to_encode:
-            logging.info("No categorical features found in new data for one-hot encoding.")
-            return new_df
-
-        encoded_array = self.feature_encoder.transform(new_df[cols_to_encode])
-        encoded_df = pd.DataFrame(
-            encoded_array,
-            columns=self.feature_encoder.get_feature_names_out(cols_to_encode),
-            index=new_df.index
-        )
-
-        new_df = new_df.drop(columns=cols_to_encode)
-        new_df = pd.concat([new_df, encoded_df], axis=1)
-
-        logging.info(f"One-hot encoded categorical columns in new DataFrame: {cols_to_encode}")
-
-        return new_df
-
+    
     def split_features_and_target(self):
         """ Splits data into features (X) and target (y)"""
         X = self.df.drop(columns=self.target_column, errors="ignore")
@@ -353,34 +314,34 @@ class PreprocessingEngine:
         # Save final dataset
         self.final_df = pd.concat([X, y], axis=1)
         logging.info(
-            "Preprocessing completed successfully. Final dataset stored.")
+            "Preprocessing completed successfully. Final dataset stored. Saving Meta Data...")
+
+        # Save label mapping if applicable
+        joblib.dump(self.feature_encoder, 'feature_encoder.pkl')
+        joblib.dump(self.scaler, 'scaler.pkl')
+        joblib.dump(self.label_encoder, 'label_encoder.pkl')
+
+        meta = {
+            "categorical_columns": self.categorical_columns,
+            "target_column": self.target_column,
+            "original_target_column": getattr(self, "original_target_column", self.target_column),
+            "target_is_categorical": getattr(self, "target_is_categorical", False),
+            "columns_to_remove": getattr(self, "columns_to_remove", []),
+            "dropped_columns": getattr(self, "dropped_columns", []),
+            "original_columns": list(self.original_df.columns),
+            "final_columns": list(self.final_df.columns),
+            "task_type": self.task_type,
+        }
+
+        with open('preprocessing_meta.json', 'w') as f:
+            json.dump(meta, f, indent=4)
+
+        logging.info("Meta data saved to preprocessing_meta.json")
 
         return X_train, X_test, y_train, y_test, self.task_type
 
-    def translate_new_data(self, new_data):
-        """ Applies the same preprocessing steps to new data as were applied to the original dataset. """
-        if self.final_df is None:
-            raise ValueError("Preprocessing not run yet. Please run 'run_preprocessing_engine' first.")
 
-        new_data = new_data.copy()
-
-        self.remove_unwanted_columns(new_data) # drops columns specified for removal
-        self.remove_dropped_columns(new_data) # drops columns that were dropped in the original dataset
-        self.clean_categorical_columns(new_data)
-        self.clean_continuous_columns(new_data)
-        self.encode_target_in_new_df(new_data)
-        self.scale_continuous_features_in_new_df(new_data)
-        self.transform_new_categoricals(new_data)
-
-
-
-
-
-
-
-
-
-
+    # Methods for accessing and summarizing the final dataset
 
     def summary(self):
         return {
@@ -390,10 +351,127 @@ class PreprocessingEngine:
             "label_mapping": self.label_mapping_df if self.label_mapping_df is not None else "N/A"
         }
 
-    def verify_final_dataset(self):
+    def verify_final_dataset(self, df):
         """Logs remaining missing data counts after cleaning."""
 
-        remaining_missing = self.df.isnull().sum()
+        remaining_missing = df.isnull().sum()
         logging.info(f"Final dataset missing values:\n{remaining_missing}")
+
+
+    # Methods for transforming new data using the fitted preprocessing steps
+
+    def scale_continuous_features_in_new_df(self, new_df):
+        """Applies the previously fitted scaler to continuous features of a new dataframe."""
+        
+        cont_features = [
+            col for col in new_df.columns
+            if col not in self.categorical_columns and col != self.target_column
+        ]
+        
+        if not cont_features:
+            logging.warning("No continuous features found to scale in new DataFrame.")
+            return new_df
+        
+        if not hasattr(self, 'scaler'):
+            raise ValueError("Scaler not fitted. Call scale_continuous_features() on training data first.")
+        
+        new_df = new_df.copy()
+        new_df[cont_features] = self.scaler.transform(new_df[cont_features])
+        
+        logging.info(f"Scaled continuous features in new DataFrame: {cont_features}")
+        return new_df
+
+    def transform_categoricals_in_new_df(self, new_df):
+        """Apply the previously fitted OneHotEncoder to a new DataFrame."""
+        
+        if not hasattr(self, 'feature_encoder'):
+            raise ValueError("OneHotEncoder not fitted yet. Call fit_one_hot_encoder first.")
+
+        cols_to_encode = [
+            col for col in self.categorical_columns
+            if col in new_df.columns and col != self.target_column
+        ]
+
+        if not cols_to_encode:
+            logging.info("No categorical features found in new data for one-hot encoding.")
+            return new_df
+
+        encoded_array = self.feature_encoder.transform(new_df[cols_to_encode])
+        encoded_df = pd.DataFrame(
+            encoded_array,
+            columns=self.feature_encoder.get_feature_names_out(cols_to_encode),
+            index=new_df.index
+        )
+
+        new_df = new_df.drop(columns=cols_to_encode)
+        new_df = pd.concat([new_df, encoded_df], axis=1)
+
+        logging.info(f"One-hot encoded categorical columns in new DataFrame: {cols_to_encode}")
+
+        return new_df
+
+    def encode_target_in_new_df(self, new_df):
+        if not self.target_is_categorical:
+            logging.info("Skipping target encoding for new DataFrame, target not categorical.")
+            return new_df
+
+        if not hasattr(self, "label_encoder"):
+            raise ValueError("No saved label encoder found. Call encode_target_column first.")
+
+        target_col = self.original_target_column
+        if target_col not in new_df.columns:
+            raise ValueError(f"Target column '{target_col}' not found in new DataFrame.")
+
+        try:
+            new_df[f"{target_col}_encoded"] = self.label_encoder.transform(new_df[target_col])
+        except ValueError:
+            new_df[f"{target_col}_encoded"] = new_df[target_col].map(
+                {label: i for i, label in enumerate(self.label_encoder.classes_)}
+            ).fillna(-1).astype(int)
+
+        new_df.drop(columns=[target_col], inplace=True)
+
+        logging.info(f"Encoded target column in new DataFrame using saved label encoder.")
+        return new_df
+
+    def remove_dropped_columns(self, new_df):
+        """Removes columns that were dropped during preprocessing from a new DataFrame."""
+        
+        if not self.dropped_columns:
+            logging.info("No columns to remove from new DataFrame.")
+            return new_df
+        
+        new_df = new_df.drop(columns=self.dropped_columns, errors="ignore")
+        logging.info(f"Removed dropped columns from new DataFrame: {self.dropped_columns}")
+        
+        return new_df
+
+    def clean_new_dataset(self, new_data):
+        """Cleans a new dataset using the same preprocessing steps as the original."""
+
+        if set(new_data.columns) != set(self.original_columns):
+            raise ValueError(
+                f"Input columns do not match expected columns.\n"
+                f"Expected: {sorted(self.original_columns)}\n"
+                f"Received: {sorted(new_data.columns)}"
+            )
+
+        new_data = new_data.copy()
+        new_data = self.remove_unwanted_columns(new_data)
+        new_data = self.remove_dropped_columns(new_data)
+        new_data = self.clean_categorical_columns(new_data)
+        new_data = self.clean_continuous_columns(new_data)
+        new_data = self.encode_target_in_new_df(new_data)
+        new_data = self.scale_continuous_features_in_new_df(new_data)
+        new_data = self.transform_categoricals_in_new_df(new_data)
+
+        if set(new_data.columns) != set(self.final_columns):
+            raise ValueError(
+                f"Output columns do not match expected columns.\n"
+                f"Expected: {sorted(self.final_columns)}\n"
+                f"Calculated: {sorted(new_data.columns)}"
+            )
+
+        return new_data
     
         
