@@ -122,9 +122,11 @@ def test_signup_login_logout(client):
     assert response.headers['Location'] == reverse('index')
     
     # Verify redirect to login since user is no longer authenticated
-    response = client.get(reverse('index'))
+    response = client.get(reverse('dataset_collection'))
     assert response.status_code == 302
-    assert response.headers['Location'] == reverse('login')
+    #'accounts/login/?next=/automodeler/dataset_collection/''
+    expected_redirecturi = "".join([reverse('login'), "?next=", reverse('dataset_collection')])
+    assert response.headers['Location'] == expected_redirecturi
 
 
     
