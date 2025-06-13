@@ -7,4 +7,4 @@ proj/*/migrations/__pycache__/*
 proj/db.sqlite3
 proj/media/dataset_uploads/iris_*.data.csv
 proj/modelworx/tests/__pycache__/*
-proj/*/*/__pycache__/*
+proj/*/*/__pycache__/*db.sqlite3
