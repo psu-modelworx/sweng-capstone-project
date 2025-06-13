@@ -18,6 +18,5 @@ def start(request, dataset_id):
     categorical_columns = [f for f in dataset.features if all_features_dict[f] == 'C']
     ppe = PreprocessingEngine(df=df, target_column=target_column, categorical_columns=categorical_columns)
     ppe.run_preprocessing_engine()
-    print(ppe.summary())
     return HttpResponse("Preprocessing started...")
 

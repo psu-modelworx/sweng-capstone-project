@@ -28,7 +28,10 @@
                 <td>{{ ds.name }}</td>
                 <td>{{ ds.filename }}</td>
                 <td>
-                    <button class="btn btn-primary">Start modeling!</button>
+                    <form method="post" action="{% url 'ppe' dataset_id=ds.id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-primary" type="Submit">Start Preprocessing!</button>
+                    </form>
                     <form method="post" action="{% url 'dataset_delete' dataset_id=ds.id %}">
                         {% csrf_token %}
                         <button class="btn btn-danger" type="Submit">Delete</button>
