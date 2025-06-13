@@ -11,9 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
-
 from pathlib import Path
-import os
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -98,9 +96,9 @@ DATABASES = {
     
     # setup postgre, for now won't be implemented but enabling to be production ready
     'postgres': {
-        'ENGINE': config('DB_ENGINE'),
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
+        'ENGINE': config('DB_ENGINE', default=''),
+        'NAME': config('DB_NAME', default=''),
+        'USER': config('DB_USER', default=''),
         'PASSWORD': config('DB_PASSWORD', default=''),
         'HOST' : config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default='5432'),  # default PostgreSQL Port
