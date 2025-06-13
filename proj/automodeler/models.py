@@ -14,3 +14,7 @@ class Dataset(models.Model):
     def filename(self):
         return os.path.basename(self.csv_file.name)
     
+class PreprocessedDataSet(models.Model):
+    name = models.CharField(max_length=100)
+    csv_file = models.FileField(upload_to='preprocessed_datasets/')
+    original_dataset = models.OneToOneField(Dataset, on_delete=models.CASCADE)
