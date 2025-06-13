@@ -2,8 +2,7 @@ from django.contrib.auth.forms import UserCreationForm
 #from django.urls import reverse_lazy
 #from django.views.generic import CreateView
 
-from django.shortcuts import render
-from django.shortcuts import redirect
+from django.shortcuts import render, redirect, reverse
 from django.http import HttpResponse
 
 
@@ -21,7 +20,8 @@ def signup(request):
         username = user_form['username']
         if user_form.is_valid():
             user_form.save()
-            return redirect("registration/login.html")
+            url = reverse('login')
+            return redirect(url)
             #return render(request, "registration/login.html", {})
             #return render(request, "automodeler/index.html", {})
         else:
