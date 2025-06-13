@@ -94,6 +94,16 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+    },
+    
+    # setup postgre, for now won't be implemented but enabling to be production ready
+    'postgres': {
+        'ENGINE': config('DB_ENGINE'),
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST' : config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5432'),  # default PostgreSQL Port
     }
 }
 
@@ -141,7 +151,12 @@ STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-CSRF_TRUSTED_ORIGINS = ["https://8000--main--python-ws--hanbrolo.coder.leviathanworks.net"]
+CSRF_TRUSTED_ORIGINS = [
+        "https://8000--main--python-ws--hanbrolo.coder.leviathanworks.net",
+        "https://modelworx.leviathanworks.net", 
+]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 LOGIN_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon login
 LOGOUT_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon logout
