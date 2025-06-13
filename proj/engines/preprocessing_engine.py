@@ -35,7 +35,7 @@ class PreprocessingEngine:
         self.random_state = random_state
         self.scaler = StandardScaler()
         self.feature_encoder = OneHotEncoder(drop='first', sparse_output=False, handle_unknown='ignore')
-        self.target_encoder = LabelEncoder()
+        self.label_encoder = LabelEncoder()
         # Default to empty list
         self.columns_to_remove = columns_to_remove if columns_to_remove else []
         self.X, self.y = None, None  # Placeholders for features and target
