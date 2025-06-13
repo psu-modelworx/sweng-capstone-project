@@ -1,5 +1,5 @@
-from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.files.base import ContentFile
 
@@ -10,16 +10,21 @@ from engines.preprocessing_engine import PreprocessingEngine
 import pandas as pd
 import os
 
-# self, df, target_column, categorical_columns=None, columns_to_remove=None, 
-# test_size=DEFAULT_TEST_SIZE, random_state=DEFAULT_RANDOM_STATE
+@login_required
 def start_preprocessing_request(request, dataset_id):
-    dataset = Dataset.objects.get(id = dataset_id)
+    if request.method != 'POST':
+        return HttpResponseNotAllowed("Method not allowed")
     
-    #media_folder = settings.MEDIA_ROOT
+    # Verify dataset exists
+    try:
+        dataset = Dataset.objects.get(id = dataset_id)
+    except:
+        return HttpResponseNotFound("Dataset not found")
+    
     df = pd.read_csv(dataset.csv_file)
     target_column = dataset.target_feature
     all_features_dict = dataset.features
-    categorical_columns = [f for f in dataset.features if all_features_dict[f] == 'C']
+    categorical_columns = [f for f in dataset.features if all_features_dict[f] == 'C'] # Create list of categorical columns
     ppe = PreprocessingEngine(df=df, target_column=target_column, categorical_columns=categorical_columns)
     ppe.run_preprocessing_engine()
     

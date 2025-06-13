@@ -13,26 +13,34 @@
 {% if user.is_authenticated %}
 <h1>Hello {{ user.username }}</h1>
 
-{% if datasets %}
+{% if combined_datasets %}
 <table class="table" id="id_datasets_table" name="datasets_table">
         <thead>
             <tr>
                 <th scope="col">Dataset Name</th>
                 <th scope="col">Dataset File Name</th>
+                <th scope="col">Preprocessed Dataset</th>
                 <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for ds in datasets %}
+            {% for ds_list in combined_datasets %}
             <tr>
-                <td>{{ ds.name }}</td>
-                <td>{{ ds.filename }}</td>
+                <td>{{ ds_list.0.name }}</td>
+                <td>{{ ds_list.0.filename }}</td>
                 <td>
-                    <form method="post" action="{% url 'ppe' dataset_id=ds.id %}">
+                    {% if ds_list.1 %}
+                    {{ ds_list.1.filename }}
+                    {% else %}
+                    Dataset has not been preprocessed
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="post" action="{% url 'ppe' dataset_id=ds_list.0.id %}">
                         {% csrf_token %}
                         <button class="btn btn-primary" type="Submit">Start Preprocessing!</button>
                     </form>
-                    <form method="post" action="{% url 'dataset_delete' dataset_id=ds.id %}">
+                    <form method="post" action="{% url 'dataset_delete' dataset_id=ds_list.0.id %}">
                         {% csrf_token %}
                         <button class="btn btn-danger" type="Submit">Delete</button>
                     </form>
