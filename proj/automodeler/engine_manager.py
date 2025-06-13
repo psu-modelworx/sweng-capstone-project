@@ -37,6 +37,8 @@ def start_preprocessing_request(request, dataset_id):
     pp_ds_name = ''.join([dataset.name, "_preprocessed", ".csv"])
     temp_file.name = pp_ds_name
     
+    pp_ds = False
+    
     # First, see if there is a preprocessed dataset already
     try:
         pp_ds = PreprocessedDataSet.objects.get(original_dataset_id = dataset.id)
