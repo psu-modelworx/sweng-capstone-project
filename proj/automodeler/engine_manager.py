@@ -1,4 +1,4 @@
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -11,11 +11,16 @@ import pandas as pd
 import os
 
 @login_required
-def start_preprocessing_request(request, dataset_id):
+def start_preprocessing_request(request):
     if request.method != 'POST':
         return HttpResponseNotAllowed("Method not allowed")
     
     # Verify dataset exists
+    try:
+        dataset_id = request.POST.get('dataset_id')
+    except:
+        return HttpResponseBadRequest('Missing value: dataset_id')
+    
     try:
         dataset = Dataset.objects.get(id = dataset_id)
     except:

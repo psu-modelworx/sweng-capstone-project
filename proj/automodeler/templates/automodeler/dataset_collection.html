@@ -36,10 +36,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    <form method="post" action="{% url 'ppe' dataset_id=ds_list.0.id %}">
-                        {% csrf_token %}
-                        <button class="btn btn-primary" type="Submit">Start Preprocessing!</button>
-                    </form>
+                    <button class="btn btn-primary" onclick="preprocess_fetch_request( {{ ds_list.0.id }} )">Start Preprocessing!</button>
                     <form method="post" action="{% url 'dataset_delete' dataset_id=ds_list.0.id %}">
                         {% csrf_token %}
                         <button class="btn btn-danger" type="Submit">Delete</button>
@@ -65,6 +62,35 @@
 {% include "base/footer.html" %}
 
 <script>
+
+function preprocess_fetch_request(dataset_id) {
+    var url = '{% url 'ppe' %}';
+    var CSRF_TOKEN = '{{ csrf_token }}';
+    data = {
+        dataset_id: dataset_id
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': CSRF_TOKEN
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error.  Status Code: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(responseData => {
+        console.log('Response data:', responseData);
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    })
+}
 
 $(document).ready( function () {
     $('#id_datasets_table').DataTable({
