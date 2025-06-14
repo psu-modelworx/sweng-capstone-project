@@ -1,6 +1,10 @@
 import pytest
 import pandas as pd
+import json
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
+from joblib import load
 from engines.preprocessing_engine import PreprocessingEngine
+from unittest.mock import mock_open, patch, MagicMock
 
 
 @pytest.fixture
@@ -12,6 +16,27 @@ def sample_df():
         "zip": ["12345", "12345", "54321", "00000", "99999"],
         "target": ["yes", "no", "yes", "no", None]
     })
+
+@pytest.fixture
+def engine():
+    df = pd.DataFrame({
+        'age': [25, 30],
+        'income': [50000, 60000],
+        'gender': ['M', 'F'],
+        'label': [1, 0]
+    })
+    target_column = 'label'
+
+    engine = PreprocessingEngine(df=df, target_column=target_column)
+    engine.categorical_columns = ['gender']
+    engine.target_column = target_column
+    engine.original_target_column = target_column
+    engine.target_is_categorical = True
+    engine.dropped_columns = ['unwanted']
+    engine.original_columns = ['age', 'income', 'gender', 'label', 'unwanted']
+    engine.final_columns = ['age', 'income', 'gender_F', 'gender_M', 'label_encoded']
+
+    return engine
 
 
 def test_initialization(sample_df):
@@ -170,3 +195,113 @@ def test_decode_target_returns_original_labels(sample_df):
     encoded_values = engine.df[engine.target_column].tolist()
     decoded = engine.decode_target(encoded_values)
     assert decoded.tolist() == ["yes", "no", "yes", "no"]
+
+
+def test_load_from_files_method():
+    """TC-31 Verify load_from_files correctly initializes engine from metadata and joblib files."""
+    meta_data = {
+        "target_column": "label",
+        "categorical_columns": ["gender"],
+        "columns_to_remove": ["unwanted"],
+        "original_target_column": "label",
+        "target_is_categorical": True,
+        "original_columns": ["age", "income", "gender", "label", "unwanted"],
+        "final_columns": ["age", "income", "gender_F", "gender_M", "label_encoded"],
+        "task_type": "classification",
+        "dropped_columns": ["unwanted"]
+    }
+    meta_json = json.dumps(meta_data)
+
+    # Dummy objects
+    dummy_feature_encoder = MagicMock(name="feature_encoder")
+    dummy_scaler = MagicMock(name="scaler")
+    dummy_label_encoder = MagicMock(name="label_encoder")
+
+    with patch("builtins.open", mock_open(read_data=meta_json)) as mock_file, \
+         patch("joblib.load") as mock_joblib_load:
+
+        mock_joblib_load.side_effect = [dummy_feature_encoder, dummy_scaler, dummy_label_encoder]
+
+        engine = PreprocessingEngine.load_from_files("dummy_meta.json")
+
+        mock_file.assert_called_once_with("dummy_meta.json")
+        mock_joblib_load.assert_any_call("feature_encoder.pkl")
+        mock_joblib_load.assert_any_call("scaler.pkl")
+        mock_joblib_load.assert_any_call("label_encoder.pkl")
+
+        # Validate engine
+        assert isinstance(engine, PreprocessingEngine)
+        assert engine.target_column == "label"
+        assert engine.categorical_columns == ["gender"]
+        assert engine.columns_to_remove == ["unwanted"]
+        assert engine.original_target_column == "label"
+        assert engine.target_is_categorical is True
+        assert engine.original_columns == ["age", "income", "gender", "label", "unwanted"]
+        assert engine.final_columns == ["age", "income", "gender_F", "gender_M", "label_encoded"]
+        assert engine.task_type == "classification"
+        assert engine.dropped_columns == ["unwanted"]
+
+        # Validate joblib
+        assert engine.feature_encoder is dummy_feature_encoder
+        assert engine.scaler is dummy_scaler
+        assert engine.label_encoder is dummy_label_encoder
+
+def test_scale_continuous_features_in_new_df(engine):
+    """TC-32 Verify continuous features in new DataFrame are scaled correctly."""
+    engine.scaler = StandardScaler()
+    df_train = pd.DataFrame({'age': [20, 30, 40], 'income': [100, 200, 300], 'gender': ['M', 'F', 'F'], 'label': [1, 0, 1]})
+    engine.scaler.fit(df_train[['age', 'income']])
+    new_df = pd.DataFrame({'age': [25], 'income': [150], 'gender': ['M'], 'label': [1]})
+    scaled_df = engine.scale_continuous_features_in_new_df(new_df)
+
+    assert 'age' in scaled_df.columns
+    assert abs(scaled_df['age'].values[0]) < 1 
+
+def test_transform_categoricals_in_new_df(engine):
+    """TC-33 Verify categorical features in new DataFrame are transformed correctly."""
+    engine.feature_encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+    engine.feature_encoder.fit(pd.DataFrame({'gender': ['M', 'F']}))
+    new_df = pd.DataFrame({'age': [25], 'income': [150], 'gender': ['F'], 'label': [1]})
+    transformed = engine.transform_categoricals_in_new_df(new_df)
+
+    assert 'gender_F' in transformed.columns
+    assert 'gender_M' in transformed.columns
+    assert 'gender' not in transformed.columns
+
+def test_encode_target_in_new_df(engine):
+    """TC-34 Verify target column in new DataFrame is encoded correctly."""
+    engine.label_encoder = LabelEncoder()
+    engine.label_encoder.fit(['yes', 'no'])
+    df = pd.DataFrame({'label': ['yes', 'no']})
+    encoded = engine.encode_target_in_new_df(df)
+    
+    assert 'label_encoded' in encoded.columns
+    assert 'label' not in encoded.columns
+    assert list(encoded['label_encoded']) == [1, 0]
+
+def test_remove_dropped_columns(engine):
+    """TC-35 Verify unwanted columns are removed from new DataFrame."""
+    df = pd.DataFrame({'age': [25], 'unwanted': ['dropped data']})
+    cleaned = engine.remove_dropped_columns(df)
+
+    assert 'unwanted' not in cleaned.columns
+    assert 'age' in cleaned.columns
+
+def test_clean_new_dataset_column_check(engine, monkeypatch):
+    """TC-36 Verify new dataset cleaning results in expected final columns."""
+    df = pd.DataFrame({
+        'age': [25], 'income': [150], 'gender': ['M'],
+        'label': ['yes'], 'unwanted': ['drop']
+    })
+
+    # avoids having to fit the encoders and scalers with real data
+    monkeypatch.setattr(engine, 'remove_unwanted_columns', lambda d: d)
+    monkeypatch.setattr(engine, 'remove_dropped_columns', lambda d: d.drop(columns=['unwanted']))
+    monkeypatch.setattr(engine, 'clean_categorical_columns', lambda d: d)
+    monkeypatch.setattr(engine, 'clean_continuous_columns', lambda d: d)
+    monkeypatch.setattr(engine, 'encode_target_in_new_df', lambda d: d.assign(label_encoded=[1]).drop(columns=['label']))
+    monkeypatch.setattr(engine, 'scale_continuous_features_in_new_df', lambda d: d)
+    monkeypatch.setattr(engine, 'transform_categoricals_in_new_df', lambda d: d.assign(gender_F=[0], gender_M=[1]).drop(columns=['gender']))
+
+    cleaned = engine.clean_new_dataset(df)
+    assert set(cleaned.columns) == set(engine.final_columns)
