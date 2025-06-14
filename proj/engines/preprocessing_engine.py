@@ -295,6 +295,30 @@ class PreprocessingEngine:
             f"Split data into train ({1 - self.test_size:.0%}) and test ({self.test_size:.0%}) sets.")
         return X_train, X_test, y_train, y_test
 
+    def save_preprocessing_artifacts(self, path_prefix=""):
+        """Saves encoders, scaler, and metadata for preprocessing."""
+
+        joblib.dump(self.feature_encoder, f'{path_prefix}feature_encoder.pkl')
+        joblib.dump(self.scaler, f'{path_prefix}scaler.pkl')
+        joblib.dump(self.label_encoder, f'{path_prefix}label_encoder.pkl')
+
+        meta = {
+            "categorical_columns": self.categorical_columns,
+            "target_column": self.target_column,
+            "original_target_column": getattr(self, "original_target_column", self.target_column),
+            "target_is_categorical": getattr(self, "target_is_categorical", False),
+            "columns_to_remove": getattr(self, "columns_to_remove", []),
+            "dropped_columns": getattr(self, "dropped_columns", []),
+            "original_columns": list(self.original_df.columns),
+            "final_columns": list(self.final_df.columns),
+            "task_type": self.task_type,
+        }
+
+        with open(f'{path_prefix}preprocessing_meta.json', 'w') as f:
+            json.dump(meta, f, indent=4)
+
+        logging.info(f"Metadata saved to {path_prefix}preprocessing_meta.json")
+
     def run_preprocessing_engine(self):
         """ Runs the full preprocessing pipeline and saves final processed data. """
         logging.info("Running PreprocessingEngine...")
@@ -314,29 +338,9 @@ class PreprocessingEngine:
         # Save final dataset
         self.final_df = pd.concat([X, y], axis=1)
         logging.info(
-            "Preprocessing completed successfully. Final dataset stored. Saving Meta Data...")
+            "Preprocessing completed successfully. Final dataset stored.)
 
-        # Save label mapping if applicable
-        joblib.dump(self.feature_encoder, 'feature_encoder.pkl')
-        joblib.dump(self.scaler, 'scaler.pkl')
-        joblib.dump(self.label_encoder, 'label_encoder.pkl')
-
-        meta = {
-            "categorical_columns": self.categorical_columns,
-            "target_column": self.target_column,
-            "original_target_column": getattr(self, "original_target_column", self.target_column),
-            "target_is_categorical": getattr(self, "target_is_categorical", False),
-            "columns_to_remove": getattr(self, "columns_to_remove", []),
-            "dropped_columns": getattr(self, "dropped_columns", []),
-            "original_columns": list(self.original_df.columns),
-            "final_columns": list(self.final_df.columns),
-            "task_type": self.task_type,
-        }
-
-        with open('preprocessing_meta.json', 'w') as f:
-            json.dump(meta, f, indent=4)
-
-        logging.info("Meta data saved to preprocessing_meta.json")
+        self.save_preprocessing_artifacts()
 
         return X_train, X_test, y_train, y_test, self.task_type
 
