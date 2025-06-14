@@ -24,6 +24,7 @@ jobs:
       run: |
         rsync -az --delete \
         --exclude='venv/' \
+        --exclude='db.sqlite3' \
         --exclude='proj/modelworx/.env.production' \
         ./ ${{ secrets.USERNAME}}@${{ secrets.HOST }}:/home/deploy/sweng-capstone-project
     
