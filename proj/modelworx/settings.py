@@ -149,10 +149,7 @@ STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-CSRF_TRUSTED_ORIGINS = [
-        "https://8000--main--python-ws--hanbrolo.coder.leviathanworks.net",
-        "https://modelworx.leviathanworks.net", 
-]
+CSRF_TRUSTED_ORIGINS = ["https://modelworx.leviathanworks.net"]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
