@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     path("", views.index, name="index"),
     path("upload/", views.upload, name="upload"),
+    path("upload/api", views.upload_api, name="upload_api"),
     path("dataset_delete/<int:dataset_id>", views.dataset_delete, name="dataset_delete"),
     path("dataset/<int:dataset_id>", views.dataset, name="dataset"),
     path("dataset_collection/", views.dataset_collection, name="dataset_collection"),
