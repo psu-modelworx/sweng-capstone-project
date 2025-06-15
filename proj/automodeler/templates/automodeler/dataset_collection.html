@@ -37,11 +37,6 @@
                 </td>
                 <td>
                     <button class="btn btn-primary" onclick="preprocess_fetch_request( {{ ds_list.0.id }} )">Start Preprocessing!</button>
-                    <form method="post" action="{% url 'ppe' %}">
-                        {% csrf_token %}
-                        <input type='hidden' id="dataset_id" name="dataset_id" value={{ ds_list.0.id }} />
-                        <button class="btn btn-warning" type="Submit">POST TEST</button>
-                    </form>
                     <form method="post" action="{% url 'dataset_delete' dataset_id=ds_list.0.id %}">
                         {% csrf_token %}
                         <button class="btn btn-danger" type="Submit">Delete</button>
