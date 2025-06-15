@@ -37,6 +37,11 @@
                 </td>
                 <td>
                     <button class="btn btn-primary" onclick="preprocess_fetch_request( {{ ds_list.0.id }} )">Start Preprocessing!</button>
+                    <form method="post" action="{% url 'ppe' %}">
+                        {% csrf_token %}
+                        <input type='hidden' id="dataset_id" name="dataset_id" value={{ ds_list.0.id }} />
+                        <button class="btn btn-warning" type="Submit">POST TEST</button>
+                    </form>
                     <form method="post" action="{% url 'dataset_delete' dataset_id=ds_list.0.id %}">
                         {% csrf_token %}
                         <button class="btn btn-danger" type="Submit">Delete</button>
@@ -66,26 +71,27 @@
 function preprocess_fetch_request(dataset_id) {
     var url = '{% url 'ppe' %}';
     var CSRF_TOKEN = '{{ csrf_token }}';
-    data = {
-        dataset_id: dataset_id
-    }
 
+    let formData = new FormData();
+    formData.append("dataset_id", dataset_id)
+
+    // Need to modify this:  SHouldn't be in body.  Maybe a header?
     fetch(url, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRFToken': CSRF_TOKEN
         },
-        body: JSON.stringify(data)
+        body: formData
     })
     .then(response => {
         if (!response.ok) {
             throw new Error(`HTTP error.  Status Code: ${response.status}`);
         }
-        return response.json();
+        return response;
     })
     .then(responseData => {
         console.log('Response data:', responseData);
+        window.location.reload()
     })
     .catch(error => {
         console.error('Fetch error:', error);

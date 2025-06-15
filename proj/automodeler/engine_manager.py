@@ -12,18 +12,22 @@ import os
 
 @login_required
 def start_preprocessing_request(request):
+    print("Starting preprocessing")
     if request.method != 'POST':
+        print("Error: Non-POST Request received!")
         return HttpResponseNotAllowed("Method not allowed")
     
     # Verify dataset exists
-    try:
-        dataset_id = request.POST.get('dataset_id')
-    except:
+    dataset_id = request.POST.get('dataset_id')
+    if not dataset_id:
+        print("Error: Missing dataset_id in form!")
         return HttpResponseBadRequest('Missing value: dataset_id')
-    
+        
+    print("Dataset ID: " + str(dataset_id))
     try:
         dataset = Dataset.objects.get(id = dataset_id)
     except:
+        print("Original Dataset not found in database!")
         return HttpResponseNotFound("Dataset not found")
     
     df = pd.read_csv(dataset.csv_file)

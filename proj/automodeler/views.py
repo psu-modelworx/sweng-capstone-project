@@ -136,9 +136,9 @@ def dataset_collection(request):
     pp_datasets = {}
     for uds in user_datasets:
         try:
-            pp_datasets[uds.name] = PreprocessedDataSet.objects.get(original_dataset_id = uds.id)
+            pp_datasets[uds.filename] = PreprocessedDataSet.objects.get(original_dataset_id = uds.id)
         except:
-            print("No preprocessed datasets for " + uds.name)
+            print("No preprocessed datasets for " + str(uds.filename))
     
     combined_datasets = []
     for ds in user_datasets:
