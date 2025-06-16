@@ -57,7 +57,7 @@ def test_remove_unwanted_columns(sample_df):
 
 
 def test_clean_categorical_columns(sample_df):
-    """TC-11 Verify categorical columns columns are lowercased and stripped of whitespace."""
+    """TC-11 Verify categorical columns are lowercased and stripped of whitespace."""
     engine = PreprocessingEngine(
         sample_df, "target", categorical_columns=["gender"])
     df = engine.clean_categorical_columns(sample_df)
@@ -98,8 +98,6 @@ def test_handle_missing_data(sample_df):
 
 def test_encode_target_column(sample_df):
     """TC-17 Verify categorical target column is encoded and renamed correctly."""
-    engine = PreprocessingEngine(
-        sample_df, "target", categorical_columns=["target"])
     engine = PreprocessingEngine(sample_df, "target", categorical_columns=["target"])
     engine.encode_target_column()
     assert engine.target_column == "target_encoded"

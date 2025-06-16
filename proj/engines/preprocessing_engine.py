@@ -18,6 +18,7 @@ class PreprocessingEngine:
 
     def __init__(self, df, target_column, categorical_columns=None, columns_to_remove=None, test_size=DEFAULT_TEST_SIZE, random_state=DEFAULT_RANDOM_STATE):
         """ Initializes the preprocessing engine with required properties. """
+        self.dropped_columns = None
         self.original_df = df.copy()  # Stores the original dataset before preprocessing
         self.original_columns = df.columns.tolist()  # Store original columns for reference
         self.df = df.copy()  # Working copy for transformations
@@ -52,13 +53,13 @@ class PreprocessingEngine:
         with open(meta_path) as f:
             meta = json.load(f)
 
-        # Create placeholders for initializaiton
+        # Create placeholders for initialization
         engine = cls(df=pd.DataFrame(), 
                     target_column=meta['target_column'],
                     categorical_columns=meta['categorical_columns'],
                     columns_to_remove=meta['columns_to_remove'])
 
-        # fill in importatnt attributes from meta
+        # fill in important attributes from meta
         engine.original_target_column = meta.get('original_target_column', meta['target_column'])
         engine.target_is_categorical = meta.get('target_is_categorical', False)
         engine.categorical_columns = meta.get('categorical_columns', [])
@@ -337,8 +338,7 @@ class PreprocessingEngine:
 
         # Save final dataset
         self.final_df = pd.concat([X, y], axis=1)
-        logging.info(
-            "Preprocessing completed successfully. Final dataset stored.)
+        logging.info("Preprocessing completed successfully. Final dataset stored.")
 
         self.save_preprocessing_artifacts()
 
