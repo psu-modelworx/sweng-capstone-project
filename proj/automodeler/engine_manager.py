@@ -5,6 +5,8 @@ from django.core.files.base import ContentFile
 
 from .models import Dataset
 from .models import PreprocessedDataSet
+from .models import TrainTestDataFrame
+
 from engines.preprocessing_engine import PreprocessingEngine
 
 import pandas as pd
@@ -35,7 +37,8 @@ def start_preprocessing_request(request):
     all_features_dict = dataset.features
     categorical_columns = [f for f in dataset.features if all_features_dict[f] == 'C'] # Create list of categorical columns
     ppe = PreprocessingEngine(df=df, target_column=target_column, categorical_columns=categorical_columns)
-    ppe.run_preprocessing_engine()
+    x_train, x_test, y_train, y_test, ppe_task = ppe.run_preprocessing_engine()
+    
     
     # Get the Dataframe and convert to an in-memory file
     new_df = ppe.final_df
@@ -70,5 +73,36 @@ def start_preprocessing_request(request):
     
     # Save the object
     pp_ds.save()
+    
+    create_or_update_tt_ds_obj(x_train, type='train', axis='x', pp_ds=pp_ds)
+    create_or_update_tt_ds_obj(x_test, type='test', axis='x', pp_ds=pp_ds)
+    create_or_update_tt_ds_obj(y_train, type='train', axis='y', pp_ds=pp_ds)
+    create_or_update_tt_ds_obj(y_test, type='test', axis='y', pp_ds=pp_ds)
+    
     return HttpResponse("Preprocessing completed...")
 
+
+def create_or_update_tt_ds_obj(df, type, axis, pp_ds):
+    tt_df_filepath = ''
+    try:
+        ttdf_obj = TrainTestDataFrame.objects.get(type=type, axis=axis, preprocessed_dataset = pp_ds)
+        tt_df_filepath = ttdf_obj.tt_ds_file.path
+    except:
+        ttdf_obj = TrainTestDataFrame()
+    
+    content = df.to_csv()
+    content_file = ContentFile(content.encode('UTF-8'))
+    type_str = ''.join([axis, '_', type])
+    tt_df_filename = ''.join([pp_ds.name, '_', type_str, '.csv'])
+    content_file.name = tt_df_filename
+    
+    # Delete file if it exists
+
+    if os.path.exists(tt_df_filepath):
+        os.remove(tt_df_filepath)
+    
+    ttdf_obj.type = type
+    ttdf_obj.axis = axis
+    ttdf_obj.tt_ds_file = content_file
+    ttdf_obj.preprocessed_dataset = pp_ds
+    ttdf_obj.save()
