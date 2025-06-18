@@ -45,7 +45,7 @@ def test_upload_api(client):
     :Test Cases: TC-037 & TC-038
     '''
     # Defining the URL for the api request.
-    url = reverse('upload_api')
+    url = reverse('api_upload')
 
     # Making a post request to the URL and asserting that this isn't authorized.
     response = client.post(url)

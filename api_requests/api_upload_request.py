@@ -7,7 +7,7 @@ def api_upload_request():
     A response will be printed to let the user know if an upload was successful.
     '''
     # The url is where the API request is made and the token authenticates the user.
-    url = "http://localhost:8000/automodeler/upload/api"
+    url = "http://localhost:8000/automodeler/api/upload"
     token = "6aa53ad83773ba8a42834ff9317933759ed0e86b"
 
     # Defining the path for the csv file and name of the dataset.
