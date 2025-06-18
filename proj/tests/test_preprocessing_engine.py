@@ -196,7 +196,9 @@ def test_decode_target_returns_original_labels(sample_df):
 
 
 def test_load_from_files_method():
-    """TC-31 Verify load_from_files correctly initializes engine from metadata and joblib files."""
+    """TC-31 Test load_from_files initializes PreprocessingEngine correctly with provided meta and encoders."""
+    
+    # Prepare dummy metadata dictionary (like loaded from a JSON)
     meta_data = {
         "target_column": "label",
         "categorical_columns": ["gender"],
@@ -208,41 +210,30 @@ def test_load_from_files_method():
         "task_type": "classification",
         "dropped_columns": ["unwanted"]
     }
-    meta_json = json.dumps(meta_data)
-
-    # Dummy objects
     dummy_feature_encoder = MagicMock(name="feature_encoder")
     dummy_scaler = MagicMock(name="scaler")
     dummy_label_encoder = MagicMock(name="label_encoder")
+    engine = PreprocessingEngine.load_from_files(
+        meta=meta_data,
+        feature_encoder=dummy_feature_encoder,
+        scaler=dummy_scaler,
+        label_encoder=dummy_label_encoder
+    )
 
-    with patch("builtins.open", mock_open(read_data=meta_json)) as mock_file, \
-         patch("joblib.load") as mock_joblib_load:
-
-        mock_joblib_load.side_effect = [dummy_feature_encoder, dummy_scaler, dummy_label_encoder]
-
-        engine = PreprocessingEngine.load_from_files("dummy_meta.json")
-
-        mock_file.assert_called_once_with("dummy_meta.json")
-        mock_joblib_load.assert_any_call("feature_encoder.pkl")
-        mock_joblib_load.assert_any_call("scaler.pkl")
-        mock_joblib_load.assert_any_call("label_encoder.pkl")
-
-        # Validate engine
-        assert isinstance(engine, PreprocessingEngine)
-        assert engine.target_column == "label"
-        assert engine.categorical_columns == ["gender"]
-        assert engine.columns_to_remove == ["unwanted"]
-        assert engine.original_target_column == "label"
-        assert engine.target_is_categorical is True
-        assert engine.original_columns == ["age", "income", "gender", "label", "unwanted"]
-        assert engine.final_columns == ["age", "income", "gender_F", "gender_M", "label_encoded"]
-        assert engine.task_type == "classification"
-        assert engine.dropped_columns == ["unwanted"]
-
-        # Validate joblib
-        assert engine.feature_encoder is dummy_feature_encoder
-        assert engine.scaler is dummy_scaler
-        assert engine.label_encoder is dummy_label_encoder
+    # make sure all of the props are set correctly
+    assert isinstance(engine, PreprocessingEngine)
+    assert engine.target_column == "label"
+    assert engine.categorical_columns == ["gender"]
+    assert engine.columns_to_remove == ["unwanted"]
+    assert engine.original_target_column == "label"
+    assert engine.target_is_categorical is True
+    assert engine.original_columns == ["age", "income", "gender", "label", "unwanted"]
+    assert engine.final_columns == ["age", "income", "gender_F", "gender_M", "label_encoded"]
+    assert engine.task_type == "classification"
+    assert engine.dropped_columns == ["unwanted"]
+    assert engine.feature_encoder is dummy_feature_encoder
+    assert engine.scaler is dummy_scaler
+    assert engine.label_encoder is dummy_label_encoder
 
 def test_scale_continuous_features_in_new_df(engine):
     """TC-32 Verify continuous features in new DataFrame are scaled correctly."""
