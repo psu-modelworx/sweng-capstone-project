@@ -16,12 +16,17 @@ class Dataset(models.Model):
     
 class PreprocessedDataSet(models.Model):
     name = models.CharField(max_length=100)
-    csv_file = models.FileField(upload_to='preprocessed_datasets/')
+    csv_file = models.FileField(upload_to='preprocessed_datasets/')    
+    feature_encoder = models.FileField(upload_to='pp_ds_bins/')
+    scaler = models.FileField(upload_to='pp_ds_bins/')
+    label_encoder = models.FileField(upload_to='pp_ds_bins/')
+    meta_data = JSONField(default=dict)
     original_dataset = models.OneToOneField(Dataset, on_delete=models.CASCADE)
     
     def filename(self):
         return os.path.basename(self.csv_file.name)
-    
+
+
 class TrainTestDataFrame(models.Model):
     POSSIBLE_TYPES = [
         ('train', 'Train'),
@@ -36,4 +41,6 @@ class TrainTestDataFrame(models.Model):
     tt_ds_file = models.FileField(upload_to='traintest_dataframes/')
     preprocessed_dataset = models.ForeignKey(PreprocessedDataSet, on_delete=models.CASCADE)
     
+    
+
     
