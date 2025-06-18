@@ -283,10 +283,10 @@ class PreprocessingEngine:
         logging.info(f"Split dataset. Using '{self.target_column}' as target.")
         return X, y
 
-    def train_test_split_data(self):
+    def train_test_split_data(self, X, y):
         """ Splits dataset into training and testing sets. """
         X_train, X_test, y_train, y_test = train_test_split(
-            self.X, self.y, test_size=self.test_size, random_state=self.random_state)
+            X, y, test_size=self.test_size, random_state=self.random_state)
         self.X_train = X_train
         self.X_test = X_test
         self.y_train = y_train
@@ -338,7 +338,7 @@ class PreprocessingEngine:
         self.fit_categorical_encoder()
 
         self.split_features_and_target() # split into features and target
-        self.train_test_split_data() # split into train and test sets
+        self.train_test_split_data(self.X, self.y) # split into train and test sets
 
         # Save final dataset
         self.final_df = self.df.copy()
