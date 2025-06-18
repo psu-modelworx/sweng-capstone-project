@@ -2,11 +2,12 @@ from django.urls import path
 
 from . import views
 from . import engine_manager
+from . import api
 
 urlpatterns = [
     path("", views.index, name="index"),
     path("upload/", views.upload, name="upload"),
-    path("upload/api", views.upload_api, name="upload_api"),
+    path("api/upload", api.api_upload, name="api_upload"),
     path("dataset_delete/<int:dataset_id>", views.dataset_delete, name="dataset_delete"),
     path("dataset/<int:dataset_id>", views.dataset, name="dataset"),
     path("dataset_collection/", views.dataset_collection, name="dataset_collection"),

@@ -2,21 +2,14 @@ from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404
-from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth.decorators import login_required
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 
 from .models import Dataset, PreprocessedDataSet, DatasetModel
 from .forms import DatasetForm
+from . import helper_functions
 
-import csv
-import io
 import os
-
-import pandas as pd
 
 # Create your views here.
 
@@ -28,50 +21,6 @@ def index(request):
     :param request: This is the HTTP request object containing the HTTP request information
     """
     return render(request, "automodeler/index.html")
-
-@api_view(["POST"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def upload_api(request):
-    '''
-    Making an API request to upload a dataset with a csv file and name.
-    Verifying the file name and csv file in this function before anything is uploaded.
-    Letting the user know if a uploading was successful or not.
-
-    :param request: An API request using token authentication. It contains the csv file and name for a dataset.
-    '''
-    # Getting the form used in the API request.
-    form = DatasetForm(request.POST, request.FILES)
-
-    # Ensuring a post request is used and there is at least 1 file in the request.
-    if form.is_valid():
-        # Getting the file name, csv file, and user ID from the request.
-        file_name = request.POST.get('name')
-        csv_file = request.FILES['csv_file']
-        user_id = request.user.id
-
-        # If the dataset is empty let the user know it cannot be uploaded.
-        if csv_file.size > 0:
-            # If the name of the dataset is too long, let the user know it cannot be used.
-            if len(file_name) <= 50:
-                # Using a function to get the features from the dataset.
-                features = extract_features_from_inMemoryUploadedFile(csv_file)
-
-                # Making a datset object and saving it to the user.
-                dataset_model = Dataset.objects.create(name=file_name, features=features, csv_file=csv_file, user_id=user_id)
-                dataset_model.save()
-            else:
-                # Telling the user their file name is too long.
-                return Response("The name has too many characters in it. Could not upload dataset for " + request.user.username + ".")
-        else:
-            # Telling the user their dataset file is empty.
-            return Response("The csv file cannot be empty. Could not upload dataset for " + request.user.username + ".")
-
-        # Informing the user that their uploaded was successful.
-        return Response("Successfully uploaded dataset for " + request.user.username + ".")
-    else:
-        # Informing the user that their uploaded cannot be done.
-        return Response("Could not upload dataset for " + request.user.username + ".")
 
 def upload(request):
     """
@@ -92,12 +41,12 @@ def upload(request):
                 csv_file = request.FILES['csv_file']
                 user_id = request.user.id
                 try:
-                    sanitize_dataset(csv_file)
+                    helper_functions.sanitize_dataset(csv_file)
                 except Exception as e:
                     url = reverse('upload')
                     return render(request, url, {"form": form, "err_msg": "CSV File failed sanitation!"})
                     #return HttpResponse("Error sanitizing file!")
-                features = extract_features_from_inMemoryUploadedFile(csv_file)
+                features = helper_functions.extract_features_from_inMemoryUploadedFile(csv_file)
                 dataset_model = Dataset.objects.create(name=file_name, features=features, csv_file=csv_file, user_id=user_id)
                 dataset_model.save()
                 
@@ -224,51 +173,3 @@ def task_collection(request):
     auth_user = request.user
     # user_models = ...
     return render(request, "automodeler/task_collection.html")
-
-def extract_features(dataset_fileName):
-    """
-    extract_features opens and reads the file at the path given and extracts features from the first row.
-
-    :param dataset_fileName: Full-path filename of file to open and read
-    """
-    features = []
-    with open(dataset_fileName, 'r') as file:
-        csvFileReader = csv.reader(file)
-        features = next(csvFileReader)
-    print(features)
-    return features
-
-def extract_features_from_inMemoryUploadedFile(in_mem_file):
-    """
-    extract_features_from_inMemoryUploadedFile reads the in-memory file object and extracts the feature names from 
-    the first row.
-
-    :param in_mem_file: InMemoryFile object to read
-    """
-    file_data = in_mem_file.read().decode('utf-8')
-    csv_file = io.StringIO(file_data)
-    reader = csv.reader(csv_file)
-    features = next(reader)
-
-    # Return reading pointer to beginning of memory array
-    in_mem_file.seek(0)
-    
-    return features
-
-def sanitize_dataset(in_mem_file):
-    """
-    sanitize_dataset reads an in-memory file object, and attempts to sanitize by removing html data.  Then, it tries to load
-    into a pandas dataframe to verify it can be used.
-
-    :param in_mem_file: InMemoryFile object to read
-
-    :return sanitized_dataset: Sanitized dataset to be saved
-    """
-    file_data = in_mem_file.read().decode('utf-8')
-    the_file = io.StringIO(file_data)
-    df = pd.read_csv(the_file)
-    
-    # Return reading pointer to beginning of memory array
-    in_mem_file.seek(0)
-
-    return True
