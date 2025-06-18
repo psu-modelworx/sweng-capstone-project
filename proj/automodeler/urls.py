@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import engine_manager
 
 urlpatterns = [
     path("", views.index, name="index"),
@@ -11,5 +12,5 @@ urlpatterns = [
     path("model_collection/", views.model_collection, name="model_collection"),
     path("task_collection/", views.task_collection, name="task_collection"),
     path("account/", views.account, name="account"),
-
+    path("ppe/start_preprocessing_request/", engine_manager.start_preprocessing_request, name="ppe"),
 ]

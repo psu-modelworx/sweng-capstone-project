@@ -13,3 +13,27 @@ class Dataset(models.Model):
 
     def filename(self):
         return os.path.basename(self.csv_file.name)
+    
+class PreprocessedDataSet(models.Model):
+    name = models.CharField(max_length=100)
+    csv_file = models.FileField(upload_to='preprocessed_datasets/')
+    original_dataset = models.OneToOneField(Dataset, on_delete=models.CASCADE)
+    
+    def filename(self):
+        return os.path.basename(self.csv_file.name)
+    
+class TrainTestDataFrame(models.Model):
+    POSSIBLE_TYPES = [
+        ('train', 'Train'),
+        ('test', 'Test')
+    ]
+    POSSIBLE_AXIS = [
+        ('x', 'X'),
+        ('y', 'Y')
+    ]
+    type = models.CharField(max_length=10, choices=POSSIBLE_TYPES) # Train/Test
+    axis = models.CharField(max_length=1) # X or Y
+    tt_ds_file = models.FileField(upload_to='traintest_dataframes/')
+    preprocessed_dataset = models.ForeignKey(PreprocessedDataSet, on_delete=models.CASCADE)
+    
+    
