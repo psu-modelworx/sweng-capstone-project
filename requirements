@@ -17,3 +17,4 @@ scikit-learn==1.6.1
 pandas==2.2.3
 python-decouple>=3.8
 gunicorn>=21.2
+psycopg[binary]
