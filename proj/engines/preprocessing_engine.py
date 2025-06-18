@@ -44,38 +44,33 @@ class PreprocessingEngine:
         # Default to empty list
         self.columns_to_remove = columns_to_remove if columns_to_remove else []
         self.X, self.y = None, None  # Placeholders for features and target
+        self.X_train, self.X_test = None, None  # Placeholders for train-test split features
+        self.y_train, self.y_test = None, None  # Placeholders for train-test split target
 
         logging.info(
             f"Initialized PreprocessingEngine with task type: {self.task_type}")
 
     @classmethod
-    def load_from_files(cls, meta_path='preprocessing_meta.json'):
-        with open(meta_path) as f:
-            meta = json.load(f)
-
-        # Create placeholders for initialization
+    def load_from_files(cls, meta: dict, feature_encoder, scaler, label_encoder=None):
+        """ Initializes the PreprocessingEngine from saved metadata and encoders/scalers. """
         engine = cls(df=pd.DataFrame(), 
-                    target_column=meta['target_column'],
-                    categorical_columns=meta['categorical_columns'],
-                    columns_to_remove=meta['columns_to_remove'])
+                 target_column=meta['target_column'],
+                 categorical_columns=meta.get('categorical_columns', []),
+                 columns_to_remove=meta.get('columns_to_remove', []))
 
-        # fill in important attributes from meta
         engine.original_target_column = meta.get('original_target_column', meta['target_column'])
         engine.target_is_categorical = meta.get('target_is_categorical', False)
-        engine.categorical_columns = meta.get('categorical_columns', [])
-        engine.columns_to_remove = meta.get('columns_to_remove', [])
         engine.original_columns = meta.get('original_columns', [])
         engine.final_columns = meta.get('final_columns', [])
         engine.task_type = meta.get('task_type', 'regression')
         engine.dropped_columns = meta.get('dropped_columns', [])
-        engine.final_columns = meta.get('final_columns', [])
-        engine.feature_encoder = joblib.load('feature_encoder.pkl')
-        engine.scaler = joblib.load('scaler.pkl')
-
-        if engine.target_is_categorical:
-            engine.label_encoder = joblib.load('label_encoder.pkl')
+        
+        engine.feature_encoder = feature_encoder
+        engine.scaler = scaler
+        engine.label_encoder = label_encoder if engine.target_is_categorical else None
 
         return engine
+    
 
     def remove_unwanted_columns(self, df):
         """Removes specified columns from the input DataFrame and returns the cleaned DataFrame."""
@@ -288,32 +283,40 @@ class PreprocessingEngine:
         logging.info(f"Split dataset. Using '{self.target_column}' as target.")
         return X, y
 
-    def train_test_split_data(self, X, y):
+    def train_test_split_data(self):
         """ Splits dataset into training and testing sets. """
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=self.test_size, random_state=self.random_state)
+            self.X, self.y, test_size=self.test_size, random_state=self.random_state)
+        self.X_train = X_train
+        self.X_test = X_test
+        self.y_train = y_train
+        self.y_test = y_test
         logging.info(
             f"Split data into train ({1 - self.test_size:.0%}) and test ({self.test_size:.0%}) sets.")
         return X_train, X_test, y_train, y_test
+    
+    def to_meta_dict(self):
+        """ Returns a dictionary with metadata about the preprocessing steps. """
+        return {
+            "target_column": self.target_column,
+            "categorical_columns": self.categorical_columns,
+            "columns_to_remove": self.columns_to_remove,
+            "original_target_column": getattr(self, "original_target_column", self.target_column),
+            "target_is_categorical": getattr(self, "target_is_categorical", False),
+            "original_columns": getattr(self, "original_columns", []),
+            "final_columns": getattr(self, "final_columns", []),
+            "task_type": getattr(self, "task_type", "regression"),
+            "dropped_columns": getattr(self, "dropped_columns", []),
+        }
 
     def save_preprocessing_artifacts(self, path_prefix=""):
-        """Saves encoders, scaler, and metadata for preprocessing."""
+        """Saves encoders, scaler, and metadata for preprocessing. This is a testing artifact only."""
 
         joblib.dump(self.feature_encoder, f'{path_prefix}feature_encoder.pkl')
         joblib.dump(self.scaler, f'{path_prefix}scaler.pkl')
         joblib.dump(self.label_encoder, f'{path_prefix}label_encoder.pkl')
 
-        meta = {
-            "categorical_columns": self.categorical_columns,
-            "target_column": self.target_column,
-            "original_target_column": getattr(self, "original_target_column", self.target_column),
-            "target_is_categorical": getattr(self, "target_is_categorical", False),
-            "columns_to_remove": getattr(self, "columns_to_remove", []),
-            "dropped_columns": getattr(self, "dropped_columns", []),
-            "original_columns": list(self.original_df.columns),
-            "final_columns": list(self.final_df.columns),
-            "task_type": self.task_type,
-        }
+        meta = self.to_meta_dict()
 
         with open(f'{path_prefix}preprocessing_meta.json', 'w') as f:
             json.dump(meta, f, indent=4)
@@ -333,16 +336,15 @@ class PreprocessingEngine:
         self.encode_target_column()
         self.scale_continuous_features()
         self.fit_categorical_encoder()
-        X, y = self.split_features_and_target()
-        X_train, X_test, y_train, y_test = self.train_test_split_data(X, y)
+
+        self.split_features_and_target() # split into features and target
+        self.train_test_split_data() # split into train and test sets
 
         # Save final dataset
-        self.final_df = pd.concat([X, y], axis=1)
+        self.final_df = self.df.copy()
         logging.info("Preprocessing completed successfully. Final dataset stored.")
 
-        self.save_preprocessing_artifacts()
-
-        return X_train, X_test, y_train, y_test, self.task_type
+        return self.X_train, self.X_test, self.y_train, self.y_test, self.task_type # pass right into modeling engine
 
 
     # Methods for accessing and summarizing the final dataset
