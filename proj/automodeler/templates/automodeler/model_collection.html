@@ -12,6 +12,47 @@
 
 <h1>Model Collection Page</h1>
 
+{% if user.is_authenticated %}
+
+{% if models %}
+<table class="table" id="id_models_table" name="models_table">
+        <thead>
+            <tr>
+                <th scope="col">Model Name</th>
+                <th scope="col">Model File Name</th>
+                <th scope="col">Model Method</th>
+                <th scope="col">Model Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for model in models %}
+            <tr>
+                <td>{{ model.name }}</td>
+                <td>{{ model.model_file }}</td>
+                <td>{{ model.model_method }}</td>
+                <td>{{ model.model_type }}</td>
+            </tr>
+            {% endfor %}        
+        </tbody>
+    </table>
+{% else %}
+
+<h2>User currently has no models!</h2>
+<br />
+<h3>Models are available after uploading a dataset, preprocessing the dataset, and running the model engine!</h3>
+
+{% endif %}
+
+{% else %}
+<h3>Not logged in</h3>
+{% endif %}
 
 {% include "base/footer.html" %}
 
+<script>
+    $(document).ready( function () {
+    $('#id_models_table').DataTable({
+        searching: true
+    });
+} );
+</script>
