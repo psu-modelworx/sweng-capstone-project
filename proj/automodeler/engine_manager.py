@@ -5,6 +5,7 @@ from django.core.files.base import ContentFile
 
 from .models import Dataset
 from .models import PreprocessedDataSet
+from .models import DatasetModel
 
 from engines.preprocessing_engine import PreprocessingEngine
 from engines.modeling_engine import ModelingEngine
@@ -149,6 +150,17 @@ def start_modeling_request(request):
 
     moe = ModelingEngine(X_train=x_train, X_test=x_test, y_train=y_train, y_test=y_test, task_type=task_type)
     moe.evaluate_models()
+    
+    moe_models = moe.models
+    
+    for model_method, model_obj in moe_models.items():
+        
+        model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method)])
+        model_file_name = ''.join([model_name, '.bin'])
+        model_file = obj_to_pkl_file(model_obj, model_file_name)
+        
+        ds_model = DatasetModel(name = dataset.name, model_file=model_file, model_method=model_method, model_type=task_type, original_dataset=dataset)
+        ds_model.save()
 
     return HttpResponse("Completed modeling!")
 

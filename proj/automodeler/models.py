@@ -42,7 +42,42 @@ class PreprocessedDataSet(models.Model):
                 os.remove(self.label_encoder.path)
         super().delete(*args, **kwargs)
 
-
+""" 
+        classifiers = {
+            'LogisticRegression': LogisticRegression(max_iter=1000),
+            'RandomForestClassifier': RandomForestClassifier(),
+            'GradientBoostingClassifier': GradientBoostingClassifier(),
+            'SVC': SVC()
+        }
+        regressors = {
+            'LinearRegression': LinearRegression(),
+            'RandomForestRegressor': RandomForestRegressor(),
+            'GradientBoostingRegressor': GradientBoostingRegressor(),
+            'SVR': SVR()
+        }
+"""
+class DatasetModel(models.Model):
+    MODEL_METHODS = {
+        "LogisticRegression": "Logistic Regression",
+        "RandomForestClassifier": "Random Forest Classifier",
+        "GradientBoostingClassifier": "Gradient Boosting Classifier",
+        "SVC": "SVC",
+        "LinearRegression": "Linear Regression",
+        "RandomForestRegressor": "Random Forest Regressor",
+        "GradientBoostingRegressor": "Gradient Boosting Regressor",
+        "SVR": "SVR"    
+    }
+    
+    MODEL_TYPES = {
+        "regression": "Regression",
+        "classification": "Classification"
+    }
+    
+    name = models.CharField(max_length=100)
+    model_file = models.FileField(upload_to='models/')
+    model_method = models.CharField(max_length=30, choices=MODEL_METHODS)
+    model_type = models.CharField(max_length=15, choices=MODEL_TYPES)
+    original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     
     
 
