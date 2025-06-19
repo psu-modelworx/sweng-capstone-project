@@ -130,14 +130,18 @@ def start_modeling_request(request):
     scaler = pkl_file_to_obj(pp_ds.scaler.path)
     label_encoder = pkl_file_to_obj(pp_ds.label_encoder.path)
 
-    # Load in original dataset
-    df = pd.read_csv(dataset.csv_file)
-    ppe = PreprocessingEngine(df=df, target_column=dataset.target_feature)
-    ppe.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
+    #ppe = PreprocessingEngine(df=df, target_column=dataset.target_feature)
+    ppe = PreprocessingEngine.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
+    
 
+    # Load in original dataset and final dataset
+    df = pd.read_csv(dataset.csv_file)
+    ppe.df = df
     final_df = pd.read_csv(pp_ds.csv_file)
     ppe.final_df = final_df
+    ppe.target_column = dataset.target_feature
 
+    
     task_type = ppe.task_type
 
     x, y = ppe.split_features_and_target()
