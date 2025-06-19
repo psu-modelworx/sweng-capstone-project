@@ -77,6 +77,7 @@ class DatasetModel(models.Model):
     model_file = models.FileField(upload_to='models/')
     model_method = models.CharField(max_length=30, choices=MODEL_METHODS)
     model_type = models.CharField(max_length=15, choices=MODEL_TYPES)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     
     

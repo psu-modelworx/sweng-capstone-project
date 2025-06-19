@@ -5,7 +5,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from rest_framework.authtoken.models import Token
 
-from .models import Dataset, PreprocessedDataSet
+from .models import Dataset, PreprocessedDataSet, DatasetModel
 from .forms import DatasetForm
 
 import csv
@@ -170,6 +170,7 @@ def dataset_delete(request, dataset_id):
 def model_collection(request):
     auth_user = request.user
     # user_models = ...
+    user_models = DatasetModel
     return render(request, "automodeler/model_collection.html")
 
 @login_required

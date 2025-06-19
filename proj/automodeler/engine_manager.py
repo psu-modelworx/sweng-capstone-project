@@ -159,7 +159,7 @@ def start_modeling_request(request):
         model_file_name = ''.join([model_name, '.bin'])
         model_file = obj_to_pkl_file(model_obj, model_file_name)
         
-        ds_model = DatasetModel(name = dataset.name, model_file=model_file, model_method=model_method, model_type=task_type, original_dataset=dataset)
+        ds_model = DatasetModel(name = dataset.name, model_file=model_file, model_method=model_method, model_type=task_type, user=request.user, original_dataset=dataset)
         ds_model.save()
 
     return HttpResponse("Completed modeling!")
