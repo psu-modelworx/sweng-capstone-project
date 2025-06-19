@@ -5,7 +5,6 @@ from django.core.files.base import ContentFile
 
 from .models import Dataset
 from .models import PreprocessedDataSet
-#from .models import TrainTestDataFrame
 
 from engines.preprocessing_engine import PreprocessingEngine
 
@@ -81,21 +80,10 @@ def start_preprocessing_request(request):
     pp_ds.scaler = ppe.scaler
     pp_ds.label_encoder = ppe.label_encoder
 
-   
     # Get important objects from PPE, pickle them, and create ContentFiles for storage
     pp_ds.feature_encoder = obj_to_pkl_file(ppe.feature_encoder, ''.join([pp_ds_name, '_fe_enc.bin']))
     pp_ds.scaler = obj_to_pkl_file(ppe.scaler, ''.join([pp_ds_name, '_sca.bin']))
     pp_ds.label_encoder = obj_to_pkl_file(ppe.label_encoder, ''.join([pp_ds_name, '_la_enc.bin']))
-
-    #############
-    #############
-    #############
-    # Label encoder only required if target feature is categorical so we need to check this
-    #############
-    #if ppe.task_type == 'categorical':
-    #    pp_ds.label_encoder = obj_to_pkl_file(ppe.label_encoder, ''.join([pp_ds_name, '_la_enc.bin']))
-
-    #return HttpResponse("Successful testing...")
 
     pp_ds.original_dataset=dataset
     
@@ -106,6 +94,37 @@ def start_preprocessing_request(request):
     
     
     return HttpResponse("Preprocessing completed...")
+
+
+@login_required
+def start_preprocessing_request(request):
+    print("Starting modeling")
+    if request.method != 'POST':
+        print("Error: Non-POST Request received!")
+        return HttpResponseNotAllowed("Method not allowed")
+    
+    # Verify dataset exists
+    dataset_id = request.POST.get('dataset_id')
+    if not dataset_id:
+        print("Error: Missing dataset_id in form!")
+        return HttpResponseBadRequest('Missing value: dataset_id')
+        
+    try:
+        dataset = Dataset.objects.get(id = dataset_id)
+    except:
+        print("Original Dataset not found in database!")
+        return HttpResponseNotFound("Dataset not found")
+    
+    # Verify dataset has been preprocessed
+    try:
+        pp_ds = PreprocessedDataSet.objects.get(original_dataset_id = dataset.id)
+    except:
+        print("Dataset has not yet been preprocessed...")
+        return HttpResponse("Dataset must be preprocessed first.", status=412)
+    
+    # dataset & pp_ds are now available
+    
+
 
 
 def obj_to_pkl_file(data_obj, file_name):
