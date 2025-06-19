@@ -13,23 +13,31 @@
 {% if user.is_authenticated %}
 <h1>Hello {{ user.username }}</h1>
 
-{% if datasets %}
+{% if combined_datasets %}
 <table class="table" id="id_datasets_table" name="datasets_table">
         <thead>
             <tr>
                 <th scope="col">Dataset Name</th>
                 <th scope="col">Dataset File Name</th>
+                <th scope="col">Preprocessed Dataset</th>
                 <th scope="col">Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for ds in datasets %}
+            {% for ds_list in combined_datasets %}
             <tr>
-                <td>{{ ds.name }}</td>
-                <td>{{ ds.filename }}</td>
+                <td>{{ ds_list.0.name }}</td>
+                <td>{{ ds_list.0.filename }}</td>
                 <td>
-                    <button class="btn btn-primary">Start modeling!</button>
-                    <form method="post" action="{% url 'dataset_delete' dataset_id=ds.id %}">
+                    {% if ds_list.1 %}
+                    {{ ds_list.1.filename }}
+                    {% else %}
+                    Dataset has not been preprocessed
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-primary" onclick="preprocess_fetch_request( {{ ds_list.0.id }} )">Start Preprocessing!</button>
+                    <form method="post" action="{% url 'dataset_delete' dataset_id=ds_list.0.id %}">
                         {% csrf_token %}
                         <button class="btn btn-danger" type="Submit">Delete</button>
                     </form>
@@ -54,6 +62,36 @@
 {% include "base/footer.html" %}
 
 <script>
+
+function preprocess_fetch_request(dataset_id) {
+    var url = '{% url 'ppe' %}';
+    var CSRF_TOKEN = '{{ csrf_token }}';
+
+    let formData = new FormData();
+    formData.append("dataset_id", dataset_id)
+
+    // Need to modify this:  SHouldn't be in body.  Maybe a header?
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': CSRF_TOKEN
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error.  Status Code: ${response.status}`);
+        }
+        return response;
+    })
+    .then(responseData => {
+        console.log('Response data:', responseData);
+        window.location.reload()
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    })
+}
 
 $(document).ready( function () {
     $('#id_datasets_table').DataTable({

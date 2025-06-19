@@ -5,7 +5,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from rest_framework.authtoken.models import Token
 
-from .models import Dataset
+from .models import Dataset, PreprocessedDataSet
 from .forms import DatasetForm
 from . import helper_functions
 
@@ -128,7 +128,25 @@ def account(request):
 def dataset_collection(request):
     auth_user = request.user
     user_datasets = Dataset.objects.filter(user = auth_user)
-    return render(request, "automodeler/dataset_collection.html", {"datasets": user_datasets})
+    pp_datasets = {}
+    for uds in user_datasets:
+        try:
+            pp_datasets[uds.filename] = PreprocessedDataSet.objects.get(original_dataset_id = uds.id)
+        except:
+            print("No preprocessed datasets for " + str(uds.filename))
+    
+    combined_datasets = []
+    for ds in user_datasets:
+        tmp_list = []
+        tmp_list.append(ds)
+        for pp_ds in pp_datasets:
+            if pp_datasets[pp_ds].original_dataset == ds:
+                tmp_list.append(pp_datasets[pp_ds])
+                break
+        combined_datasets.append(tmp_list)
+                        
+    print("Found Datasets: " + str(pp_datasets))
+    return render(request, "automodeler/dataset_collection.html", {'combined_datasets': combined_datasets})
 
 @login_required
 def dataset_delete(request, dataset_id):
