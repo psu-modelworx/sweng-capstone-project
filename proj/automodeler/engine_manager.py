@@ -7,6 +7,7 @@ from .models import Dataset
 from .models import PreprocessedDataSet
 
 from engines.preprocessing_engine import PreprocessingEngine
+from engines.modeling_engine import ModelingEngine
 
 import pandas as pd
 import os
@@ -97,7 +98,7 @@ def start_preprocessing_request(request):
 
 
 @login_required
-def start_preprocessing_request(request):
+def start_modeling_request(request):
     print("Starting modeling")
     if request.method != 'POST':
         print("Error: Non-POST Request received!")
@@ -123,11 +124,38 @@ def start_preprocessing_request(request):
         return HttpResponse("Dataset must be preprocessed first.", status=412)
     
     # dataset & pp_ds are now available
-    
+    # Prior to modeling, we need x_train, x_test, y_train, y_test, and task type of the preprocessed set
+    # To do this, we're reconstructing the PPE
+    feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder.path)
+    scaler = pkl_file_to_obj(pp_ds.scaler.path)
+    label_encoder = pkl_file_to_obj(pp_ds.label_encoder.path)
 
+    # Load in original dataset
+    df = pd.read_csv(dataset.csv_file)
+    ppe = PreprocessingEngine(df=df, target_column=dataset.target_feature)
+    ppe.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
 
+    final_df = pd.read_csv(pp_ds.csv_file)
+    ppe.final_df = final_df
+
+    task_type = ppe.task_type
+
+    x, y = ppe.split_features_and_target()
+    x_train, x_test, y_train, y_test = ppe.train_test_split_data(x, y)
+
+    moe = ModelingEngine(X_train=x_train, X_test=x_test, y_train=y_train, y_test=y_test, task_type=task_type)
+    moe.evaluate_models()
+
+    return HttpResponse("Completed modeling!")
 
 def obj_to_pkl_file(data_obj, file_name):
     data_obj_pkl = pickle.dumps(data_obj)
     data_obj_file = ContentFile(data_obj_pkl, name=file_name)
     return data_obj_file
+
+
+def pkl_file_to_obj(file_name):
+    if os.path.exists(file_name):
+        with open(file_name, 'rb') as pkl_file:
+            data_obj = pickle.load(pkl_file)
+    return data_obj
