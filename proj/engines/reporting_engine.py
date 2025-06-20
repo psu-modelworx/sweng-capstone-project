@@ -12,3 +12,18 @@ class ReportingEngine:
         self.pdf.add_page()
         self.pdf.set_auto_page_break(auto=True, margin=15)
         self.pdf.set_font("Helvetica", size=12)
+    # Utility Methods
+    def section_header(self, text):
+        self.pdf.set_font("Helvetica", 'B', 14)
+        self.pdf.multi_cell(0, 10, text, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.pdf.set_font("Helvetica", size=12)
+        self.pdf.ln(2)
+
+    def subsection(self, text):
+        self.pdf.set_font("Helvetica", 'B', 12)
+        self.pdf.multi_cell(0, 8, text, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.pdf.set_font("Helvetica", size=12)
+
+    def add_bullet(self, text):
+        self.pdf.multi_cell(10)
+        self.pdf.multi_cell(0, 8, f"- {text}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
