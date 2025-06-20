@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'modelworx',
     'rest_framework',
     'rest_framework.authtoken',
+    'django-cleanup',
 ]
 
 MIDDLEWARE = [
