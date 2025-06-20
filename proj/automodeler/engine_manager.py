@@ -13,6 +13,7 @@ from engines.modeling_engine import ModelingEngine
 import pandas as pd
 import os
 import pickle
+import json
 
 @login_required
 def start_preprocessing_request(request):
@@ -163,7 +164,7 @@ def start_modeling_request(request):
 
 @login_required
 def run_model(request):
-    print("Starting modeling")
+    print("Starting model run")
     if request.method != 'POST':
         print("Error: Non-POST Request received!")
         return HttpResponseNotAllowed("Method not allowed")
@@ -191,9 +192,41 @@ def run_model(request):
         print(msg)
         return HttpResponseNotFound(msg)
 
+    # Get the data from the post request
+    data = request.POST.get('data')
+    if not data:
+        msg = 'Error:  missing data field'
+        print(msg)
+        return HttpResponseBadRequest(msg)
+    data = json.loads(data)
+    try:
+        data_values = data['values']
+    except:
+        msg = "Missing values field"
+        print(msg)
+        return HttpResponseBadRequest(msg)
 
+    ds_features = list(dataset.features.keys())
+
+    # Verify that the number of values sent is equal to the number of features
+    if len(ds_features) != len(data_values):
+        msg = "Invalid number of input features"
+        print(msg)
+        return HttpResponseBadRequest(msg)
+
+    ppe = reconstruct_ppe(pp_ds)
 
     return HttpResponse("Success")
+
+def reconstruct_ppe(pp_ds):
+    ppe = PreprocessingEngine.load_from_files(
+        meta=pp_ds.meta_data,
+        feature_encoder=pkl_file_to_obj(pp_ds.feature_encoder), 
+        scaler=pkl_file_to_obj(pp_ds.scaler), 
+        label_encoder=pkl_file_to_obj(pp_ds.label_encoder)
+    )
+
+    return ppe
     
 
 def obj_to_pkl_file(data_obj, file_name):
