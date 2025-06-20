@@ -16,24 +16,34 @@ class Dataset(models.Model):
     
 class PreprocessedDataSet(models.Model):
     name = models.CharField(max_length=100)
-    csv_file = models.FileField(upload_to='preprocessed_datasets/')
-    original_dataset = models.OneToOneField(Dataset, on_delete=models.CASCADE)
+    csv_file = models.FileField(upload_to='preprocessed_datasets/')    
+    feature_encoder = models.FileField(upload_to='pp_ds_bins/')
+    scaler = models.FileField(upload_to='pp_ds_bins/')
+    label_encoder = models.FileField(upload_to='pp_ds_bins/')
+    meta_data = models.JSONField(default=dict)
+    original_dataset = models.OneToOneField(Dataset, on_delete=models.CASCADE, blank=True, null=True)
     
     def filename(self):
         return os.path.basename(self.csv_file.name)
+
+    # Overriding default delete function to delete associated files when object is being deleted
+    def delete(self, *args, **kwargs):
+        if self.csv_file:
+            if os.path.isfile(self.csv_file.path):
+                os.remove(self.csv_file.path)
+        if self.feature_encoder:
+            if os.path.isfile(self.feature_encoder.path):
+                os.remove(self.feature_encoder.path)
+        if self.scaler:
+            if os.path.isfile(self.scaler.path):
+                os.remove(self.scaler.path)
+        if self.label_encoder:
+            if os.path.isfile(self.label_encoder.path):
+                os.remove(self.label_encoder.path)
+        super().delete(*args, **kwargs)
+
+
     
-class TrainTestDataFrame(models.Model):
-    POSSIBLE_TYPES = [
-        ('train', 'Train'),
-        ('test', 'Test')
-    ]
-    POSSIBLE_AXIS = [
-        ('x', 'X'),
-        ('y', 'Y')
-    ]
-    type = models.CharField(max_length=10, choices=POSSIBLE_TYPES) # Train/Test
-    axis = models.CharField(max_length=1) # X or Y
-    tt_ds_file = models.FileField(upload_to='traintest_dataframes/')
-    preprocessed_dataset = models.ForeignKey(PreprocessedDataSet, on_delete=models.CASCADE)
     
+
     
