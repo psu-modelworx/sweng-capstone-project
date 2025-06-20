@@ -342,6 +342,8 @@ class PreprocessingEngine:
 
         # Save final dataset
         self.final_df = self.df.copy()
+        self.final_columns = self.final_df.columns.tolist()
+
         logging.info("Preprocessing completed successfully. Final dataset stored.")
 
         return self.X_train, self.X_test, self.y_train, self.y_test, self.task_type # pass right into modeling engine
