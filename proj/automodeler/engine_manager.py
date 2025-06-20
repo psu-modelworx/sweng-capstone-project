@@ -214,7 +214,10 @@ def run_model(request):
         print(msg)
         return HttpResponseBadRequest(msg)
 
+    df = pd.DataFrame([data_values], columns=ds_features)
     ppe = reconstruct_ppe(pp_ds)
+    print(df)
+    ppe.clean_new_dataset(new_data=df)
 
     return HttpResponse("Success")
 
