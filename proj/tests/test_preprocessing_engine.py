@@ -214,6 +214,7 @@ def test_load_from_files_method():
     dummy_scaler = MagicMock(name="scaler")
     dummy_label_encoder = MagicMock(name="label_encoder")
     engine = PreprocessingEngine.load_from_files(
+        clean_df=sample_df(),
         meta=meta_data,
         feature_encoder=dummy_feature_encoder,
         scaler=dummy_scaler,
