@@ -15,4 +15,5 @@ urlpatterns = [
     path("task_collection/", views.task_collection, name="task_collection"),
     path("account/", views.account, name="account"),
     path("ppe/start_preprocessing_request/", engine_manager.start_preprocessing_request, name="ppe"),
+    path("mod/start_modeling_request/", engine_manager.start_modeling_request, name="model"),
 ]
