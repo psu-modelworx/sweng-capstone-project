@@ -295,6 +295,13 @@ class PreprocessingEngine:
             f"Split data into train ({1 - self.test_size:.0%}) and test ({self.test_size:.0%}) sets.")
         return X_train, X_test, y_train, y_test
     
+    def split_data(self):
+        """ Splits the dataset into training and testing sets, returning the split data. """
+        self.split_features_and_target()
+        self.train_test_split_data(self.X, self.y)
+        
+        return self.X_train, self.X_test, self.y_train, self.y_test
+    
     def to_meta_dict(self):
         """ Returns a dictionary with metadata about the preprocessing steps. """
         return {
