@@ -13,6 +13,7 @@ from engines.modeling_engine import ModelingEngine
 import pandas as pd
 import os
 import pickle
+import json
 
 @login_required
 def start_preprocessing_request(request):
@@ -163,7 +164,7 @@ def start_modeling_request(request):
 
 @login_required
 def run_model(request):
-    print("Starting modeling")
+    print("Starting model run")
     if request.method != 'POST':
         print("Error: Non-POST Request received!")
         return HttpResponseNotAllowed("Method not allowed")
@@ -219,6 +220,16 @@ def run_model(request):
     ppe.clean_new_dataset(new_data=df)
 
     return HttpResponse("Success")
+
+def reconstruct_ppe(pp_ds):
+    ppe = PreprocessingEngine.load_from_files(
+        meta=pp_ds.meta_data,
+        feature_encoder=pkl_file_to_obj(pp_ds.feature_encoder), 
+        scaler=pkl_file_to_obj(pp_ds.scaler), 
+        label_encoder=pkl_file_to_obj(pp_ds.label_encoder)
+    )
+
+    return ppe
     
 
 def obj_to_pkl_file(data_obj, file_name):

@@ -33,11 +33,7 @@
                 <td>{{ model.model_method }}</td>
                 <td>{{ model.model_type }}</td>
                 <td>
-                    <form method="post" action="{% url 'run_model' %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="model_id" id="model_id" value="{{ model.id }}" />
-                        <button type="submit" class="btn btn-primary">Run Model</button>
-                    </form>
+                    <button class="btn btn-primary" onclick="run_model_fetch_request( {{ model.id }} )">Run Model!</button>
                 </td>
             </tr>
             {% endfor %}        
@@ -58,9 +54,53 @@
 {% include "base/footer.html" %}
 
 <script>
+    
+function run_model_fetch_request(model_id) {
+    var url = '{% url 'run_model' %}';
+    var CSRF_TOKEN = '{{ csrf_token }}';
+
+    let formData = new FormData();
+
+    var data = {
+        values: [
+            1,
+            2,
+            3,
+            4,
+            "Iris-setosa"
+        ]
+    }
+    var dataString = JSON.stringify(data)
+
+    formData.append("model_id", model_id)
+    formData.append("data", dataString)
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': CSRF_TOKEN
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error.  Status Code: ${response.status}`);
+        }
+        return response;
+    })
+    .then(responseData => {
+        console.log('Response data:', responseData);
+        window.location.reload()
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    })
+}
+
     $(document).ready( function () {
     $('#id_models_table').DataTable({
         searching: true
     });
 } );
+
 </script>
