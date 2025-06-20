@@ -191,7 +191,32 @@ def run_model(request):
         print(msg)
         return HttpResponseNotFound(msg)
 
-    
+    # Get the data from the post request
+    data = request.POST.get('data')
+    if not data:
+        msg = 'Error:  missing data field'
+        print(msg)
+        return HttpResponseBadRequest(msg)
+    data = json.loads(data)
+    try:
+        data_values = data['values']
+    except:
+        msg = "Missing values field"
+        print(msg)
+        return HttpResponseBadRequest(msg)
+
+    ds_features = list(dataset.features.keys())
+
+    # Verify that the number of values sent is equal to the number of features
+    if len(ds_features) != len(data_values):
+        msg = "Invalid number of input features"
+        print(msg)
+        return HttpResponseBadRequest(msg)
+
+    df = pd.DataFrame([data_values], columns=ds_features)
+    ppe = reconstruct_ppe(pp_ds)
+    print(df)
+    ppe.clean_new_dataset(new_data=df)
 
     return HttpResponse("Success")
     
