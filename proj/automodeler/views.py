@@ -160,8 +160,6 @@ def dataset_delete(request, dataset_id):
     else:
         dataset = Dataset.objects.get(id = dataset_id)
         dataset_filepath = dataset.csv_file.path
-        if os.path.exists(dataset_filepath):
-            os.remove(dataset_filepath)
         dataset.delete()
         url = reverse("dataset_collection")
         return redirect(url)
