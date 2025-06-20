@@ -42,20 +42,7 @@ class PreprocessedDataSet(models.Model):
                 os.remove(self.label_encoder.path)
         super().delete(*args, **kwargs)
 
-""" 
-        classifiers = {
-            'LogisticRegression': LogisticRegression(max_iter=1000),
-            'RandomForestClassifier': RandomForestClassifier(),
-            'GradientBoostingClassifier': GradientBoostingClassifier(),
-            'SVC': SVC()
-        }
-        regressors = {
-            'LinearRegression': LinearRegression(),
-            'RandomForestRegressor': RandomForestRegressor(),
-            'GradientBoostingRegressor': GradientBoostingRegressor(),
-            'SVR': SVR()
-        }
-"""
+
 class DatasetModel(models.Model):
     MODEL_METHODS = {
         "LogisticRegression": "Logistic Regression",

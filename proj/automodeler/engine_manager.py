@@ -131,17 +131,14 @@ def start_modeling_request(request):
     scaler = pkl_file_to_obj(pp_ds.scaler.path)
     label_encoder = pkl_file_to_obj(pp_ds.label_encoder.path)
 
-    #ppe = PreprocessingEngine(df=df, target_column=dataset.target_feature)
     ppe = PreprocessingEngine.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
     
-
     # Load in original dataset and final dataset
     df = pd.read_csv(dataset.csv_file)
     ppe.df = df
     final_df = pd.read_csv(pp_ds.csv_file)
     ppe.final_df = final_df
     ppe.target_column = dataset.target_feature
-
     
     task_type = ppe.task_type
 
@@ -163,6 +160,41 @@ def start_modeling_request(request):
         ds_model.save()
 
     return HttpResponse("Completed modeling!")
+
+@login_required
+def run_model(request):
+    print("Starting modeling")
+    if request.method != 'POST':
+        print("Error: Non-POST Request received!")
+        return HttpResponseNotAllowed("Method not allowed")
+    
+    # Verify model exists
+    model_id = request.POST.get('model_id')
+    if not model_id:
+        print("Error: Missing model_id in form!")
+        return HttpResponseBadRequest('Missing value: model_id')
+
+    # Get the model and verify it exists
+    try:
+        ds_model = DatasetModel.objects.get(id=model_id)
+    except:
+        msg = "Error finding model with model ID: {0}".format(model_id)
+        print(msg)
+        return HttpResponseNotFound(msg)
+    
+    # Get preprocessed Dataset to recreate preprocessing engine
+    try:
+        dataset = Dataset.objects.get(id=ds_model.original_dataset_id)
+        pp_ds = PreprocessedDataSet.objects.get(original_dataset=dataset)
+    except:
+        msg = "Error retrieving preprocessed dataset from model."
+        print(msg)
+        return HttpResponseNotFound(msg)
+
+    
+
+    return HttpResponse("Success")
+    
 
 def obj_to_pkl_file(data_obj, file_name):
     data_obj_pkl = pickle.dumps(data_obj)

@@ -94,7 +94,7 @@ function preprocess_fetch_request(dataset_id) {
 }
 
 function modeling_fetch_request(dataset_id) {
-    var url = '{% url 'model' %}';
+    var url = '{% url 'ame' %}';
     var CSRF_TOKEN = '{{ csrf_token }}';
 
     let formData = new FormData();
