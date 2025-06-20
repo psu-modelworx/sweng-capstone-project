@@ -159,7 +159,6 @@ def dataset_delete(request, dataset_id):
         return HttpResponse("Invalid request method")
     else:
         dataset = Dataset.objects.get(id = dataset_id)
-        dataset_filepath = dataset.csv_file.path
         dataset.delete()
         url = reverse("dataset_collection")
         return redirect(url)
