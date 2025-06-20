@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'modelworx',
     'rest_framework',
     'rest_framework.authtoken',
-    'django_cleanup',
+    'storages', # Django-storages for S3 compatibility
+    'django_cleanup', # Django-cleanup to cleanup files; auto deletes files after they have been deleted
 ]
 
 MIDDLEWARE = [
@@ -106,6 +107,21 @@ DATABASES = {
     }
 }
 
+# Django-storages configuration
+# https://django-storages.readthedocs.io/en/latest/index.html
+#DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+AWS_S3_ENDPOINT_URL = os.environ['AWS_S3_ENDPOINT_URL']
+AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
