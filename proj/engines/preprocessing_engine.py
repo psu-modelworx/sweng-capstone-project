@@ -51,9 +51,9 @@ class PreprocessingEngine:
             f"Initialized PreprocessingEngine with task type: {self.task_type}")
 
     @classmethod
-    def load_from_files(cls, meta: dict, feature_encoder, scaler, label_encoder=None):
+    def load_from_files(cls, clean_df,  meta: dict, feature_encoder, scaler, label_encoder=None):
         """ Initializes the PreprocessingEngine from saved metadata and encoders/scalers. """
-        engine = cls(df=pd.DataFrame(), 
+        engine = cls(df=clean_df, 
                  target_column=meta['target_column'],
                  categorical_columns=meta.get('categorical_columns', []),
                  columns_to_remove=meta.get('columns_to_remove', []))
