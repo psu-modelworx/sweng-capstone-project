@@ -164,4 +164,16 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 LOGIN_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon login
 LOGOUT_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon logout
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+USE_S3 = config('USE_S3', default='False')
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME =config('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')
+    DEFAULT_FILE_STORAGE = config('storages.backends.s3boto3.S3Boto3Storage')
+    MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/'
+else:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
