@@ -128,23 +128,18 @@ def start_modeling_request(request):
     # dataset & pp_ds are now available
     # Prior to modeling, we need x_train, x_test, y_train, y_test, and task type of the preprocessed set
     # To do this, we're reconstructing the PPE
-    feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder)
-    scaler = pkl_file_to_obj(pp_ds.scaler)
-    label_encoder = pkl_file_to_obj(pp_ds.label_encoder)
+    #feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder)
+    #scaler = pkl_file_to_obj(pp_ds.scaler)
+    #label_encoder = pkl_file_to_obj(pp_ds.label_encoder)
 
-    ppe = PreprocessingEngine.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
-    
-    # Load in original dataset and final dataset
-    df = pd.read_csv(dataset.csv_file)
-    ppe.df = df
-    final_df = pd.read_csv(pp_ds.csv_file)
-    ppe.final_df = final_df
-    ppe.target_column = dataset.target_feature
+    #final_df = pd.read_csv(pp_ds.csv_file)
+
+    ppe = reconstruct_ppe(pp_ds)
+    #ppe = PreprocessingEngine.load_from_files(meta=pp_ds.meta_data, clean_df=final_df, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
     
     task_type = ppe.task_type
 
-    x, y = ppe.split_features_and_target()
-    x_train, x_test, y_train, y_test = ppe.train_test_split_data(x, y)
+    x_train, x_test, y_train, y_test = ppe.split_data()
 
     moe = ModelingEngine(X_train=x_train, X_test=x_test, y_train=y_train, y_test=y_test, task_type=task_type)
     moe.evaluate_models()
@@ -218,14 +213,16 @@ def run_model(request):
     df = pd.DataFrame([data_values], columns=ds_features)
     ppe = reconstruct_ppe(pp_ds)
     print(df)
-    ppe.clean_new_dataset(new_data=df)
+    processed_data = ppe.clean_new_dataset(new_data=df)
 
+    
 
     return HttpResponse("Success")
 
 def reconstruct_ppe(pp_ds):
     ppe = PreprocessingEngine.load_from_files(
         meta=pp_ds.meta_data,
+        clean_df=pd.read_csv(pp_ds.csv_file),
         feature_encoder=pkl_file_to_obj(pp_ds.feature_encoder), 
         scaler=pkl_file_to_obj(pp_ds.scaler), 
         label_encoder=pkl_file_to_obj(pp_ds.label_encoder)
