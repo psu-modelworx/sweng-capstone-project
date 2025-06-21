@@ -17,4 +17,7 @@ scikit-learn==1.6.1
 pandas==2.2.3
 python-decouple>=3.8
 gunicorn>=21.2
+django-cleanup==9.0.0
+django-storages==1.14.6
 psycopg[binary]
+

@@ -7,12 +7,9 @@ from rest_framework.authtoken.models import Token
 
 from .models import Dataset, PreprocessedDataSet, DatasetModel
 from .forms import DatasetForm
+from . import helper_functions
 
-import csv
-import io
 import os
-
-import pandas as pd
 
 # Create your views here.
 
@@ -24,8 +21,6 @@ def index(request):
     :param request: This is the HTTP request object containing the HTTP request information
     """
     return render(request, "automodeler/index.html")
-    
-
 
 def upload(request):
     """
@@ -46,12 +41,12 @@ def upload(request):
                 csv_file = request.FILES['csv_file']
                 user_id = request.user.id
                 try:
-                    sanitize_dataset(csv_file)
+                    helper_functions.sanitize_dataset(csv_file)
                 except Exception as e:
                     url = reverse('upload')
                     return render(request, url, {"form": form, "err_msg": "CSV File failed sanitation!"})
                     #return HttpResponse("Error sanitizing file!")
-                features = extract_features_from_inMemoryUploadedFile(csv_file)
+                features = helper_functions.extract_features_from_inMemoryUploadedFile(csv_file)
                 dataset_model = Dataset.objects.create(name=file_name, features=features, csv_file=csv_file, user_id=user_id)
                 dataset_model.save()
                 
@@ -159,9 +154,6 @@ def dataset_delete(request, dataset_id):
         return HttpResponse("Invalid request method")
     else:
         dataset = Dataset.objects.get(id = dataset_id)
-        dataset_filepath = dataset.csv_file.path
-        if os.path.exists(dataset_filepath):
-            os.remove(dataset_filepath)
         dataset.delete()
         url = reverse("dataset_collection")
         return redirect(url)
@@ -178,51 +170,3 @@ def task_collection(request):
     auth_user = request.user
     # user_models = ...
     return render(request, "automodeler/task_collection.html")
-
-def extract_features(dataset_fileName):
-    """
-    extract_features opens and reads the file at the path given and extracts features from the first row.
-
-    :param dataset_fileName: Full-path filename of file to open and read
-    """
-    features = []
-    with open(dataset_fileName, 'r') as file:
-        csvFileReader = csv.reader(file)
-        features = next(csvFileReader)
-    print(features)
-    return features
-
-def extract_features_from_inMemoryUploadedFile(in_mem_file):
-    """
-    extract_features_from_inMemoryUploadedFile reads the in-memory file object and extracts the feature names from 
-    the first row.
-
-    :param in_mem_file: InMemoryFile object to read
-    """
-    file_data = in_mem_file.read().decode('utf-8')
-    csv_file = io.StringIO(file_data)
-    reader = csv.reader(csv_file)
-    features = next(reader)
-
-    # Return reading pointer to beginning of memory array
-    in_mem_file.seek(0)
-    
-    return features
-
-def sanitize_dataset(in_mem_file):
-    """
-    sanitize_dataset reads an in-memory file object, and attempts to sanitize by removing html data.  Then, it tries to load
-    into a pandas dataframe to verify it can be used.
-
-    :param in_mem_file: InMemoryFile object to read
-
-    :return sanitized_dataset: Sanitized dataset to be saved
-    """
-    file_data = in_mem_file.read().decode('utf-8')
-    the_file = io.StringIO(file_data)
-    df = pd.read_csv(the_file)
-    
-    # Return reading pointer to beginning of memory array
-    in_mem_file.seek(0)
-
-    return True

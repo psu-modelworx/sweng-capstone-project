@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'modelworx',
     'rest_framework',
     'rest_framework.authtoken',
+    'storages', # Django-storages for S3 compatibility
+    'django_cleanup', # Django-cleanup to cleanup files; auto deletes files after they have been deleted
 ]
 
 MIDDLEWARE = [
@@ -88,22 +90,29 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-    
-    # setup postgre, for now won't be implemented but enabling to be production ready
-    'postgres': {
-        'ENGINE': config('DB_ENGINE', default=''),
-        'NAME': config('DB_NAME', default=''),
-        'USER': config('DB_USER', default=''),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST' : config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),  # default PostgreSQL Port
+# Set ENVIRONMENT - production or development
+ENVIRONMENT = config('ENVIRONMENT', default='development')
+
+if ENVIRONMENT == 'production':
+    DATABASES = {
+        'default' : {
+            # setup postgre, default to sqlite if config variables not found
+            'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
+            'NAME': config('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
+            'USER': config('DB_USER', default=''),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST' : config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),  # default PostgreSQL Port
+        }
     }
-}
+else:
+    # default: use SQLite for Development 
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation

@@ -26,22 +26,6 @@ class PreprocessedDataSet(models.Model):
     def filename(self):
         return os.path.basename(self.csv_file.name)
 
-    # Overriding default delete function to delete associated files when object is being deleted
-    def delete(self, *args, **kwargs):
-        if self.csv_file:
-            if os.path.isfile(self.csv_file.path):
-                os.remove(self.csv_file.path)
-        if self.feature_encoder:
-            if os.path.isfile(self.feature_encoder.path):
-                os.remove(self.feature_encoder.path)
-        if self.scaler:
-            if os.path.isfile(self.scaler.path):
-                os.remove(self.scaler.path)
-        if self.label_encoder:
-            if os.path.isfile(self.label_encoder.path):
-                os.remove(self.label_encoder.path)
-        super().delete(*args, **kwargs)
-
 
 class DatasetModel(models.Model):
     MODEL_METHODS = {

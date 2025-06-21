@@ -4,8 +4,8 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from rest_framework.test import APIRequestFactory
 from .permissions import DetermineIfStaffPermissions
+from rest_framework.authtoken.models import Token
 from .views import account
-
 
 # Create your tests here.
 def test_func():
@@ -34,6 +34,33 @@ def test_login_form(client):
     #
     #assert response.status_code == 302  # Redirect status code
     #assert response.url == reverse('') # Need to specify an expected login page 
+
+@pytest.mark.django_db
+def test_upload_api(client):
+    '''
+    Set up test cases to ensure the token authentication works and valid data needs to be sent.
+
+    :param client: A client that is provided by pytest. It is used to make get and post requests.
+
+    :Test Cases: TC-037 & TC-038
+    '''
+    # Defining the URL for the api request.
+    url = reverse('api_upload')
+
+    # Making a post request to the URL and asserting that this isn't authorized.
+    response = client.post(url)
+    assert response.status_code == 401
+    
+    # Creating a user with a test username and password and making a token for them.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Making a header to authorize the user to make a post request.
+    headers = { "Authorization": "Token " + userToken.key}
+
+    # Getting the response from the post request and asserting that the user didn't send data and files.
+    response = client.post(url, headers=headers)
+    assert "Could not upload dataset for testuser." in response.text
 
 @pytest.mark.django_db
 def test_account_page(client):

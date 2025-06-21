@@ -26,6 +26,8 @@ jobs:
         --exclude='venv/' \
         --exclude='db.sqlite3' \
         --exclude='proj/modelworx/.env.production' \
+        --exclude='__pycache__/' \
+        --exclude='*.pyc' \
         ./ ${{ secrets.USERNAME}}@${{ secrets.HOST }}:/home/deploy/sweng-capstone-project
     
     - name: SSH into VPS and restart Gunicorn
@@ -35,7 +37,12 @@ jobs:
           source venv/bin/activate
           pip install -r requirements
           cd proj/
-          python manage.py collectstatic
-          python manage.py migrate
+
+          # load production env variables
+          set -a && source modelworx/.env.production && set +a
+
+          python manage.py collectstatic --noinput
+          python manage.py migrate --noinput
+
           sudo systemctl restart gunicorn
         EOF
