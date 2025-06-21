@@ -166,6 +166,19 @@ def model_collection(request):
     return render(request, "automodeler/model_collection.html", {"models": user_models})
 
 @login_required
+def model_delete(request):
+    if request.method != 'POST':
+        return HttpResponse("Invalid request method")
+    model_id = request.POST.get('model_id')
+    if not model_id:
+        return HttpResponse("Empty model id!")
+
+    ds_model = DatasetModel.objects.get(id=model_id)
+    ds_model.delete()
+    url = reverse("model_collection")
+    return redirect(url)
+
+@login_required
 def task_collection(request):
     auth_user = request.user
     # user_models = ...

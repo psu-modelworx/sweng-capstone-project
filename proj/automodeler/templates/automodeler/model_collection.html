@@ -34,6 +34,11 @@
                 <td>{{ model.model_type }}</td>
                 <td>
                     <button class="btn btn-primary" onclick="run_model_fetch_request( {{ model.id }} )">Run Model!</button>
+                    <form method="POST" action="{% url 'model_delete' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="model_id" id="model_id" value="{{ model.id }}"/>
+                        <button type="Submit" class="btn btn-danger">Delete model</button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}        
