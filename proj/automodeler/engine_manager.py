@@ -128,9 +128,9 @@ def start_modeling_request(request):
     # dataset & pp_ds are now available
     # Prior to modeling, we need x_train, x_test, y_train, y_test, and task type of the preprocessed set
     # To do this, we're reconstructing the PPE
-    feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder.path)
-    scaler = pkl_file_to_obj(pp_ds.scaler.path)
-    label_encoder = pkl_file_to_obj(pp_ds.label_encoder.path)
+    feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder)
+    scaler = pkl_file_to_obj(pp_ds.scaler)
+    label_encoder = pkl_file_to_obj(pp_ds.label_encoder)
 
     ppe = PreprocessingEngine.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
     
@@ -214,10 +214,12 @@ def run_model(request):
         print(msg)
         return HttpResponseBadRequest(msg)
 
+
     df = pd.DataFrame([data_values], columns=ds_features)
     ppe = reconstruct_ppe(pp_ds)
     print(df)
     ppe.clean_new_dataset(new_data=df)
+
 
     return HttpResponse("Success")
 
@@ -238,8 +240,9 @@ def obj_to_pkl_file(data_obj, file_name):
     return data_obj_file
 
 
-def pkl_file_to_obj(file_name):
-    if os.path.exists(file_name):
-        with open(file_name, 'rb') as pkl_file:
-            data_obj = pickle.load(pkl_file)
+def pkl_file_to_obj(file_obj):
+    data_obj = pickle.load(file_obj)
+    #if os.path.exists(file_name):
+    #    with open(file_name, 'rb') as pkl_file:
+    #        data_obj = pickle.load(pkl_file)
     return data_obj
