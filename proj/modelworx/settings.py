@@ -90,36 +90,28 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-    
-    # setup postgre, for now won't be implemented but enabling to be production ready
-    'postgres': {
-        'ENGINE': config('DB_ENGINE', default=''),
-        'NAME': config('DB_NAME', default=''),
-        'USER': config('DB_USER', default=''),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST' : config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),  # default PostgreSQL Port
-    }
-}
+# Set ENVIRONMENT - production or development
+ENVIRONMENT = config('ENVIRONMENT', default='development')
 
-# Django-storages configuration
-# https://django-storages.readthedocs.io/en/latest/index.html
-#DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-AWS_S3_ENDPOINT_URL = os.environ['AWS_S3_ENDPOINT_URL']
-AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
-AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
-STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.s3.S3Storage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+if ENVIRONMENT == 'production':
+    DATABASES = {
+        'default' : {
+            # setup postgre, default to sqlite if config variables not found
+            'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
+            'NAME': config('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
+            'USER': config('DB_USER', default=''),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST' : config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),  # default PostgreSQL Port
+        }
+    }
+else:
+    # default: use SQLite for Development 
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
 }
 
