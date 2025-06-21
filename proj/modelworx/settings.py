@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'modelworx',
     'rest_framework',
     'rest_framework.authtoken',
+    'storages', # Django-storages for S3 compatibility
+    'django_cleanup', # Django-cleanup to cleanup files; auto deletes files after they have been deleted
 ]
 
 MIDDLEWARE = [
@@ -111,6 +113,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

@@ -13,6 +13,7 @@ from engines.modeling_engine import ModelingEngine
 import pandas as pd
 import os
 import pickle
+import json
 
 @login_required
 def start_preprocessing_request(request):
@@ -127,21 +128,18 @@ def start_modeling_request(request):
     # dataset & pp_ds are now available
     # Prior to modeling, we need x_train, x_test, y_train, y_test, and task type of the preprocessed set
     # To do this, we're reconstructing the PPE
-    feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder.path)
-    scaler = pkl_file_to_obj(pp_ds.scaler.path)
-    label_encoder = pkl_file_to_obj(pp_ds.label_encoder.path)
+    feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder)
+    scaler = pkl_file_to_obj(pp_ds.scaler)
+    label_encoder = pkl_file_to_obj(pp_ds.label_encoder)
 
-    #ppe = PreprocessingEngine(df=df, target_column=dataset.target_feature)
     ppe = PreprocessingEngine.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
     
-
     # Load in original dataset and final dataset
     df = pd.read_csv(dataset.csv_file)
     ppe.df = df
     final_df = pd.read_csv(pp_ds.csv_file)
     ppe.final_df = final_df
     ppe.target_column = dataset.target_feature
-
     
     task_type = ppe.task_type
 
@@ -164,14 +162,82 @@ def start_modeling_request(request):
 
     return HttpResponse("Completed modeling!")
 
+@login_required
+def run_model(request):
+    print("Starting model run")
+    if request.method != 'POST':
+        print("Error: Non-POST Request received!")
+        return HttpResponseNotAllowed("Method not allowed")
+    
+    # Verify model exists
+    model_id = request.POST.get('model_id')
+    if not model_id:
+        print("Error: Missing model_id in form!")
+        return HttpResponseBadRequest('Missing value: model_id')
+
+    # Get the model and verify it exists
+    try:
+        ds_model = DatasetModel.objects.get(id=model_id)
+    except:
+        msg = "Error finding model with model ID: {0}".format(model_id)
+        print(msg)
+        return HttpResponseNotFound(msg)
+    
+    # Get preprocessed Dataset to recreate preprocessing engine
+    try:
+        dataset = Dataset.objects.get(id=ds_model.original_dataset_id)
+        pp_ds = PreprocessedDataSet.objects.get(original_dataset=dataset)
+    except:
+        msg = "Error retrieving preprocessed dataset from model."
+        print(msg)
+        return HttpResponseNotFound(msg)
+
+    # Get the data from the post request
+    data = request.POST.get('data')
+    if not data:
+        msg = 'Error:  missing data field'
+        print(msg)
+        return HttpResponseBadRequest(msg)
+    data = json.loads(data)
+    try:
+        data_values = data['values']
+    except:
+        msg = "Missing values field"
+        print(msg)
+        return HttpResponseBadRequest(msg)
+
+    ds_features = list(dataset.features.keys())
+
+    # Verify that the number of values sent is equal to the number of features
+    if len(ds_features) != len(data_values):
+        msg = "Invalid number of input features"
+        print(msg)
+        return HttpResponseBadRequest(msg)
+
+    ppe = reconstruct_ppe(pp_ds)
+
+    return HttpResponse("Success")
+
+def reconstruct_ppe(pp_ds):
+    ppe = PreprocessingEngine.load_from_files(
+        meta=pp_ds.meta_data,
+        feature_encoder=pkl_file_to_obj(pp_ds.feature_encoder), 
+        scaler=pkl_file_to_obj(pp_ds.scaler), 
+        label_encoder=pkl_file_to_obj(pp_ds.label_encoder)
+    )
+
+    return ppe
+    
+
 def obj_to_pkl_file(data_obj, file_name):
     data_obj_pkl = pickle.dumps(data_obj)
     data_obj_file = ContentFile(data_obj_pkl, name=file_name)
     return data_obj_file
 
 
-def pkl_file_to_obj(file_name):
-    if os.path.exists(file_name):
-        with open(file_name, 'rb') as pkl_file:
-            data_obj = pickle.load(pkl_file)
+def pkl_file_to_obj(file_obj):
+    data_obj = pickle.load(file_obj)
+    #if os.path.exists(file_name):
+    #    with open(file_name, 'rb') as pkl_file:
+    #        data_obj = pickle.load(pkl_file)
     return data_obj
