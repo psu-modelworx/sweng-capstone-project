@@ -1,3 +1,5 @@
+import csv
+import json
 import requests
 
 def api_upload_request():
@@ -16,7 +18,26 @@ def api_upload_request():
 
     # Making variables for the csv file, name, and token so they can be passed in the response.
     files = {"csv_file": open(csv_file, "rb")}
-    data = {"name": name}
+    
+    # Collecting all the features from the csv file.
+    features = []
+    with open(csv_file, 'r') as file:
+        csvFileReader = csv.reader(file)
+        features = next(csvFileReader)
+
+    # Going through the features and adding "N" for numerical and "C" for categorical.
+    feature_types = ["N", "C", "N", "N", "C", "N", "N", "C"]
+    
+    # Making a dictionary with the feature as a key and the feature type as the value.
+    input_features = {}
+    for x in range(len(features)):
+        input_features[features[x]] = feature_types[x]
+
+    # Selecting the target variable from the name of a feature.
+    target_variable = "Post_frequency"
+
+    # Including csv file data and the authorization token as a header.
+    data = {"name": name, "input_features": json.dumps(input_features), "target_variable": target_variable}
     headers = { "Authorization": "Token " + token}
             
     # Getting the response after the API request is made and printing it to know if the upload was successful.
