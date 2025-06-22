@@ -68,7 +68,7 @@ def start_preprocessing_request(request):
     # Get the new Dataframe and convert to an in-memory file
     new_df = ppe.final_df
 
-    content = new_df.to_csv()
+    content = new_df.to_csv(index=False)
     temp_file = ContentFile(content.encode('UTF-8'))
 
     # Name the temp file
@@ -206,18 +206,22 @@ def run_model(request):
     df = pd.DataFrame([data_values], columns=ds_features)
     ppe = reconstruct_ppe(pp_ds)
     print(df)
-    processed_data = ppe.clean_new_dataset(new_data=df)
+    p_df = ppe.clean_new_dataset(new_data=df)
+    p_df = p_df.drop(p_df.columns[4], axis=1) # Drop output feature
 
     ds_model_obj = pkl_file_to_obj(ds_model.model_file)
 
-    results = ds_model_obj.predict(processed_data)
+    x_train, x_test, y_train, y_test = ppe.split_data()
+    ds_model_obj.fit(x_train, y_train)
+    results = ds_model_obj.predict(p_df)
 
     return HttpResponse("Success")
 
 def reconstruct_ppe(pp_ds):
+    test_df = pd.read_csv(pp_ds.csv_file)
     ppe = PreprocessingEngine.load_from_files(
         meta=pp_ds.meta_data,
-        clean_df=pd.read_csv(pp_ds.csv_file),
+        clean_df=test_df,
         feature_encoder=pkl_file_to_obj(pp_ds.feature_encoder), 
         scaler=pkl_file_to_obj(pp_ds.scaler), 
         label_encoder=pkl_file_to_obj(pp_ds.label_encoder)
