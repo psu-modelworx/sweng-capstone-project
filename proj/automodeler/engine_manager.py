@@ -201,21 +201,19 @@ def run_model(request):
         msg = "Invalid number of input features"
         print(msg)
         return HttpResponseBadRequest(msg)
-
-
-    df = pd.DataFrame([data_values], columns=ds_features)
+    
     ppe = reconstruct_ppe(pp_ds)
-    print(df)
-    p_df = ppe.clean_new_dataset(new_data=df)
-    p_df = p_df.drop(p_df.columns[4], axis=1) # Drop output feature
 
     ds_model_obj = pkl_file_to_obj(ds_model.model_file)
 
     x_train, x_test, y_train, y_test = ppe.split_data()
     ds_model_obj.fit(x_train, y_train)
+
+    df = pd.DataFrame([data_values], columns=ds_features)
+    p_df = ppe.transform_single_row(df)
     results = ds_model_obj.predict(p_df)
 
-    return HttpResponse("Success")
+    return HttpResponse("Predicted results: {0}".format(results), content_type="text/plain")
 
 def reconstruct_ppe(pp_ds):
     test_df = pd.read_csv(pp_ds.csv_file)
