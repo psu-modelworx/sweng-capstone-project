@@ -489,3 +489,11 @@ class PreprocessingEngine:
 
         return new_data
 
+    def transform_single_row(self, new_df):
+        # Clean new dataframe
+        new_df = self.clean_new_dataset(new_df)
+        
+        # Drop output column if it exists
+        new_df = new_df.drop(self.target_column, axis=1)
+        
+        return new_df
