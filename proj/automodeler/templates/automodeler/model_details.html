@@ -1,0 +1,17 @@
+{% include 'base/header.html' %}
+{% include 'base/navbar.html' %}
+
+{% if model %}
+
+Model ID: {{ model.id }}
+<br />
+Model Name: {{ model.name }}
+
+
+
+{% else %}
+<h2>No model id provided</h2>
+{% endif %}
+
+
+{% include 'base/footer.html' %}
