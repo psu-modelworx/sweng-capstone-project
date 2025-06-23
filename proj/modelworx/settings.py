@@ -12,11 +12,24 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
-from decouple import config
+from decouple import Config, RepositoryEnv
+from django.core.files.storage import default_storage
+from django.utils.functional import LazyObject
+from storages.backends.s3boto3 import S3Boto3Storage
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Set ENVIRONMENT - production or development
+# Determine which env file to load
+if os.getenv("DJANGO_ENV") == 'production':
+    ENV_PATH = BASE_DIR / 'modelworx' / '.env.production'
+else:
+    ENV_PATH = BASE_DIR / 'modelworx' / '.env'
+
+config = Config(RepositoryEnv(str(ENV_PATH)))
+
+ENVIRONMENT = config('ENVIRONMENT', default='development')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -90,9 +103,6 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Set ENVIRONMENT - production or development
-ENVIRONMENT = config('ENVIRONMENT', default='development')
-
 if ENVIRONMENT == 'production':
     DATABASES = {
         'default' : {
@@ -164,4 +174,22 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 LOGIN_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon login
 LOGOUT_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon logout
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+USE_S3 = config('USE_S3', default='False', cast=bool)  # set to true in in .env.production, false in .env
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME =config('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/'
+else:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+if USE_S3:
+    # Force update default_storage to match DEFAULT_FILE_STORAGE
+    if isinstance(default_storage, LazyObject) or isinstance(default_storage._wrapped, models.storage.FileSystemStorage):
+        default_storage._wrapped = S3Boto3Storage()
+
