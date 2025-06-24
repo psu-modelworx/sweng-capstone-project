@@ -1,5 +1,4 @@
 import pytest
-from pytest_django.asserts import assertRedirects
 from django.urls import reverse, reverse_lazy
 from django.contrib import auth
 from django.contrib.auth.models import User

@@ -5,11 +5,9 @@ from django.contrib.auth.models import User
 from rest_framework.test import APIRequestFactory
 from .permissions import DetermineIfStaffPermissions
 from rest_framework.authtoken.models import Token
-from .views import account
+
 
 # Create your tests here.
-def test_func():
-    assert 0 == 0
 
 
 @pytest.mark.django_db
