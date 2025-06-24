@@ -42,6 +42,7 @@ def upload(request):
                     helper_functions.sanitize_dataset(csv_file)
                 except Exception as e:
                     url = reverse('upload')
+                    print("Exception: {0}".format(e))
                     return render(request, url, {"form": form, "err_msg": "CSV File failed sanitation!"})
                     #return HttpResponse("Error sanitizing file!")
                 features = helper_functions.extract_features_from_inMemoryUploadedFile(csv_file)
@@ -130,7 +131,7 @@ def dataset_collection(request):
     for uds in user_datasets:
         try:
             pp_datasets[uds.filename] = PreprocessedDataSet.objects.get(original_dataset_id = uds.id)
-        except:
+        except ObjectDoesNotExist:
             print("No preprocessed datasets for " + str(uds.filename))
     
     combined_datasets = []
@@ -178,6 +179,5 @@ def model_delete(request):
 
 @login_required
 def task_collection(request):
-    auth_user = request.user
     # user_models = ...
     return render(request, "automodeler/task_collection.html")
