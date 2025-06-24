@@ -1,7 +1,7 @@
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseServerError
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
 from django.core.files.base import ContentFile
+from django.core.exceptions import ObjectDoesNotExist
 
 from .models import Dataset
 from .models import PreprocessedDataSet
@@ -31,7 +31,7 @@ def start_preprocessing_request(request):
     print("Dataset ID: " + str(dataset_id))
     try:
         dataset = Dataset.objects.get(id = dataset_id)
-    except:
+    except ObjectDoesNotExist:
         print("Original Dataset not found in database!")
         return HttpResponseNotFound("Dataset not found")
     
@@ -42,7 +42,7 @@ def start_preprocessing_request(request):
         # Delete the original if it exists and create a new object
         pp_ds.delete()
         pp_ds = PreprocessedDataSet()
-    except:
+    except ObjectDoesNotExist:
         print("No PP_DS related to original dataset, creating new one...")
         pp_ds = PreprocessedDataSet()
 
@@ -56,7 +56,7 @@ def start_preprocessing_request(request):
     try:
         #x_train, x_test, y_train, y_test, ppe_task = ppe.run_preprocessing_engine()
         ppe.run_preprocessing_engine()
-    except:
+    except Exception as e:
         return HttpResponseServerError("Error running preprocessing engine")
 
     # If there is an old file, delete it
@@ -114,14 +114,14 @@ def start_modeling_request(request):
         
     try:
         dataset = Dataset.objects.get(id = dataset_id)
-    except:
+    except ObjectDoesNotExist:
         print("Original Dataset not found in database!")
         return HttpResponseNotFound("Dataset not found")
     
     # Verify dataset has been preprocessed
     try:
         pp_ds = PreprocessedDataSet.objects.get(original_dataset_id = dataset.id)
-    except:
+    except ObjectDoesNotExist:
         print("Dataset has not yet been preprocessed...")
         return HttpResponse("Dataset must be preprocessed first.", status=412)
     
@@ -178,7 +178,7 @@ def run_model(request):
     # Get the model and verify it exists
     try:
         ds_model = DatasetModel.objects.get(id=model_id)
-    except:
+    except ObjectDoesNotExist:
         msg = "Error finding model with model ID: {0}".format(model_id)
         print(msg)
         return HttpResponseNotFound(msg)
@@ -187,7 +187,7 @@ def run_model(request):
     try:
         dataset = Dataset.objects.get(id=ds_model.original_dataset_id)
         pp_ds = PreprocessedDataSet.objects.get(original_dataset=dataset)
-    except:
+    except ObjectDoesNotExist:
         msg = "Error retrieving preprocessed dataset from model."
         print(msg)
         return HttpResponseNotFound(msg)
@@ -201,7 +201,7 @@ def run_model(request):
     data = json.loads(data)
     try:
         data_values = data['values']
-    except:
+    except KeyError:
         msg = "Missing values field"
         print(msg)
         return HttpResponseBadRequest(msg)
