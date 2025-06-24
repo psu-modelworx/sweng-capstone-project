@@ -36,6 +36,7 @@ def api_upload(request):
                     # Trying to sanitize the csv file by removing html data.
                     helper_functions.sanitize_dataset(csv_file)
                 except Exception as e:
+                    print('Exception: ' + e)
                     # Letting the user know they cannot use the CSV file because it failed sanitation.
                     return Response("CSV file failed sanitation for " + request.user.username + ".")
                 
