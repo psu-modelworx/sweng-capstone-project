@@ -1,10 +1,8 @@
 import pytest
 import pandas as pd
-import json
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
-from joblib import load
 from engines.preprocessing_engine import PreprocessingEngine
-from unittest.mock import mock_open, patch, MagicMock
+from unittest.mock import MagicMock
 
 
 @pytest.fixture
