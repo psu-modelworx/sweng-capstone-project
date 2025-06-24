@@ -44,7 +44,7 @@ def sanitize_dataset(in_mem_file):
     file_data = in_mem_file.read().decode('utf-8')
     the_file = io.StringIO(file_data)
     df = pd.read_csv(the_file)
-    if df:
+    if not df.empty:
         # Return reading pointer to beginning of memory array
         in_mem_file.seek(0)
         return True
