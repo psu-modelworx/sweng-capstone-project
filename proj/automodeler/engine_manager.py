@@ -57,7 +57,9 @@ def start_preprocessing_request(request):
         #x_train, x_test, y_train, y_test, ppe_task = ppe.run_preprocessing_engine()
         ppe.run_preprocessing_engine()
     except Exception as e:
-        return HttpResponseServerError("Error running preprocessing engine")
+        msg = "Error running preprocessing engine {0}".format(e)
+        print(msg)
+        return HttpResponseServerError("Error running preprocessing engine {0}".format(e))
 
     # If there is an old file, delete it
     if pp_ds.csv_file:
