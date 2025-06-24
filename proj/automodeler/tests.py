@@ -73,6 +73,7 @@ def test_account_page(client):
 
     # Setting up a user and logging them into the client so they are authenticated.
     user = User.objects.create_user(username='testuser', password='testpassword')
+    assert user
     client.login(username='testuser', password='testpassword')
     
     # Getting the response when the client navigates to the URL.
@@ -96,7 +97,7 @@ def test_user_staff_permissions_request():
     permissions = determinePermissions.has_permission(request, None)
 
     # The assertion is that permissions weren't given.
-    assert permissions == False
+    assert not permissions
 
 @pytest.mark.django_db
 def test_user_no_staff_permissions_request():
@@ -113,5 +114,5 @@ def test_user_no_staff_permissions_request():
     permissions = determinePermissions.has_permission(request, None)
 
     # Asserting that the user does have permissions to view the page.
-    assert permissions == True
+    assert permissions
     
