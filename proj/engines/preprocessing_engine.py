@@ -446,7 +446,7 @@ class PreprocessingEngine:
 
         new_df.drop(columns=[target_col], inplace=True)
 
-        logging.info(f"Encoded target column in new DataFrame using saved label encoder.")
+        logging.info("Encoded target column in new DataFrame using saved label encoder.")
         return new_df
 
     def remove_dropped_columns(self, new_df):
