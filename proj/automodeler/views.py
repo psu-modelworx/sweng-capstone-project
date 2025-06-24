@@ -9,8 +9,6 @@ from .models import Dataset, PreprocessedDataSet, DatasetModel
 from .forms import DatasetForm
 from . import helper_functions
 
-import os
-
 # Create your views here.
 
 def index(request):
