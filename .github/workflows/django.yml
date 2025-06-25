@@ -27,7 +27,7 @@ jobs:
 
     - name: Run Linter
       run: |
-        ruff check --output-format=github --target-version=py311
+        ruff check --diff --output-format=github --target-version=py311
 
     - name: Run Tests
       env:
