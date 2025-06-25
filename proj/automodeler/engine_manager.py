@@ -137,17 +137,24 @@ def start_modeling_request(request):
     x_train, x_test, y_train, y_test = ppe.split_data()
 
     moe = ModelingEngine(X_train=x_train, X_test=x_test, y_train=y_train, y_test=y_test, task_type=task_type)
-    moe.evaluate_models()
+    moe.run_modeling_engine()
     
-    moe_models = moe.models
-    
-    for model_method, model_obj in moe_models.items():
-        
+    moe_results = moe.results
+    untuned_models = moe_results['untuned']
+    tuned_models = moe_results['tuned']
+
+    for model_method, model_obj in untuned_models.items():
+        model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_untuned'])
+        model_file_name = ''.join([model_name, '.bin'])
+        model_file = obj_to_pkl_file(model_obj, model_file_name)
+        ds_model = DatasetModel(name = model_name, model_file=model_file, model_method=model_method, model_type=task_type, tuned=False, user=request.user, original_dataset=dataset)
+        ds_model.save()
+
+    for model_method, model_obj in tuned_models.items():
         model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method)])
         model_file_name = ''.join([model_name, '.bin'])
         model_file = obj_to_pkl_file(model_obj, model_file_name)
-        
-        ds_model = DatasetModel(name = dataset.name, model_file=model_file, model_method=model_method, model_type=task_type, user=request.user, original_dataset=dataset)
+        ds_model = DatasetModel(name = model_name, model_file=model_file, model_method=model_method, model_type=task_type, tuned=True, user=request.user, original_dataset=dataset)
         ds_model.save()
 
     return HttpResponse("Completed modeling!")
