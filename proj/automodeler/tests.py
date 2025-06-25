@@ -6,7 +6,8 @@ from rest_framework.test import APIRequestFactory
 from .permissions import DetermineIfStaffPermissions
 from rest_framework.authtoken.models import Token
 
-from .api import verify_features
+# Commented out for lack of test
+#from .api import verify_features
 
 # Create your tests here.
 
