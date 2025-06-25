@@ -59,7 +59,8 @@ def test_upload_api(client):
 
     # Getting the response from the post request and asserting that the user didn't send data and files.
     response = client.post(url, headers=headers)
-    assert "Could not upload dataset."
+    #assert "Could not upload dataset."
+    assert response
 
 def test_upload_api():
     '''

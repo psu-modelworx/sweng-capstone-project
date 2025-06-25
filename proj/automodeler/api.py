@@ -33,6 +33,7 @@ def api_upload(request):
             csv_file = request.FILES['csv_file']
             user_id = request.user.id
         except Exception as e:
+            print("Exception: {0}".format(e))
             return Response("Could not retrieve the data in the request.")
 
         # If the dataset is empty let the user know it cannot be uploaded.
