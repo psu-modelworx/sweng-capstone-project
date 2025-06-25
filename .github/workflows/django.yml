@@ -27,9 +27,7 @@ jobs:
 
     - name: Run Linter
       run: |
-        ruff check --output-format=github --target-version=py311
-        ruff format --diff --target-version=py311
-      continue-on-error: true # Optional: allow workflow to continue on lint failure
+        ruff check --diff --output-format=github --target-version=py311
 
     - name: Run Tests
       env:

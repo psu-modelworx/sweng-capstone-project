@@ -59,7 +59,7 @@ class ModelingEngine:
     def run_modeling_engine(self):
         self.compare_untuned_models(cv_folds=5)
         self.tune_all_models()
-        best_tuned = self.get_best_tuned_model()
+        self.best_tuned = self.get_best_tuned_model()
         self.fit_tuned_models()
         self.evaluate_tuned_models()
 

@@ -16,6 +16,8 @@ from decouple import Config, RepositoryEnv
 from django.core.files.storage import default_storage
 from django.utils.functional import LazyObject
 from storages.backends.s3boto3 import S3Boto3Storage
+from django.core.files.storage import FileSystemStorage
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -190,6 +192,6 @@ else:
 
 if USE_S3:
     # Force update default_storage to match DEFAULT_FILE_STORAGE
-    if isinstance(default_storage, LazyObject) or isinstance(default_storage._wrapped, models.storage.FileSystemStorage):
+    if isinstance(default_storage, LazyObject) or isinstance(default_storage._wrapped, FileSystemStorage):
         default_storage._wrapped = S3Boto3Storage()
 
