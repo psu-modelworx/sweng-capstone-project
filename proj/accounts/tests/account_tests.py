@@ -1,11 +1,7 @@
 import pytest
-from pytest_django.asserts import assertRedirects
-from django.urls import reverse, reverse_lazy
-from django.contrib import auth
+from django.urls import reverse
 from django.contrib.auth.models import User
 
-
-from accounts import views
 
 # Start unit tests here
 @pytest.mark.django_db
@@ -40,6 +36,7 @@ def test_login_post(client):
 
     # Validate user is authenticated
     result = client.login(username="testuser", password="testpassword")
+    assert result
     response = client.get(reverse('index'))
     assert response.context['request'].user.is_authenticated
 
@@ -71,10 +68,6 @@ def test_signup(client):
     response = client.post(url, params)
     assert response.status_code == 302
     
-
-#def test_dataset_configure():
-#    return False
-
 
 # Start system tests here
 
@@ -112,6 +105,7 @@ def test_signup_login_logout(client):
 
     # Validate user is authenticated
     result = client.login(username="testuser", password="testpassword")
+    assert result
     response = client.get(url)
     assert response.context['request'].user.is_authenticated
 
