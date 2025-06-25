@@ -54,8 +54,14 @@ class ModelingEngine:
         self.X_train, self.y_train, self.X_test, self.y_test = X_train, y_train, X_test, y_test
         self.task_type = task_type
         self.models = self.get_models(task_type)
-        self.results = {'model_scores': {}, 'best_model_name': None, 'best_params': None,
-                        'optimized_model': None, 'final_scores': {}}
+        self.results = {}
+
+    def run_modeling_engine(self):
+        self.compare_untuned_models(cv_folds=5)
+        self.tune_all_models()
+        best_tuned = self.get_best_tuned_model()
+        self.fit_tuned_models()
+        self.evaluate_tuned_models()
 
     def get_models(self, task_type):
         """ Returns a dictionary of models based on task type. """
@@ -73,65 +79,209 @@ class ModelingEngine:
         }
         return classifiers if task_type == 'classification' else regressors
 
-    def evaluate_models(self, cv_folds=5):
-        """ Evaluates models and selects the best one using cross-validation. """
-        scoring_metric = 'accuracy' if self.task_type == 'classification' else 'r2'
-
-        for name, model in self.models.items():
-            try:
-                scores = cross_val_score(model, self.X_train, self.y_train, cv=cv_folds, scoring=scoring_metric)
-                self.results['model_scores'][name] = scores.mean()
-                logging.info(f"{name}: Mean {scoring_metric} = {scores.mean():.3f}")
-            except Exception as e:
-                logging.warning(f"Error evaluating {name}: {e}")
-
-        self.results['best_model_name'] = max(self.results['model_scores'], key=self.results['model_scores'].get, default=None)
-
-        if self.results['best_model_name']:
-            logging.info(f"Best model selected: {self.results['best_model_name']} with {scoring_metric} = {self.results['model_scores'][self.results['best_model_name']]:.3f}")
-        else:
-            logging.error("No suitable model found.")
-
-    def tune_best_model(self):
-        """ Tunes hyperparameters for the best model using GridSearchCV. """
-        if not self.results['best_model_name']:
-            logging.error("Must run evaluate_models before tuning.")
+    def tune_model(self, model=None):
+        """ Tunes hyperparameters for the given model using GridSearchCV. """
+        if model is None:
+            logging.error("No model available to fit.")
             return
 
-        param_grid = self.PARAM_GRIDS.get(self.results['best_model_name'], {})
+        model_name = model.__class__.__name__
+        param_grid = self.PARAM_GRIDS.get(model_name, {})
         if not param_grid:
-            logging.warning(f"No parameter grid available for {self.results['best_model_name']}. Skipping tuning.")
+            logging.warning(f"No parameter grid available for {model_name}. Skipping tuning.")
             return
 
-        grid_search = GridSearchCV(self.models[self.results['best_model_name']], param_grid, cv=5,
+        grid_search = GridSearchCV(model, param_grid, cv=5,
                                    scoring='accuracy' if self.task_type == 'classification' else 'r2', n_jobs=-1)
         grid_search.fit(self.X_train, self.y_train)
 
-        self.results['best_params'] = grid_search.best_params_
-        self.results['optimized_model'] = grid_search.best_estimator_
+        self.results['tuned'] = self.results.get('tuned', {})
+        self.results['tuned'][model_name] = {
+            "best_params": grid_search.best_params_,
+            "best_score": grid_search.best_score_,
+            "optimized_model": grid_search.best_estimator_,
+        }
 
-        logging.info(f"Best params for {self.results['best_model_name']}: {self.results['best_params']}")
-        logging.info(f"Best CV score: {grid_search.best_score_:.3f}")
+        logging.info(f"Best params for {model_name}: {grid_search.best_params_}")
+        logging.info(f"Best CV score for {model_name}: {grid_search.best_score_:.3f}")
 
-    def evaluate_final_model(self):
-        if not self.results['optimized_model']:
-            logging.error("Run tune_best_model before final evaluation.")
+        return self.results['tuned'][model_name]['optimized_model']
+
+    def fit_model(self, model=None):
+        """ Fits the model to the training data. """
+
+        if not model:
+            logging.error("No model available to fit.")
             return
 
-        model = self.results['optimized_model']
         model.fit(self.X_train, self.y_train)
+        logging.info(f"Model {model.__class__.__name__} fitted to training data.")
+
+    def evaluate_model(self, model=None):
+        """ Evaluates the model on both training and test datasets. """
+        if not model:
+            logging.error("No model available for evaluation.")
+            return
+        
         y_train_pred = model.predict(self.X_train)
         y_test_pred = model.predict(self.X_test)
 
         metric_fn = accuracy_score if self.task_type == 'classification' else r2_score
-        self.results['final_scores']['train'] = metric_fn(self.y_train, y_train_pred)
-        self.results['final_scores']['test'] = metric_fn(self.y_test, y_test_pred)
+        model_name = model.__class__.__name__
+        self.results['tuned'][model_name].update({
+        "train": metric_fn(self.y_train, y_train_pred),
+        "test": metric_fn(self.y_test, y_test_pred)
+        })
 
-        logging.info(f"Final Model Train Score: {self.results['final_scores']['train']:.4f}")
-        logging.info(f"Final Model Test Score: {self.results['final_scores']['test']:.4f}")
+        logging.info(f"{model_name} Train Score: {self.results['tuned'][model_name]['train']:.4f}")
+        logging.info(f"{model_name} Test Score: {self.results['tuned'][model_name]['test']:.4f}")
 
-    def run_modeling_engine(self):
-        self.evaluate_models()
-        self.tune_best_model()
-        self.evaluate_final_model()
+
+    def get_results(self):
+        """ Returns the results of the modeling process. """
         return self.results
+    
+    def get_best_untuned_model(self):
+        """ Returns the best untuned model. """
+        if 'untuned' not in self.results or not self.results['untuned']:
+            logging.error("No untuned models found. Run compare_untuned_models() first.")
+            return None
+
+        best_model_name = None
+        best_score = float('-inf')
+        best_model = None
+
+        for name, info in self.results['untuned'].items():
+            mean_score = info.get('mean_score', float('-inf'))
+            if mean_score > best_score:
+                best_score = mean_score
+                best_model_name = name
+                best_model = info.get('model')
+
+        if best_model_name:
+            logging.info(f"Best untuned model is {best_model_name} with mean_score = {best_score:.3f}")
+            return {
+                "model_name": best_model_name,
+                "mean_score": best_score,
+                "model": best_model
+            }
+        else:
+            logging.warning("No suitable untuned model was found.")
+            return None
+        
+    def get_best_tuned_model(self):
+        """Returns the best tuned model info based on best_score."""
+        tuned_results = self.results.get('tuned', {})
+        if not tuned_results:
+            logging.error("No tuned models found in results.")
+            return None
+
+        best_model_name = None
+        best_score = float('-inf')
+        best_model = None
+        best_params = None
+
+        for model_name, info in tuned_results.items():
+            score = info.get('best_score', float('-inf'))
+            if score > best_score:
+                best_score = score
+                best_model_name = model_name
+                best_model = info.get('optimized_model')
+                best_params = info.get('best_params')
+
+        logging.info(f"Best tuned model: {best_model_name} with score {best_score:.4f}")
+        return {
+            "model_name": best_model_name,
+            "best_score": best_score,
+            "best_params": best_params,
+            "model": best_model
+        }
+    
+    def get_tuned_models(self):
+        """ Returns the tuned models with their parameters. """
+        return self.results.get('tuned', {})
+    
+    def compare_untuned_models(self, cv_folds=5):
+        """ Compares all untuned models using cross-validation and returns the best one. """
+        if not hasattr(self, 'models') or not self.models:
+            logging.error("No untuned models found in self.models. Make sure to set self.models first.")
+            return None
+
+        if not hasattr(self, 'models') or not self.models:
+            logging.error("No untuned models found in self.models. Make sure to set self.models first.")
+            return
+
+        model_list = list(self.models.items())
+        logging.info(f"Found {len(model_list)} untuned models to evaluate: {', '.join([m for m, _ in model_list])}")
+        logging.info(f"Evaluating {len(model_list)} models using {cv_folds}-fold CV...")
+
+        scoring_metric = 'accuracy' if self.task_type == 'classification' else 'r2'
+        self.results['untuned'] = {}
+
+        for name, model in model_list:
+            try:
+                scores = cross_val_score(model, self.X_train, self.y_train, cv=cv_folds, scoring=scoring_metric)
+                mean_score = scores.mean()
+
+                self.results['untuned'][name] = {
+                    "mean_score": mean_score,
+                    "cv_scores": scores.tolist(),
+                    "model": model
+                }
+                logging.info(f"{name}: Mean {scoring_metric} = {mean_score:.3f}")
+
+            except Exception as e:
+                logging.warning(f"Error evaluating {name}: {e}")
+    
+    def tune_all_models(self):
+        """ Tunes all models and returns the results. """
+        tuned_results = {}
+
+        if not self.models:
+            logging.warning("No models found to tune. Make sure self.models is populated.")
+            return tuned_results
+
+        logging.info(f"Starting hyperparameter tuning for {len(self.models)} models...")
+
+        for model_name, model in self.models.items():
+            logging.info(f"Tuning model: {model_name}")
+
+            tuned_model = self.tune_model(model)
+            if tuned_model:
+                tuned_results[model_name] = tuned_model
+                logging.info(f"Finished tuning {model_name}. Added to tuned results.")
+            else:
+                logging.warning(f"Could not tune {model_name}. Check parameter grid or model type.")
+
+        logging.info(f"Completed tuning all models. Successfully tuned {len(tuned_results)} models.")
+        return tuned_results
+
+    def fit_tuned_models(self):
+        """ Fits all tuned models to the training data. """
+        if 'tuned' not in self.results or not self.results['tuned']:
+            logging.error("No tuned models found. Run tune_all_models() first.")
+            return
+
+        for model_name, model_info in self.results['tuned'].items():
+            model = model_info.get('optimized_model')
+            if model:
+                self.fit_model(model)
+            else:
+                logging.warning(f"No optimized model found for {model_name}. Skipping fitting and evaluation.")
+
+    def evaluate_tuned_models(self):
+        """ Evaluates all tuned models on the training and test datasets. """
+        if 'tuned' not in self.results or not self.results['tuned']:
+            logging.error("No tuned models found. Run tune_all_models() first.")
+            return
+
+        self.results['final_scores'] = {}
+
+        for model_name, model_info in self.results['tuned'].items():
+            model = model_info.get('optimized_model')
+            if model:
+                self.evaluate_model(model)
+            else:
+                logging.warning(f"No optimized model found for {model_name}. Skipping evaluation.")
+    
+        
