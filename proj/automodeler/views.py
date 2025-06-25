@@ -163,7 +163,7 @@ def dataset_delete(request, dataset_id):
 def model_collection(request):
     auth_user = request.user
     # user_models = ...
-    user_models = DatasetModel.objects.filter(user=auth_user)
+    user_models = DatasetModel.objects.filter(user=auth_user, tuned=True)
     return render(request, "automodeler/model_collection.html", {"models": user_models})
 
 @login_required
