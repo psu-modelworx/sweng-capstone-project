@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -178,6 +178,23 @@ def model_delete(request):
     ds_model.delete()
     url = reverse("model_collection")
     return redirect(url)
+
+@login_required
+def model_details(request, model_id):
+    #if request.method != 'GET':
+    #    return HttpResponse("Invalid request method")
+    try:
+        dataset_model = DatasetModel.objects.get(id=model_id)
+    except:
+        msg = "Error retrieving model by:  id={0}".format(model_id)
+        print(msg)
+        return HttpResponseNotFound(msg)
+    
+    model_details = {
+        "name": dataset_model.name,
+    }
+
+    return render(request, "automodeler/model_details.html", {"model": dataset_model})
 
 @login_required
 def task_collection(request):

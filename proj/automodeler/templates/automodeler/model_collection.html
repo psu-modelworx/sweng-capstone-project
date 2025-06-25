@@ -95,7 +95,8 @@ function run_model_fetch_request(model_id) {
     })
     .then(responseData => {
         console.log('Response data:', responseData);
-        window.location.reload()
+        console.log('Response text:', responseData.text())
+        //window.location.reload()
     })
     .catch(error => {
         console.error('Fetch error:', error);

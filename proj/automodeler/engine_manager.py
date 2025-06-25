@@ -70,7 +70,7 @@ def start_preprocessing_request(request):
     # Get the new Dataframe and convert to an in-memory file
     new_df = ppe.final_df
 
-    content = new_df.to_csv()
+    content = new_df.to_csv(index=False)
     temp_file = ContentFile(content.encode('UTF-8'))
 
     # Name the temp file
@@ -129,24 +129,12 @@ def start_modeling_request(request):
     
     # dataset & pp_ds are now available
     # Prior to modeling, we need x_train, x_test, y_train, y_test, and task type of the preprocessed set
-    # To do this, we're reconstructing the PPE
-    feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder)
-    scaler = pkl_file_to_obj(pp_ds.scaler)
-    label_encoder = pkl_file_to_obj(pp_ds.label_encoder)
-
-    ppe = PreprocessingEngine.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
     
-    # Load in original dataset and final dataset
-    df = pd.read_csv(dataset.csv_file)
-    ppe.df = df
-    final_df = pd.read_csv(pp_ds.csv_file)
-    ppe.final_df = final_df
-    ppe.target_column = dataset.target_feature
+    ppe = reconstruct_ppe(pp_ds)
     
     task_type = ppe.task_type
 
-    x, y = ppe.split_features_and_target()
-    x_train, x_test, y_train, y_test = ppe.train_test_split_data(x, y)
+    x_train, x_test, y_train, y_test = ppe.split_data()
 
     moe = ModelingEngine(X_train=x_train, X_test=x_test, y_train=y_train, y_test=y_test, task_type=task_type)
     moe.evaluate_models()
@@ -215,19 +203,25 @@ def run_model(request):
         msg = "Invalid number of input features"
         print(msg)
         return HttpResponseBadRequest(msg)
+    
+    ppe = reconstruct_ppe(pp_ds)
 
+    ds_model_obj = pkl_file_to_obj(ds_model.model_file)
+
+    x_train, x_test, y_train, y_test = ppe.split_data()
+    ds_model_obj.fit(x_train, y_train)
 
     df = pd.DataFrame([data_values], columns=ds_features)
-    ppe = reconstruct_ppe(pp_ds)
-    print(df)
-    ppe.clean_new_dataset(new_data=df)
+    p_df = ppe.transform_single_row(df)
+    results = ds_model_obj.predict(p_df)
 
-
-    return HttpResponse("Success")
+    return HttpResponse("Predicted results: {0}".format(results), content_type="text/plain")
 
 def reconstruct_ppe(pp_ds):
+    test_df = pd.read_csv(pp_ds.csv_file)
     ppe = PreprocessingEngine.load_from_files(
         meta=pp_ds.meta_data,
+        clean_df=test_df,
         feature_encoder=pkl_file_to_obj(pp_ds.feature_encoder), 
         scaler=pkl_file_to_obj(pp_ds.scaler), 
         label_encoder=pkl_file_to_obj(pp_ds.label_encoder)
@@ -244,7 +238,4 @@ def obj_to_pkl_file(data_obj, file_name):
 
 def pkl_file_to_obj(file_obj):
     data_obj = pickle.load(file_obj)
-    #if os.path.exists(file_name):
-    #    with open(file_name, 'rb') as pkl_file:
-    #        data_obj = pickle.load(pkl_file)
     return data_obj
