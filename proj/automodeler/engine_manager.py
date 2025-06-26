@@ -15,7 +15,7 @@ import pandas as pd
 import os
 import pickle
 import json
-import sklearn
+
 
 @login_required
 def start_preprocessing_request(request):
