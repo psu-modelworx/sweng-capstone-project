@@ -197,6 +197,7 @@ def model_details(request, model_id):
         return HttpResponseServerError(msg)
     
     model_details = {
+        "id": dataset_model.id,
         "name": dataset_model.name,
         "method": dataset_model.model_method,
         "type": dataset_model.model_type,

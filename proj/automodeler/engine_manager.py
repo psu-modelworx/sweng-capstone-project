@@ -174,16 +174,23 @@ def run_model(request):
         return HttpResponseBadRequest('Missing value: model_id')
 
     # Get the model and verify it exists
-    try:
-        ds_model = DatasetModel.objects.get(id=model_id)
-    except ObjectDoesNotExist:
-        msg = "Error finding model with model ID: {0}".format(model_id)
-        print(msg)
-        return HttpResponseNotFound(msg)
+    #try:
+    #    ds_model = DatasetModel.objects.get(id=model_id)
+    #except ObjectDoesNotExist:
+    #    msg = "Error finding model with model ID: {0}".format(model_id)
+    #    print(msg)
+    #    return HttpResponseNotFound(msg)
     
+    # Get the tuned model and verify it exists
+    try:
+        tuned_model = TunedDatasetModel.objects.get(untuned_model_id=model_id)
+    except Exception as e:
+        print("Exception: {0}".format(e))
+
+
     # Get preprocessed Dataset to recreate preprocessing engine
     try:
-        dataset = Dataset.objects.get(id=ds_model.original_dataset_id)
+        dataset = Dataset.objects.get(id=tuned_model.original_dataset_id)
         pp_ds = PreprocessedDataSet.objects.get(original_dataset=dataset)
     except ObjectDoesNotExist:
         msg = "Error retrieving preprocessed dataset from model."
@@ -203,6 +210,9 @@ def run_model(request):
         msg = "Missing values field"
         print(msg)
         return HttpResponseBadRequest(msg)
+
+    # data_values should be a list of dictionaries with 'key' 'value' key names
+    #for value
 
     ds_features = list(dataset.features.keys())
 

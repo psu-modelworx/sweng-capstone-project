@@ -40,41 +40,40 @@ function run_model_request(model_id) {
     var CSRF_TOKEN = '{{ csrf_token }}';
 
     // Get the form
-    const form = document.getElementById("model_parameters_form");
+    const input_form = document.getElementById("model_parameters_form");
 
-    const form_inputs_elements = form.getElementsByTagName("input");
+    const form_inputs_elements = input_form.getElementsByTagName("input");
 
     const form_inputs_array = Array.from(form_inputs_elements);
 
     // Loop through form elements to get inputs
-    var data = []
+    var input_data = []
 
+    /*
+    // Method to create list of dictionaries if needed in the future...
     form_inputs_array.forEach( input_obj => {
-        data.push({
+        input_data.push({
             key: input_obj.id ,
             value: input_obj.value
         });
     });
-    
+    */
 
-    console.log(data)
+    form_inputs_array.forEach( input_obj => {
+        input_data.push(input_obj.value);
+    });
 
-    /*
-    var data = {
-        values: [
-            1,
-            2,
-            3,
-            4,
-            "Iris-setosa"
-        ]
+    request_data = {
+        values: input_data
     }
-    var dataString = JSON.stringify(data)
+
+    let formData = new FormData()
+
+    var dataString = JSON.stringify(request_data)
 
     formData.append("model_id", model_id)
     formData.append("data", dataString)
 
-    
     fetch(url, {
         method: 'POST',
         headers: {
@@ -96,7 +95,7 @@ function run_model_request(model_id) {
     .catch(error => {
         console.error('Fetch error:', error);
     })
-*/
+
 }
  
 
