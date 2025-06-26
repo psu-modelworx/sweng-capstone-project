@@ -184,7 +184,7 @@ def run_model(request):
     
     # Get the tuned model and verify it exists
     try:
-        tuned_model = TunedDatasetModel.objects.get(untuned_model_id=model_id)
+        tuned_model = TunedDatasetModel.objects.get(id=model_id)
     except Exception as e:
         print("Exception: {0}".format(e))
 
@@ -233,10 +233,12 @@ def run_model(request):
     df = pd.DataFrame([data_values], columns=ds_features)
     p_df = ppe.transform_single_row(df)
     results = tuned_model_obj.predict(p_df)
+    
+    if tuned_model.model_type == "classification":
+        results = ppe.decode_target(results)
 
     # Still need to do stuff to convert categorical from integer to category name!
     print(results[0])
-    print()
     return HttpResponse("Predicted results: {0}".format(results[0]), content_type="text/plain")
 
 def reconstruct_ppe(pp_ds):
