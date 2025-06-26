@@ -25,6 +25,11 @@ Model Type: {{ model.type }}
 
 <button class="btn btn-success" onclick="run_model_request( {{ model.id }} )">Run Model!</button>
 
+<br />
+<br />
+
+<h3 class="text-success-emphasis" id="result_text"></h3>
+
 {% else %}
 <h2>No model id provided</h2>
 {% endif %}
@@ -88,12 +93,18 @@ function run_model_request(model_id) {
         return response;
     })
     .then(responseData => {
-        console.log('Response data:', responseData);
-        console.log('Response text:', responseData.text())
+        //console.log('Response data:', responseData);
+        //console.log('Response text:', responseData.text())
         //window.location.reload()
+        responseData.text().then( text => {
+            result_text = document.getElementById("result_text");
+            result_text.textContent = text;
+        });
     })
     .catch(error => {
         console.error('Fetch error:', error);
+        result_text = document.getElementById("result_text");
+        result_text.textContent = error;
     })
 
 }
