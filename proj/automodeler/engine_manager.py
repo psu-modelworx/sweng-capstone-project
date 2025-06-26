@@ -145,16 +145,16 @@ def start_modeling_request(request):
     untuned_models = moe_results['untuned']
     tuned_models = moe_results['tuned']
 
-    for model_method, model_obj in untuned_models.items():
+    for model_method, model_results in untuned_models.items():
         model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_untuned'])
         model_file_name = ''.join([model_name, '.bin'])
-        model_file = obj_to_pkl_file(model_obj, model_file_name)
+        model_file = obj_to_pkl_file(model_results['model'], model_file_name)
         ds_model = DatasetModel(name = model_name, model_file=model_file, model_method=model_method, model_type=task_type, user=request.user, original_dataset=dataset)
         ds_model.save()
 
         tuned_model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_tuned'])
         tuned_model_file_name = ''.join([tuned_model_name, '.bin'])
-        tuned_model_file = obj_to_pkl_file(tuned_models[model_method], tuned_model_file_name)
+        tuned_model_file = obj_to_pkl_file(tuned_models[model_method]['optimized_model'], tuned_model_file_name)
         tuned_ds_model = TunedDatasetModel(name = tuned_model_name, model_file=tuned_model_file, model_method=model_method, model_type=task_type, untuned_model=ds_model, user=request.user, original_dataset=dataset)
         tuned_ds_model.save()
         
@@ -234,7 +234,10 @@ def run_model(request):
     p_df = ppe.transform_single_row(df)
     results = tuned_model_obj.predict(p_df)
 
-    return HttpResponse("Predicted results: {0}".format(results), content_type="text/plain")
+    # Still need to do stuff to convert categorical from integer to category name!
+    print(results[0])
+    print()
+    return HttpResponse("Predicted results: {0}".format(results[0]), content_type="text/plain")
 
 def reconstruct_ppe(pp_ds):
     test_df = pd.read_csv(pp_ds.csv_file)
