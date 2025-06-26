@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authtoken.models import Token
 
 
-from .models import Dataset, PreprocessedDataSet, DatasetModel
+from .models import Dataset, PreprocessedDataSet, TunedDatasetModel
 from .forms import DatasetForm
 from . import helper_functions
 
@@ -162,8 +162,7 @@ def dataset_delete(request, dataset_id):
 @login_required
 def model_collection(request):
     auth_user = request.user
-    # user_models = ...
-    user_models = DatasetModel.objects.filter(user=auth_user, tuned=True)
+    user_models = TunedDatasetModel.objects.filter(user=auth_user)
     return render(request, "automodeler/model_collection.html", {"models": user_models})
 
 @login_required
@@ -181,20 +180,29 @@ def model_delete(request):
 
 @login_required
 def model_details(request, model_id):
-    #if request.method != 'GET':
-    #    return HttpResponse("Invalid request method")
     try:
-        dataset_model = DatasetModel.objects.get(id=model_id)
-    except:
+        dataset_model = TunedDatasetModel.objects.get(id=model_id)
+    except Exception as e:
+        print("Exception {0}".format(e))
         msg = "Error retrieving model by:  id={0}".format(model_id)
         print(msg)
         return HttpResponseNotFound(msg)
     
+    try:
+        dataset = Dataset.objects.get(id=dataset_model.original_dataset.id)
+        ds_features = list(dataset.features.keys())
+    except Exception as e:
+        msg = "Error getting features.  Exception: {0}".format(e)
+        print(msg)
+        return HttpResponseServerError(msg)
+    
     model_details = {
         "name": dataset_model.name,
+        "method": dataset_model.model_method,
+        "type": dataset_model.model_type,
+        "features": ds_features
     }
-
-    return render(request, "automodeler/model_details.html", {"model": dataset_model})
+    return render(request, "automodeler/model_details.html", { "model": model_details })
 
 @login_required
 def task_collection(request):

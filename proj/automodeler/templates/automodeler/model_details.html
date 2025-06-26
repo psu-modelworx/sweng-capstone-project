@@ -3,11 +3,27 @@
 
 {% if model %}
 
-Model ID: {{ model.id }}
-<br />
 Model Name: {{ model.name }}
+<br />
+Model Method: {{ model.method }}
+<br />
+Model Type: {{ model.type }}
+<br />
 
+<form id="model_parameters_form">
+    
+    <div class="col-md-2 mb-2">
 
+    
+{% for f in model.features %}
+    <label for="{{ f }}" class="form-label">{{ f }}</label>
+    <input type="text" class="form-control" id="{{ f }}" name="{{ f }}" />
+    
+{% endfor %}
+    </div>
+</form>
+
+<button class="btn btn-success" onclick="run_model_request( {{ model.id }} )">Run Model!</button>
 
 {% else %}
 <h2>No model id provided</h2>
@@ -15,3 +31,73 @@ Model Name: {{ model.name }}
 
 
 {% include 'base/footer.html' %}
+
+
+<script>
+    
+function run_model_request(model_id) {
+    var url = '{% url 'run_model' %}';
+    var CSRF_TOKEN = '{{ csrf_token }}';
+
+    // Get the form
+    const form = document.getElementById("model_parameters_form");
+
+    const form_inputs_elements = form.getElementsByTagName("input");
+
+    const form_inputs_array = Array.from(form_inputs_elements);
+
+    // Loop through form elements to get inputs
+    var data = []
+
+    form_inputs_array.forEach( input_obj => {
+        data.push({
+            key: input_obj.id ,
+            value: input_obj.value
+        });
+    });
+    
+
+    console.log(data)
+
+    /*
+    var data = {
+        values: [
+            1,
+            2,
+            3,
+            4,
+            "Iris-setosa"
+        ]
+    }
+    var dataString = JSON.stringify(data)
+
+    formData.append("model_id", model_id)
+    formData.append("data", dataString)
+
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': CSRF_TOKEN
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error.  Status Code: ${response.status}`);
+        }
+        return response;
+    })
+    .then(responseData => {
+        console.log('Response data:', responseData);
+        console.log('Response text:', responseData.text())
+        //window.location.reload()
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+    })
+*/
+}
+ 
+
+</script>

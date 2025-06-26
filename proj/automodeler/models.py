@@ -48,10 +48,34 @@ class DatasetModel(models.Model):
     model_file = models.FileField(upload_to='models/')
     model_method = models.CharField(max_length=30, choices=MODEL_METHODS)
     model_type = models.CharField(max_length=15, choices=MODEL_TYPES)
-    tuned = models.BooleanField(default=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     
     
-
+class TunedDatasetModel(models.Model):
+    MODEL_METHODS = {
+        "LogisticRegression": "Logistic Regression",
+        "RandomForestClassifier": "Random Forest Classifier",
+        "GradientBoostingClassifier": "Gradient Boosting Classifier",
+        "SVC": "SVC",
+        "LinearRegression": "Linear Regression",
+        "RandomForestRegressor": "Random Forest Regressor",
+        "GradientBoostingRegressor": "Gradient Boosting Regressor",
+        "SVR": "SVR"    
+    }
+    
+    MODEL_TYPES = {
+        "regression": "Regression",
+        "classification": "Classification"
+    }
+    
+    name = models.CharField(max_length=100)
+    model_file = models.FileField(upload_to='models/')
+    model_method = models.CharField(max_length=30, choices=MODEL_METHODS)
+    model_type = models.CharField(max_length=15, choices=MODEL_TYPES)
+    untuned_model = models.OneToOneField(DatasetModel, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    
+    
     
