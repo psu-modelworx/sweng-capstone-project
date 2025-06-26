@@ -15,6 +15,7 @@ import pandas as pd
 import os
 import pickle
 import json
+import sklearn
 
 @login_required
 def start_preprocessing_request(request):
@@ -224,14 +225,14 @@ def run_model(request):
     
     ppe = reconstruct_ppe(pp_ds)
 
-    ds_model_obj = pkl_file_to_obj(ds_model.model_file)
+    tuned_model_obj = pkl_file_to_obj(tuned_model.model_file)
 
-    x_train, x_test, y_train, y_test = ppe.split_data()
-    ds_model_obj.fit(x_train, y_train)
+    #x_train, x_test, y_train, y_test = ppe.split_data()
+    #ds_model_obj.fit(x_train, y_train)
 
     df = pd.DataFrame([data_values], columns=ds_features)
     p_df = ppe.transform_single_row(df)
-    results = ds_model_obj.predict(p_df)
+    results = tuned_model_obj.predict(p_df)
 
     return HttpResponse("Predicted results: {0}".format(results), content_type="text/plain")
 
