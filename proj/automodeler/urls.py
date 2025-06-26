@@ -7,6 +7,7 @@ from . import engine_manager
 
 urlpatterns = [
     path("", views.index, name="index"),
+    path("automodeler/", views.index, name="automodeler"),
     path("upload/", views.upload, name="upload"),
     path("api/upload", api.api_upload, name="api_upload"),
     path("dataset_delete/<int:dataset_id>", views.dataset_delete, name="dataset_delete"),
