@@ -16,24 +16,41 @@ class Dataset(models.Model):
     
 class PreprocessedDataSet(models.Model):
     name = models.CharField(max_length=100)
-    csv_file = models.FileField(upload_to='preprocessed_datasets/')
-    original_dataset = models.OneToOneField(Dataset, on_delete=models.CASCADE)
+    csv_file = models.FileField(upload_to='preprocessed_datasets/')    
+    feature_encoder = models.FileField(upload_to='pp_ds_bins/')
+    scaler = models.FileField(upload_to='pp_ds_bins/')
+    label_encoder = models.FileField(upload_to='pp_ds_bins/')
+    meta_data = models.JSONField(default=dict)
+    original_dataset = models.OneToOneField(Dataset, on_delete=models.CASCADE, blank=True, null=True)
     
     def filename(self):
         return os.path.basename(self.csv_file.name)
+
+
+class DatasetModel(models.Model):
+    MODEL_METHODS = {
+        "LogisticRegression": "Logistic Regression",
+        "RandomForestClassifier": "Random Forest Classifier",
+        "GradientBoostingClassifier": "Gradient Boosting Classifier",
+        "SVC": "SVC",
+        "LinearRegression": "Linear Regression",
+        "RandomForestRegressor": "Random Forest Regressor",
+        "GradientBoostingRegressor": "Gradient Boosting Regressor",
+        "SVR": "SVR"    
+    }
     
-class TrainTestDataFrame(models.Model):
-    POSSIBLE_TYPES = [
-        ('train', 'Train'),
-        ('test', 'Test')
-    ]
-    POSSIBLE_AXIS = [
-        ('x', 'X'),
-        ('y', 'Y')
-    ]
-    type = models.CharField(max_length=10, choices=POSSIBLE_TYPES) # Train/Test
-    axis = models.CharField(max_length=1) # X or Y
-    tt_ds_file = models.FileField(upload_to='traintest_dataframes/')
-    preprocessed_dataset = models.ForeignKey(PreprocessedDataSet, on_delete=models.CASCADE)
+    MODEL_TYPES = {
+        "regression": "Regression",
+        "classification": "Classification"
+    }
     
+    name = models.CharField(max_length=100)
+    model_file = models.FileField(upload_to='models/')
+    model_method = models.CharField(max_length=30, choices=MODEL_METHODS)
+    model_type = models.CharField(max_length=15, choices=MODEL_TYPES)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    
+    
+
     

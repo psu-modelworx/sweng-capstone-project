@@ -1,10 +1,8 @@
 import pytest
 import pandas as pd
-import json
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
-from joblib import load
 from engines.preprocessing_engine import PreprocessingEngine
-from unittest.mock import mock_open, patch, MagicMock
+from unittest.mock import MagicMock
 
 
 @pytest.fixture
@@ -195,7 +193,7 @@ def test_decode_target_returns_original_labels(sample_df):
     assert decoded.tolist() == ["yes", "no", "yes", "no"]
 
 
-def test_load_from_files_method():
+def test_load_from_files_method(sample_df):
     """TC-31 Test load_from_files initializes PreprocessingEngine correctly with provided meta and encoders."""
     
     # Prepare dummy metadata dictionary (like loaded from a JSON)
@@ -214,6 +212,7 @@ def test_load_from_files_method():
     dummy_scaler = MagicMock(name="scaler")
     dummy_label_encoder = MagicMock(name="label_encoder")
     engine = PreprocessingEngine.load_from_files(
+        clean_df=sample_df,
         meta=meta_data,
         feature_encoder=dummy_feature_encoder,
         scaler=dummy_scaler,

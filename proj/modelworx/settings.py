@@ -12,11 +12,26 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
-from decouple import config
+from decouple import Config, RepositoryEnv
+from django.core.files.storage import default_storage
+from django.utils.functional import LazyObject
+from storages.backends.s3boto3 import S3Boto3Storage
+from django.core.files.storage import FileSystemStorage
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Set ENVIRONMENT - production or development
+# Determine which env file to load
+if os.getenv("DJANGO_ENV") == 'production':
+    ENV_PATH = BASE_DIR / 'modelworx' / '.env.production'
+else:
+    ENV_PATH = BASE_DIR / 'modelworx' / '.env'
+
+config = Config(RepositoryEnv(str(ENV_PATH)))
+
+ENVIRONMENT = config('ENVIRONMENT', default='development')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -42,6 +57,8 @@ INSTALLED_APPS = [
     'modelworx',
     'rest_framework',
     'rest_framework.authtoken',
+    'storages', # Django-storages for S3 compatibility
+    'django_cleanup', # Django-cleanup to cleanup files; auto deletes files after they have been deleted
 ]
 
 MIDDLEWARE = [
@@ -88,23 +105,26 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-    
-    # setup postgre, for now won't be implemented but enabling to be production ready
-    'postgres': {
-        'ENGINE': config('DB_ENGINE', default=''),
-        'NAME': config('DB_NAME', default=''),
-        'USER': config('DB_USER', default=''),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST' : config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),  # default PostgreSQL Port
+if ENVIRONMENT == 'production':
+    DATABASES = {
+        'default' : {
+            # setup postgre, default to sqlite if config variables not found
+            'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
+            'NAME': config('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
+            'USER': config('DB_USER', default=''),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST' : config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),  # default PostgreSQL Port
+        }
     }
-}
-
+else:
+    # default: use SQLite for Development 
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -156,4 +176,22 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 LOGIN_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon login
 LOGOUT_REDIRECT_URL = "/automodeler/" # Redirect to automodeler url upon logout
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+USE_S3 = config('USE_S3', default='False', cast=bool)  # set to true in in .env.production, false in .env
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME =config('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_ENDPOINT_URL = config('AWS_S3_ENDPOINT_URL')
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/'
+else:
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+if USE_S3:
+    # Force update default_storage to match DEFAULT_FILE_STORAGE
+    if isinstance(default_storage, LazyObject) or isinstance(default_storage._wrapped, FileSystemStorage):
+        default_storage._wrapped = S3Boto3Storage()
+

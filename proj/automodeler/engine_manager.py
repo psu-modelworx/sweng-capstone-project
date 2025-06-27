@@ -1,16 +1,19 @@
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseServerError
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
 from django.core.files.base import ContentFile
+from django.core.exceptions import ObjectDoesNotExist
 
 from .models import Dataset
 from .models import PreprocessedDataSet
-from .models import TrainTestDataFrame
+from .models import DatasetModel
 
 from engines.preprocessing_engine import PreprocessingEngine
+from engines.modeling_engine import ModelingEngine
 
 import pandas as pd
 import os
+import pickle
+import json
 
 @login_required
 def start_preprocessing_request(request):
@@ -28,81 +31,220 @@ def start_preprocessing_request(request):
     print("Dataset ID: " + str(dataset_id))
     try:
         dataset = Dataset.objects.get(id = dataset_id)
-    except:
+    except ObjectDoesNotExist:
         print("Original Dataset not found in database!")
         return HttpResponseNotFound("Dataset not found")
     
+    # First, see if there is a preprocessed dataset already; if not, create one
+    try:
+        pp_ds = PreprocessedDataSet.objects.get(original_dataset_id = dataset.id)
+        
+        # Delete the original if it exists and create a new object
+        pp_ds.delete()
+        pp_ds = PreprocessedDataSet()
+    except ObjectDoesNotExist:
+        print("No PP_DS related to original dataset, creating new one...")
+        pp_ds = PreprocessedDataSet()
+
     df = pd.read_csv(dataset.csv_file)
     target_column = dataset.target_feature
     all_features_dict = dataset.features
     categorical_columns = [f for f in dataset.features if all_features_dict[f] == 'C'] # Create list of categorical columns
     ppe = PreprocessingEngine(df=df, target_column=target_column, categorical_columns=categorical_columns)
-    x_train, x_test, y_train, y_test, ppe_task = ppe.run_preprocessing_engine()
     
-    
-    # Get the Dataframe and convert to an in-memory file
+    # Try to run the ppe; if there is an error, return internal server error 500
+    try:
+        #x_train, x_test, y_train, y_test, ppe_task = ppe.run_preprocessing_engine()
+        ppe.run_preprocessing_engine()
+    except Exception as e:
+        msg = "Error running preprocessing engine {0}".format(e)
+        print(msg)
+        return HttpResponseServerError("Error running preprocessing engine {0}".format(e))
+
+    # If there is an old file, delete it
+    if pp_ds.csv_file:
+        pp_ds_filepath = pp_ds.csv_file.path
+        if os.path.exists(pp_ds_filepath):
+            os.remove(pp_ds_filepath)
+
+    # Get the new Dataframe and convert to an in-memory file
     new_df = ppe.final_df
+
     content = new_df.to_csv()
     temp_file = ContentFile(content.encode('UTF-8'))
 
     # Name the temp file
     pp_ds_name = ''.join([dataset.name, "_preprocessed", ".csv"])
     temp_file.name = pp_ds_name
-    
-    pp_ds = False
-    
-    # First, see if there is a preprocessed dataset already
-    try:
-        pp_ds = PreprocessedDataSet.objects.get(original_dataset_id = dataset.id)
-    except:
-        print("No PP_DS related to original dataset, creating new one...")
-
-    # If there is no previous preprocessed dataset, create a new one
-    if not pp_ds:
-        pp_ds = PreprocessedDataSet()
-    else:
-        # If there was, delete the old file
-        pp_ds_filepath = pp_ds.csv_file.path
-        if os.path.exists(pp_ds_filepath):
-            os.remove(pp_ds_filepath)
 
     # Write/overwrite values
     pp_ds.name=pp_ds_name
     pp_ds.csv_file=temp_file
+
+    pp_ds.feature_encoder = ppe.feature_encoder
+    pp_ds.scaler = ppe.scaler
+    pp_ds.label_encoder = ppe.label_encoder
+
+    # Get important objects from PPE, pickle them, and create ContentFiles for storage
+    pp_ds.feature_encoder = obj_to_pkl_file(ppe.feature_encoder, ''.join([pp_ds_name, '_fe_enc.bin']))
+    pp_ds.scaler = obj_to_pkl_file(ppe.scaler, ''.join([pp_ds_name, '_sca.bin']))
+    pp_ds.label_encoder = obj_to_pkl_file(ppe.label_encoder, ''.join([pp_ds_name, '_la_enc.bin']))
+
     pp_ds.original_dataset=dataset
     
+    pp_ds.meta_data = ppe.to_meta_dict()
+
     # Save the object
     pp_ds.save()
     
-    create_or_update_tt_ds_obj(x_train, type='train', axis='x', pp_ds=pp_ds)
-    create_or_update_tt_ds_obj(x_test, type='test', axis='x', pp_ds=pp_ds)
-    create_or_update_tt_ds_obj(y_train, type='train', axis='y', pp_ds=pp_ds)
-    create_or_update_tt_ds_obj(y_test, type='test', axis='y', pp_ds=pp_ds)
     
     return HttpResponse("Preprocessing completed...")
 
 
-def create_or_update_tt_ds_obj(df, type, axis, pp_ds):
-    tt_df_filepath = ''
+@login_required
+def start_modeling_request(request):
+    print("Starting modeling")
+    if request.method != 'POST':
+        print("Error: Non-POST Request received!")
+        return HttpResponseNotAllowed("Method not allowed")
+    
+    # Verify dataset exists
+    dataset_id = request.POST.get('dataset_id')
+    if not dataset_id:
+        print("Error: Missing dataset_id in form!")
+        return HttpResponseBadRequest('Missing value: dataset_id')
+        
     try:
-        ttdf_obj = TrainTestDataFrame.objects.get(type=type, axis=axis, preprocessed_dataset = pp_ds)
-        tt_df_filepath = ttdf_obj.tt_ds_file.path
-    except:
-        ttdf_obj = TrainTestDataFrame()
+        dataset = Dataset.objects.get(id = dataset_id)
+    except ObjectDoesNotExist:
+        print("Original Dataset not found in database!")
+        return HttpResponseNotFound("Dataset not found")
     
-    content = df.to_csv()
-    content_file = ContentFile(content.encode('UTF-8'))
-    type_str = ''.join([axis, '_', type])
-    tt_df_filename = ''.join([pp_ds.name, '_', type_str, '.csv'])
-    content_file.name = tt_df_filename
+    # Verify dataset has been preprocessed
+    try:
+        pp_ds = PreprocessedDataSet.objects.get(original_dataset_id = dataset.id)
+    except ObjectDoesNotExist:
+        print("Dataset has not yet been preprocessed...")
+        return HttpResponse("Dataset must be preprocessed first.", status=412)
     
-    # Delete file if it exists
+    # dataset & pp_ds are now available
+    # Prior to modeling, we need x_train, x_test, y_train, y_test, and task type of the preprocessed set
+    # To do this, we're reconstructing the PPE
+    feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder)
+    scaler = pkl_file_to_obj(pp_ds.scaler)
+    label_encoder = pkl_file_to_obj(pp_ds.label_encoder)
 
-    if os.path.exists(tt_df_filepath):
-        os.remove(tt_df_filepath)
+    ppe = PreprocessingEngine.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
     
-    ttdf_obj.type = type
-    ttdf_obj.axis = axis
-    ttdf_obj.tt_ds_file = content_file
-    ttdf_obj.preprocessed_dataset = pp_ds
-    ttdf_obj.save()
+    # Load in original dataset and final dataset
+    df = pd.read_csv(dataset.csv_file)
+    ppe.df = df
+    final_df = pd.read_csv(pp_ds.csv_file)
+    ppe.final_df = final_df
+    ppe.target_column = dataset.target_feature
+    
+    task_type = ppe.task_type
+
+    x, y = ppe.split_features_and_target()
+    x_train, x_test, y_train, y_test = ppe.train_test_split_data(x, y)
+
+    moe = ModelingEngine(X_train=x_train, X_test=x_test, y_train=y_train, y_test=y_test, task_type=task_type)
+    moe.evaluate_models()
+    
+    moe_models = moe.models
+    
+    for model_method, model_obj in moe_models.items():
+        
+        model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method)])
+        model_file_name = ''.join([model_name, '.bin'])
+        model_file = obj_to_pkl_file(model_obj, model_file_name)
+        
+        ds_model = DatasetModel(name = dataset.name, model_file=model_file, model_method=model_method, model_type=task_type, user=request.user, original_dataset=dataset)
+        ds_model.save()
+
+    return HttpResponse("Completed modeling!")
+
+@login_required
+def run_model(request):
+    print("Starting model run")
+    if request.method != 'POST':
+        print("Error: Non-POST Request received!")
+        return HttpResponseNotAllowed("Method not allowed")
+    
+    # Verify model exists
+    model_id = request.POST.get('model_id')
+    if not model_id:
+        print("Error: Missing model_id in form!")
+        return HttpResponseBadRequest('Missing value: model_id')
+
+    # Get the model and verify it exists
+    try:
+        ds_model = DatasetModel.objects.get(id=model_id)
+    except ObjectDoesNotExist:
+        msg = "Error finding model with model ID: {0}".format(model_id)
+        print(msg)
+        return HttpResponseNotFound(msg)
+    
+    # Get preprocessed Dataset to recreate preprocessing engine
+    try:
+        dataset = Dataset.objects.get(id=ds_model.original_dataset_id)
+        pp_ds = PreprocessedDataSet.objects.get(original_dataset=dataset)
+    except ObjectDoesNotExist:
+        msg = "Error retrieving preprocessed dataset from model."
+        print(msg)
+        return HttpResponseNotFound(msg)
+
+    # Get the data from the post request
+    data = request.POST.get('data')
+    if not data:
+        msg = 'Error:  missing data field'
+        print(msg)
+        return HttpResponseBadRequest(msg)
+    data = json.loads(data)
+    try:
+        data_values = data['values']
+    except KeyError:
+        msg = "Missing values field"
+        print(msg)
+        return HttpResponseBadRequest(msg)
+
+    ds_features = list(dataset.features.keys())
+
+    # Verify that the number of values sent is equal to the number of features
+    if len(ds_features) != len(data_values):
+        msg = "Invalid number of input features"
+        print(msg)
+        return HttpResponseBadRequest(msg)
+
+
+    df = pd.DataFrame([data_values], columns=ds_features)
+    ppe = reconstruct_ppe(pp_ds)
+    print(df)
+    ppe.clean_new_dataset(new_data=df)
+
+
+    return HttpResponse("Success")
+
+def reconstruct_ppe(pp_ds):
+    ppe = PreprocessingEngine.load_from_files(
+        meta=pp_ds.meta_data,
+        feature_encoder=pkl_file_to_obj(pp_ds.feature_encoder), 
+        scaler=pkl_file_to_obj(pp_ds.scaler), 
+        label_encoder=pkl_file_to_obj(pp_ds.label_encoder)
+    )
+
+    return ppe
+    
+
+def obj_to_pkl_file(data_obj, file_name):
+    data_obj_pkl = pickle.dumps(data_obj)
+    data_obj_file = ContentFile(data_obj_pkl, name=file_name)
+    return data_obj_file
+
+
+def pkl_file_to_obj(file_obj):
+    data_obj = pickle.load(file_obj)
+    #if os.path.exists(file_name):
+    #    with open(file_name, 'rb') as pkl_file:
+    #        data_obj = pickle.load(pkl_file)
+    return data_obj

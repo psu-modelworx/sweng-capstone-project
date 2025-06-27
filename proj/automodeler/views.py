@@ -3,13 +3,13 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authtoken.models import Token
 
-from .models import Dataset, PreprocessedDataSet
+
+from .models import Dataset, PreprocessedDataSet, DatasetModel
 from .forms import DatasetForm
 from . import helper_functions
-
-import os
 
 # Create your views here.
 
@@ -44,6 +44,7 @@ def upload(request):
                     helper_functions.sanitize_dataset(csv_file)
                 except Exception as e:
                     url = reverse('upload')
+                    print("Exception: {0}".format(e))
                     return render(request, url, {"form": form, "err_msg": "CSV File failed sanitation!"})
                     #return HttpResponse("Error sanitizing file!")
                 features = helper_functions.extract_features_from_inMemoryUploadedFile(csv_file)
@@ -132,7 +133,7 @@ def dataset_collection(request):
     for uds in user_datasets:
         try:
             pp_datasets[uds.filename] = PreprocessedDataSet.objects.get(original_dataset_id = uds.id)
-        except:
+        except ObjectDoesNotExist:
             print("No preprocessed datasets for " + str(uds.filename))
     
     combined_datasets = []
@@ -154,9 +155,6 @@ def dataset_delete(request, dataset_id):
         return HttpResponse("Invalid request method")
     else:
         dataset = Dataset.objects.get(id = dataset_id)
-        dataset_filepath = dataset.csv_file.path
-        if os.path.exists(dataset_filepath):
-            os.remove(dataset_filepath)
         dataset.delete()
         url = reverse("dataset_collection")
         return redirect(url)
@@ -165,10 +163,23 @@ def dataset_delete(request, dataset_id):
 def model_collection(request):
     auth_user = request.user
     # user_models = ...
-    return render(request, "automodeler/model_collection.html")
+    user_models = DatasetModel.objects.filter(user=auth_user)
+    return render(request, "automodeler/model_collection.html", {"models": user_models})
+
+@login_required
+def model_delete(request):
+    if request.method != 'POST':
+        return HttpResponse("Invalid request method")
+    model_id = request.POST.get('model_id')
+    if not model_id:
+        return HttpResponse("Empty model id!")
+
+    ds_model = DatasetModel.objects.get(id=model_id)
+    ds_model.delete()
+    url = reverse("model_collection")
+    return redirect(url)
 
 @login_required
 def task_collection(request):
-    auth_user = request.user
     # user_models = ...
     return render(request, "automodeler/task_collection.html")

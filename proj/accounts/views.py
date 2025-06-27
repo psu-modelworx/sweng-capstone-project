@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 #from django.views.generic import CreateView
 
 from django.shortcuts import render, redirect, reverse
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotAllowed
 
 
 #class SignUpView(CreateView):
@@ -17,7 +17,6 @@ def signup(request):
         return render(request, "registration/signup.html", {})
     elif request.method == 'POST':
         user_form = UserCreationForm(request.POST)
-        username = user_form['username']
         if user_form.is_valid():
             user_form.save()
             url = reverse('login')
