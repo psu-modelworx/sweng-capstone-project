@@ -62,8 +62,9 @@ def test_signup(client):
     username = "testuser"
     password1 = "testpassword"
     password2 = "testpassword"
+    email = "testemail@modelworx.leviathanworks.net"
     
-    params = {"username": username, "password1": password1, "password2": password2}
+    params = {"username": username, "password1": password1, "password2": password2, "email": email}
 
     response = client.post(url, params)
     assert response.status_code == 302
