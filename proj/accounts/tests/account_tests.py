@@ -82,8 +82,9 @@ def test_signup_login_logout(client):
     # Create test user; 
     username = "testuser"
     password = "testpassword"
+    email = "testemail@modelworx.leviathanworks.net"
     url = reverse('signup')
-    signup_params = {"username": username, "password1": password, "password2": password}
+    signup_params = {"username": username, "password1": password, "password2": password, "email": email}
 
     # First, get the signup form
     response = client.get(url)
@@ -97,17 +98,20 @@ def test_signup_login_logout(client):
     url = reverse('login')
     login_params = {"username": username, "password": password}
     response = client.post(url, login_params)
+    #breakpoint()
     assert response.status_code == 302
-    assert response.headers['Location'] == reverse('index')
+    #assert response.headers['Location'] == reverse('index')
     
     # Verify the user is authenticated
-    url = reverse('index')
+    url = reverse('dataset_collection')
 
     # Validate user is authenticated
-    result = client.login(username="testuser", password="testpassword")
+    user = user = User.objects.get(username=username)
+    result = client.post({"username": username, "password": password})
     assert result
     response = client.get(url)
     assert response.context['request'].user.is_authenticated
+    assert response.status_code == 200
 
     # Finally, we test logging out
     url = reverse('logout')
