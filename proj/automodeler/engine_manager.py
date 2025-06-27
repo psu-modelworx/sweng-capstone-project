@@ -6,6 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from .models import Dataset
 from .models import PreprocessedDataSet
 from .models import DatasetModel
+from .models import TunedDatasetModel
 
 from engines.preprocessing_engine import PreprocessingEngine
 from engines.modeling_engine import ModelingEngine
@@ -14,6 +15,7 @@ import pandas as pd
 import os
 import pickle
 import json
+
 
 @login_required
 def start_preprocessing_request(request):
@@ -70,7 +72,7 @@ def start_preprocessing_request(request):
     # Get the new Dataframe and convert to an in-memory file
     new_df = ppe.final_df
 
-    content = new_df.to_csv()
+    content = new_df.to_csv(index=False)
     temp_file = ContentFile(content.encode('UTF-8'))
 
     # Name the temp file
@@ -129,38 +131,33 @@ def start_modeling_request(request):
     
     # dataset & pp_ds are now available
     # Prior to modeling, we need x_train, x_test, y_train, y_test, and task type of the preprocessed set
-    # To do this, we're reconstructing the PPE
-    feature_encoder = pkl_file_to_obj(pp_ds.feature_encoder)
-    scaler = pkl_file_to_obj(pp_ds.scaler)
-    label_encoder = pkl_file_to_obj(pp_ds.label_encoder)
-
-    ppe = PreprocessingEngine.load_from_files(meta=pp_ds.meta_data, feature_encoder=feature_encoder, scaler=scaler, label_encoder=label_encoder)
     
-    # Load in original dataset and final dataset
-    df = pd.read_csv(dataset.csv_file)
-    ppe.df = df
-    final_df = pd.read_csv(pp_ds.csv_file)
-    ppe.final_df = final_df
-    ppe.target_column = dataset.target_feature
+    ppe = reconstruct_ppe(pp_ds)
     
     task_type = ppe.task_type
 
-    x, y = ppe.split_features_and_target()
-    x_train, x_test, y_train, y_test = ppe.train_test_split_data(x, y)
+    x_train, x_test, y_train, y_test = ppe.split_data()
 
     moe = ModelingEngine(X_train=x_train, X_test=x_test, y_train=y_train, y_test=y_test, task_type=task_type)
-    moe.evaluate_models()
+    moe.run_modeling_engine()
     
-    moe_models = moe.models
-    
-    for model_method, model_obj in moe_models.items():
-        
-        model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method)])
+    moe_results = moe.results
+    untuned_models = moe_results['untuned']
+    tuned_models = moe_results['tuned']
+
+    for model_method, model_results in untuned_models.items():
+        model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_untuned'])
         model_file_name = ''.join([model_name, '.bin'])
-        model_file = obj_to_pkl_file(model_obj, model_file_name)
-        
-        ds_model = DatasetModel(name = dataset.name, model_file=model_file, model_method=model_method, model_type=task_type, user=request.user, original_dataset=dataset)
+        model_file = obj_to_pkl_file(model_results['model'], model_file_name)
+        ds_model = DatasetModel(name = model_name, model_file=model_file, model_method=model_method, model_type=task_type, user=request.user, original_dataset=dataset)
         ds_model.save()
+
+        tuned_model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_tuned'])
+        tuned_model_file_name = ''.join([tuned_model_name, '.bin'])
+        tuned_model_file = obj_to_pkl_file(tuned_models[model_method]['optimized_model'], tuned_model_file_name)
+        tuned_ds_model = TunedDatasetModel(name = tuned_model_name, model_file=tuned_model_file, model_method=model_method, model_type=task_type, untuned_model=ds_model, user=request.user, original_dataset=dataset)
+        tuned_ds_model.save()
+        
 
     return HttpResponse("Completed modeling!")
 
@@ -178,16 +175,23 @@ def run_model(request):
         return HttpResponseBadRequest('Missing value: model_id')
 
     # Get the model and verify it exists
-    try:
-        ds_model = DatasetModel.objects.get(id=model_id)
-    except ObjectDoesNotExist:
-        msg = "Error finding model with model ID: {0}".format(model_id)
-        print(msg)
-        return HttpResponseNotFound(msg)
+    #try:
+    #    ds_model = DatasetModel.objects.get(id=model_id)
+    #except ObjectDoesNotExist:
+    #    msg = "Error finding model with model ID: {0}".format(model_id)
+    #    print(msg)
+    #    return HttpResponseNotFound(msg)
     
+    # Get the tuned model and verify it exists
+    try:
+        tuned_model = TunedDatasetModel.objects.get(id=model_id)
+    except Exception as e:
+        print("Exception: {0}".format(e))
+
+
     # Get preprocessed Dataset to recreate preprocessing engine
     try:
-        dataset = Dataset.objects.get(id=ds_model.original_dataset_id)
+        dataset = Dataset.objects.get(id=tuned_model.original_dataset_id)
         pp_ds = PreprocessedDataSet.objects.get(original_dataset=dataset)
     except ObjectDoesNotExist:
         msg = "Error retrieving preprocessed dataset from model."
@@ -208,6 +212,9 @@ def run_model(request):
         print(msg)
         return HttpResponseBadRequest(msg)
 
+    # data_values should be a list of dictionaries with 'key' 'value' key names
+    #for value
+
     ds_features = list(dataset.features.keys())
 
     # Verify that the number of values sent is equal to the number of features
@@ -215,19 +222,30 @@ def run_model(request):
         msg = "Invalid number of input features"
         print(msg)
         return HttpResponseBadRequest(msg)
+    
+    ppe = reconstruct_ppe(pp_ds)
 
+    tuned_model_obj = pkl_file_to_obj(tuned_model.model_file)
+
+    #x_train, x_test, y_train, y_test = ppe.split_data()
+    #ds_model_obj.fit(x_train, y_train)
 
     df = pd.DataFrame([data_values], columns=ds_features)
-    ppe = reconstruct_ppe(pp_ds)
-    print(df)
-    ppe.clean_new_dataset(new_data=df)
+    p_df = ppe.transform_single_row(df)
+    results = tuned_model_obj.predict(p_df)
+    
+    if tuned_model.model_type == "classification":
+        results = ppe.decode_target(results)
 
-
-    return HttpResponse("Success")
+    # Still need to do stuff to convert categorical from integer to category name!
+    print(results[0])
+    return HttpResponse("Predicted results: {0}".format(results[0]), content_type="text/plain")
 
 def reconstruct_ppe(pp_ds):
+    test_df = pd.read_csv(pp_ds.csv_file)
     ppe = PreprocessingEngine.load_from_files(
         meta=pp_ds.meta_data,
+        clean_df=test_df,
         feature_encoder=pkl_file_to_obj(pp_ds.feature_encoder), 
         scaler=pkl_file_to_obj(pp_ds.scaler), 
         label_encoder=pkl_file_to_obj(pp_ds.label_encoder)
@@ -244,7 +262,4 @@ def obj_to_pkl_file(data_obj, file_name):
 
 def pkl_file_to_obj(file_obj):
     data_obj = pickle.load(file_obj)
-    #if os.path.exists(file_name):
-    #    with open(file_name, 'rb') as pkl_file:
-    #        data_obj = pickle.load(pkl_file)
     return data_obj

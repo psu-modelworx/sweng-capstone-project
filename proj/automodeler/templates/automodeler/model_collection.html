@@ -33,7 +33,7 @@
                 <td>{{ model.model_method }}</td>
                 <td>{{ model.model_type }}</td>
                 <td>
-                    <button class="btn btn-primary" onclick="run_model_fetch_request( {{ model.id }} )">Run Model!</button>
+                    <a class="btn btn-primary" href="{% url 'model_details' model_id=model.id %}">View Details</a>
                     <form method="POST" action="{% url 'model_delete' %}">
                         {% csrf_token %}
                         <input type="hidden" name="model_id" id="model_id" value="{{ model.id }}"/>
@@ -95,7 +95,8 @@ function run_model_fetch_request(model_id) {
     })
     .then(responseData => {
         console.log('Response data:', responseData);
-        window.location.reload()
+        console.log('Response text:', responseData.text())
+        //window.location.reload()
     })
     .catch(error => {
         console.error('Fetch error:', error);
