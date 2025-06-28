@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'storages', # Django-storages for S3 compatibility
     'django_cleanup', # Django-cleanup to cleanup files; auto deletes files after they have been deleted
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -195,3 +196,8 @@ if USE_S3:
     if isinstance(default_storage, LazyObject) or isinstance(default_storage._wrapped, FileSystemStorage):
         default_storage._wrapped = S3Boto3Storage()
 
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'  # store results in DB
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
