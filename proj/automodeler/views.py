@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authtoken.models import Token
 
 
-from .models import Dataset, PreprocessedDataSet, DatasetModel, TunedDatasetModel
+from .models import Dataset, PreprocessedDataSet, DatasetModel, TunedDatasetModel, UserTask
 from .forms import DatasetForm
 from . import helper_functions
 

@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 import os
 
@@ -91,3 +93,9 @@ class UserTask(models.Model):
     status = models.CharField(max_length=50, default='PENDING')
     result_message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, null=True, blank =True)
+
+@receiver(pre_delete, sender=Dataset)
+def delete_usertasks_with_dataset(sender, instance, **kwargs):
+    # Delete all UserTasks related to this dataset
+    UserTask.objects.filter(dataset=instance).delete()

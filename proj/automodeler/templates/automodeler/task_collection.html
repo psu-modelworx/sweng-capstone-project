@@ -11,7 +11,22 @@
 
 
 <h1>Task Collection Page</h1>
-
+<h2>Task History</h2>
+<table>
+    <thead>
+        <tr><th>Type</th><th>Status</th><th>Result</th><th>Created</th></tr>
+    </thead>
+    <tbody>
+        {% for task in user_tasks %}
+        <tr>
+            <td>{{ task.task_type }}</td>
+            <td>{{ task.status }}</td>
+            <td>{{ task.result_message|default:"-" }}</td>
+            <td>{{ task.created_at }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 {% include "base/footer.html" %}
 
