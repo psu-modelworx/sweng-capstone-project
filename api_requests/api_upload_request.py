@@ -34,7 +34,7 @@ def api_upload_request():
         input_features[features[x]] = feature_types[x]
 
     # Selecting the target variable from the name of a feature.
-    target_variable = "Post_frequency"
+    target_variable = "Personality"
 
     # Including csv file data and the authorization token as a header.
     data = {"name": name, "input_features": json.dumps(input_features), "target_variable": target_variable}
