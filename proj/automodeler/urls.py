@@ -9,6 +9,7 @@ urlpatterns = [
     path("", views.index, name="index"),
     path("upload/", views.upload, name="upload"),
     path("api/upload", api.api_upload, name="api_upload"),
+    path("api/request_datasets", api.api_request_datasets, name="api_request_datasets"),
     path("dataset_delete/<int:dataset_id>", views.dataset_delete, name="dataset_delete"),
     path("dataset/<int:dataset_id>", views.dataset, name="dataset"),
     path("dataset_collection/", views.dataset_collection, name="dataset_collection"),

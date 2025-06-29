@@ -1,9 +1,11 @@
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Dataset
+from .models import Dataset, PreprocessedDataSet
 from .forms import DatasetForm
 from . import helper_functions
 
@@ -34,7 +36,7 @@ def api_upload(request):
             user_id = request.user.id
         except Exception as e:
             print("Exception: {0}".format(e))
-            return Response("Could not retrieve the data in the request.")
+            return Response(data="Could not retrieve the data in the request.", status=status.HTTP_400_BAD_REQUEST)
 
         # If the dataset is empty let the user know it cannot be uploaded.
         if csv_file.size > 0:
@@ -46,7 +48,7 @@ def api_upload(request):
                 except Exception as e:
                     print('Exception: ' + e)
                     # Letting the user know they cannot use the CSV file because it failed sanitation.
-                    return Response("CSV file failed sanitation.")
+                    return Response(data="CSV file failed sanitation.", status=status.HTTP_400_BAD_REQUEST)
 
                 # Using a function to get the features from the dataset.
                 features = helper_functions.extract_features_from_inMemoryUploadedFile(csv_file)
@@ -56,23 +58,23 @@ def api_upload(request):
 
                 # Checking the results of verifying the features.
                 if (results != "Valid Features"):
-                    return Response(results)
+                    return Response(data=results, status=status.HTTP_400_BAD_REQUEST)
 
                 # Making a datset object and saving it to the user.
                 dataset_model = Dataset.objects.create(name=file_name, features=input_features, target_feature=file_target_variable, csv_file=csv_file, user_id=user_id)
                 dataset_model.save()
             else:
                 # Telling the user their file name is too long.
-                return Response("The name has too many characters in it.")
+                return Response(data="The name has too many characters in it.", status=status.HTTP_400_BAD_REQUEST)
         else:
             # Telling the user their dataset file is empty.
-            return Response("The csv file cannot be empty.")
+            return Response(data="The csv file cannot be empty.", status=status.HTTP_400_BAD_REQUEST)
 
         # Informing the user that their uploaded was successful.
-        return Response("Successfully uploaded dataset.")
+        return Response(data="Successfully uploaded dataset.", status=status.HTTP_200_OK)
     else:
         # Informing the user that their uploaded cannot be done.
-        return Response("Could not upload dataset.")
+        return Response(data="Could not upload dataset.", status=status.HTTP_400_BAD_REQUEST)
 
 def verify_features(features, input_features, file_target_variable):
     # Looping through the list of features to compare with the input features in the request.
@@ -90,3 +92,33 @@ def verify_features(features, input_features, file_target_variable):
         return "The target variable selected was not found in the csv file."
 
     return "Valid Features"
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_request_datasets(request):
+    '''
+    This function gets all the datasets for a users and checks if they have been preprocessed.
+    Then make a response with all datasets in a list so they can be printed in an easy to read format.   
+
+    :param request: The API request that contains the URL and authentication token for a user.
+    '''
+    # Collecting all datasets for the user making the request and setting up the dataset information list for the response.
+    user_datasets = Dataset.objects.filter(user = request.user)
+    dataset_information = ["Dataset Name, " + "Dataset File Name, " + "Preprocessed Dataset File Name", ""]
+    
+    # Going through the datasets and checking if they are preprocessed.
+    for dataset in user_datasets:
+        # Resetting the preprocessed string with each iteration.
+        pp_dataset = ""
+
+        try:
+            # Trying to get the preprocessed file and appending it to the dataset information.
+            pp_dataset_filename = PreprocessedDataSet.objects.get(original_dataset_id = dataset.id).filename()
+            dataset_information.append(dataset.name + ", " + dataset.filename() + ", " + pp_dataset_filename)
+        except ObjectDoesNotExist:
+            # If no preprocessed file exits, append that information to the dataset information list.
+            dataset_information.append(dataset.name + ", " + dataset.filename() + ", " + "No Preprocessed Dataset")
+
+    # Returning a response with the dataset information which can be printed out by the user.
+    return Response(data=dataset_information, status=status.HTTP_200_OK)
