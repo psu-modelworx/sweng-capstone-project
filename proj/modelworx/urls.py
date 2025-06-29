@@ -27,5 +27,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include("accounts.urls")), # Used with middleware below
     path('accounts/', include("django.contrib.auth.urls")),
-    path('', include(router.urls)),
+    #path('', include(router.urls)),
+    path('', include("automodeler.urls")),
 ]

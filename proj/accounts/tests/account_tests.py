@@ -49,7 +49,7 @@ def test_logout(client):
     url = reverse("logout")
     response = client.post(url)
     assert response.status_code == 302
-    assert response.headers['Location'] == reverse('index')
+    assert response.headers['Location'] == reverse('automodeler')
 
 @pytest.mark.django_db
 def test_signup(client):
@@ -101,7 +101,6 @@ def test_signup_login_logout(client):
     response = client.post(url, login_params)
     #breakpoint()
     assert response.status_code == 302
-    #assert response.headers['Location'] == reverse('index')
     
     # Verify the user is authenticated
     url = reverse('dataset_collection')
@@ -118,7 +117,7 @@ def test_signup_login_logout(client):
     url = reverse('logout')
     response = client.post(url)
     assert response.status_code == 302
-    assert response.headers['Location'] == reverse('index')
+    assert response.headers['Location'] == reverse('automodeler')
     
     # Verify redirect to login since user is no longer authenticated
     response = client.get(reverse('dataset_collection'))
