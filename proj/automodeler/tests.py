@@ -60,8 +60,7 @@ def test_upload_api(client):
 
     # Getting the response from the post request and asserting that the user didn't send data and files.
     response = client.post(url, headers=headers)
-    #assert "Could not upload dataset."
-    assert response
+    assert response.status_code == 400
 
 # Commenting this one out for now.  It does not have a pytest decorator and is not called anywhere.abs
 # If it needs to be used, we will need to rename it
@@ -107,6 +106,34 @@ def test_upload_api(client):
 #    # Asserting that the features are valid and can be saved with a dataset.
 #    results = verify_features(features, input_features, file_target_feature)
 #    assert results == "Valid Features"
+
+@pytest.mark.django_db
+def test_request_datasets(client):
+    '''
+    Testing the request datasets API request to ensure a valid user is needed and the response.
+
+    :param client: The client is used by pytest to make post requests.
+
+    :Test Cases: TC-64 & TC-65
+    '''
+    # Setting the URL to API request for datasets.
+    url = reverse('api_request_datasets')
+
+    # Asserting that a user needs to be authenticated to make an API request.
+    response = client.post(url)
+    assert response.status_code == 401
+    
+    # Setting up a user and assigning them an authentication token.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Putting the token in a header so it will authenticate the user.
+    headers = { "Authorization": "Token " + userToken.key}
+
+    # Asserting that this is a valid request but the response wouldn't have any data.
+    response = client.post(url, headers=headers)
+    assert response.status_code == 200
+
 
 @pytest.mark.django_db
 def test_account_page(client):
