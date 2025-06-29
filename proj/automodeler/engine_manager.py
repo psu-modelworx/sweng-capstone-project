@@ -7,6 +7,9 @@ from rest_framework.authentication import TokenAuthentication, SessionAuthentica
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
+from django.http import JsonResponse
+from celery.result import AsyncResult
+
 from .models import Dataset
 from .models import PreprocessedDataSet
 from .models import DatasetModel
@@ -118,8 +121,18 @@ def run_model(request):
     user_task = UserTask.objects.create(
         user=request.user, 
         task_id=async_result.id,  # task_id celery assigned
-        task_type='modeling', 
+        task_type='prediction', 
         status='PENDING',
         dataset_id=dataset_id)
+
+    # Return JSON with the task ID so frontend can poll
+    return JsonResponse({'task_id': async_result.id})
     
-    return HttpResponse("Started Processing") ##return HttpResponse(f"Prediction started, task id: {user_task.task_id}")
+
+@login_required
+def check_task_result(request, task_id):
+    result = AsyncResult(task_id)
+    if result.ready():
+        data = result.result
+        return JsonResponse(data)
+    return JsonResponse({'status': 'PENDING'})
