@@ -196,8 +196,11 @@ if USE_S3:
     if isinstance(default_storage, LazyObject) or isinstance(default_storage._wrapped, FileSystemStorage):
         default_storage._wrapped = S3Boto3Storage()
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'django-db'  # store results in DB
+# Celery Broker URL: use env var, fallback to localhost Redis
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+
+# Celery Result Backend: support django-db or redis
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='django-db')
 
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'

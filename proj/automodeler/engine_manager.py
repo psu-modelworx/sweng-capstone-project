@@ -1,7 +1,5 @@
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
-from django.core.files.base import ContentFile
-from django.core.exceptions import ObjectDoesNotExist
 
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -10,20 +8,11 @@ from rest_framework.permissions import IsAuthenticated
 from django.http import JsonResponse
 from celery.result import AsyncResult
 
-from .models import Dataset
-from .models import PreprocessedDataSet
-from .models import DatasetModel
 from .models import TunedDatasetModel
 from .models import UserTask
 
-from engines.preprocessing_engine import PreprocessingEngine
-from engines.modeling_engine import ModelingEngine
-
 from .tasks import start_preprocessing_task, start_modeling_task, run_model_task
 
-import pandas as pd
-import os
-import pickle
 import json
 
 

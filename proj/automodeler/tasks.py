@@ -15,7 +15,6 @@ from engines.modeling_engine import ModelingEngine
 import pandas as pd
 import os
 import pickle
-import json
 
 
 @shared_task(bind=True)
@@ -200,9 +199,14 @@ def run_model_task(self, model_id, user_id, data_dict):
     # Get the tuned model and verify it exists
     try:
         tuned_model = TunedDatasetModel.objects.get(id=model_id, user_id=user_id)
-    except TunedDatasetModel.DoesNotExist:
+    except TunedDatasetModel.DoesNotExist as e:
         # return {"message": "Tuned model not found.", "status": 404}
-         print("Exception: {0}".format(e))
+        print(f"TunedDatasetModel not found: {e}")
+        if task_record:
+            task_record.status = "FAILURE"
+            task_record.result_message = "Tuned model not found."
+            task_record.save()
+        return {"message": "Tuned model not found.", "status": 404}
 
     # Get preprocessed Dataset to recreate preprocessing engine
     try:
