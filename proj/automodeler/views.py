@@ -207,5 +207,7 @@ def model_details(request, model_id):
 
 @login_required
 def task_collection(request):
-    user_tasks = UserTask.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, "automodeler/task_collection.html", {"user_tasks": user_tasks})
+    #user_tasks = UserTask.objects.filter(user=request.user).order_by('-created_at')
+    #return render(request, "automodeler/task_collection.html", {"user_tasks": user_tasks})
+    user_tasks = UserTask.objects.filter(user=request.user).select_related('dataset').order_by('-created_at')
+    return render(request, 'automodeler/task_collection.html', {'user_tasks': user_tasks})
