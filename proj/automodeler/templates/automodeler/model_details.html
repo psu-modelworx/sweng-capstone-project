@@ -141,8 +141,8 @@ function pollTaskResult(task_id) {
         .then(data => {
             if (data.status === "SUCCESS" || data.status === 200) {
                 document.getElementById("result_text").textContent = data.message;
-            } else if (data.status === "FAILURE") {
-                document.getElementById("result_text").textContent = "Prediction failed.";
+            } else if (data.status === 400 || data.status === 404 || data.status === "FAILURE" ) {
+                document.getElementById("result_text").textContent = data.message;
             } else {
                 setTimeout(() => pollTaskResult(task_id), 2000); // Poll again in 2s
             }

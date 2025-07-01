@@ -53,8 +53,18 @@ def start_preprocessing_task(self, dataset_id, user_id):
     df = pd.read_csv(dataset.csv_file)
     target_column = dataset.target_feature
     all_features_dict = dataset.features
-    categorical_columns = [f for f in dataset.features if all_features_dict[f] == 'C']
-    ppe = PreprocessingEngine(df=df, target_column=target_column, categorical_columns=categorical_columns)
+
+    try:
+        categorical_columns = [f for f in dataset.features if all_features_dict[f] == 'C']
+        ppe = PreprocessingEngine(df=df, target_column=target_column, categorical_columns=categorical_columns)
+    except Exception as e:
+        msg = "Potential TypeError: {0}".format(e)
+        print(msg)
+        if task_record:
+            task_record.status = "FAILURE"
+            task_record.result_message = msg
+            task_record.save()
+        return {"message": "Error running preprocessing engine. Did you select Target Variable?", "status": 500}
 
      # Try to run the ppe; if there is an error, return internal server error 500
     try:
@@ -106,7 +116,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         task_record.result_message = msg
         task_record.save()
 
-    return {"message": msg, "status": 200}
+    return {"filename": pp_ds_name, "status": 200}
 
 
 @shared_task(bind=True)

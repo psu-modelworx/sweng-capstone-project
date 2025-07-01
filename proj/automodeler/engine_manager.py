@@ -36,7 +36,8 @@ def start_preprocessing_request(request):
         dataset_id=dataset_id
     )   
   
-    return HttpResponse(f"Preprocessing started, task id: {user_task.task_id}")
+    #return HttpResponse(f"Preprocessing started, task id: {user_task.task_id}")
+    return JsonResponse({"task_id": async_results.id})
 
 @login_required
 def start_modeling_request(request):
@@ -110,6 +111,7 @@ def run_model(request):
     
     #return HttpResponse("Started Processing") ##return HttpResponse(f"Prediction started, task id: {user_task.task_id}")
 
+
 @login_required
 def check_task_result(request, task_id):
     result = AsyncResult(task_id)
@@ -117,3 +119,5 @@ def check_task_result(request, task_id):
         data = result.result
         return JsonResponse(data)
     return JsonResponse({'status': 'PENDING'})
+
+
