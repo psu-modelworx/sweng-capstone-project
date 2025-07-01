@@ -32,9 +32,9 @@ def test_start_preprocessing_request_system(mock_apply_async, client, user_facto
     mock_apply_async.return_value = mock_async_result
 
     response = client.post(reverse("ppe"), {"dataset_id": dataset.id})
-
+   
     assert response.status_code == 200
-    assert "fake-task-id" in response.content.decode()
+    assert "task_id" in response.json()
 
 
 @pytest.mark.django_db

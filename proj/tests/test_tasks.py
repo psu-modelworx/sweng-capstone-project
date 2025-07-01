@@ -62,7 +62,7 @@ def test_start_preprocessing_success(mock_obj_to_pkl, mock_engine_cls, mock_pp_d
     result = start_preprocessing_task(dataset_id=1, user_id=user.id)
 
     assert result["status"] == 200
-    assert "Preprocessing completed" in result["message"]
+    assert "TestDataset_preprocessed.csv" in result["filename"]
 
 @pytest.mark.django_db
 @patch('automodeler.tasks.Dataset.objects.get', side_effect=ObjectDoesNotExist)

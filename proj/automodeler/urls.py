@@ -22,5 +22,7 @@ urlpatterns = [
     path("ppe/start_preprocessing_request/", engine_manager.start_preprocessing_request, name="ppe"),
     path("mod/start_modeling_request/", engine_manager.start_modeling_request, name="ame"), # ame = automated model engine
     path("mod/run_model/", engine_manager.run_model, name="run_model"),
-    path('check_task/<str:task_id>/', engine_manager.check_task_result, name='check_task_result')
+    path('check_task/<str:task_id>/', engine_manager.check_task_result, name='check_task_result'),
+    #path('check_ppe_task/<str:task_id>/', engine_manager.check_preprocessing_task_result, name='check_preprocessing_task_result'),
+    #path('check_run_model_task/<str:task_id>/', engine_manager.check_run_model_task_result, name='check_run_model_task_result')
 ]
