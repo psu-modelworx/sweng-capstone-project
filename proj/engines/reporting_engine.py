@@ -1,12 +1,8 @@
+import logging
 import os
 import tempfile
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
-from datetime import datetime
-
-from matplotlib import pyplot as plt
-from sklearn.metrics import confusion_matrix
-
 from matplotlib import pyplot as plt
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
@@ -89,7 +85,6 @@ class ReportingEngine:
 
     def write_modeling_summary(self):
         self.section_header("3. Modeling Engine Summary")
-
         me = self.modeler
 
         self.subsection("Task Info")
@@ -106,7 +101,7 @@ class ReportingEngine:
                 mean_score = info.get('mean_score', None)
                 cv_scores = info.get('cv_scores', [])
                 if mean_score is not None:
-                    self.subsubsection(f"Model: {model_name}")
+                    self.subsection(f"Model: {model_name}")
                     self.add_bullet(f"Mean CV score: {mean_score:.4f}")
                     self.add_bullet(f"CV scores: {', '.join(f'{s:.4f}' for s in cv_scores)}")
 
@@ -127,7 +122,7 @@ class ReportingEngine:
                 train_score = info.get('train', None)
                 test_score = info.get('test', None)
 
-                self.subsubsection(f"Model: {model_name}")
+                self.subsection(f"Model: {model_name}")
                 self.add_bullet(f"Best hyperparameters: {best_params if best_params else 'N/A'}")
                 if best_score is not None:
                     self.add_bullet(f"Best CV score: {best_score:.4f}")
@@ -146,7 +141,37 @@ class ReportingEngine:
                 self.add_bullet("No best tuned model found.")
 
     def write_visuals_section(self):
-        self.section_header("7. Figures and Visualizations")
+        self.section_header("3. Figures and Visualizations")
+
+        if self.preprocessor.task_type == 'classification':
+            logging.info("Generating classification visualizations...")
+
+            self.generate_conf_matrix()
+            self.plot_class_distribution()
+            self.plot_feature_importance()
+            self.plot_roc_curve()
+            self.plot_precision_recall_curve()
+            self.plot_classification_report()
+            self.plot_model_performance_bar_chart()
+            self.plot_cv_score_boxplots()
+
+        elif self.preprocessorpe.task_type == 'regression':
+            logging.info("Generating regression visualizations...")
+
+            self.plot_residuals()
+            self.plot_actual_vs_predicted()
+            self.plot_error_distribution()
+            self.plot_feature_importance()
+            self.plot_metrics_bar_chart()
+            self.plot_cv_score_boxplots()
+            self.plot_model_performance_bar_chart()
+
+        else:
+            logging.warning("Unsupported task type for visualizations: %s", ppe.task_type)
+
+
+    def generate_conf_matrix(self):
+        """Generates confusion matrix heatmaps for tuned models."""
         if self.preprocessor.task_type != 'classification':
             self.add_bullet("Confusion matrix heatmap: Not applicable for regression task.")
             return
@@ -192,9 +217,468 @@ class ReportingEngine:
                 plt.close()
                 self.pdf.image(tmpfile.name, x=15, w=180)
             os.remove(tmpfile.name)
-        self.add_bullet("ROC curve: [placeholder]")
-        self.add_bullet("Feature importance bar plot: [placeholder]")
-        self.add_bullet("Distributions before/after scaling or encoding: [placeholder]")
+
+    def plot_class_distribution(self):
+        """Plots the distribution of classes in the target variable."""
+        if self.preprocessor.task_type != 'classification':
+            self.add_bullet("Class distribution plot: Not applicable for regression task.")
+            return
+
+        y = self.preprocessor.y
+        if y is None:
+            self.add_bullet("Class distribution plot: Target variable not available.")
+            return
+
+        plt.figure(figsize=(8, 6))
+        sns.countplot(x=y, palette='viridis')
+        plt.title('Class Distribution')
+        plt.xlabel('Classes')
+        plt.ylabel('Count')
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+            plt.savefig(tmpfile.name, bbox_inches='tight')
+            plt.close()
+            self.pdf.image(tmpfile.name, x=15, w=180)
+        os.remove(tmpfile.name)
+
+    def plot_feature_importance(self):
+        """Plots feature importance for tuned models."""
+        if self.preprocessor.task_type not in ['classification', 'regression']:
+            self.add_bullet("Feature importance plot: Not applicable for this task type.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("Feature importance plot: No tuned models available.")
+            return
+
+        X_train = self.preprocessor.X_train
+        if X_train is None:
+            self.add_bullet("Feature importance plot: Training data not available.")
+            return
+
+        for model_name, info in tuned_models.items():
+            model = info.get('optimized_model')
+            if model is None:
+                self.add_bullet(f"Feature importance plot: No model available for {model_name}. Skipping.")
+                continue
+
+            try:
+                importances = model.feature_importances_
+                feature_names = self.preprocessor.final_columns
+                indices = importances.argsort()[::-1]
+
+                plt.figure(figsize=(10, 6))
+                plt.title(f'Feature Importance: {model_name}')
+                plt.bar(range(len(importances)), importances[indices], align='center')
+                plt.xticks(range(len(importances)), [feature_names[i] for i in indices], rotation=90)
+                plt.xlabel('Features')
+                plt.ylabel('Importance')
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+                    plt.savefig(tmpfile.name, bbox_inches='tight')
+                    plt.close()
+                    self.pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+            except AttributeError:
+                self.add_bullet(f"Feature importance plot: Model {model_name} does not support feature importance.")
+
+    def plot_roc_curve(self):
+        """Plots ROC curve for classification models."""
+        if self.preprocessor.task_type != 'classification':
+            self.add_bullet("ROC curve plot: Not applicable for regression task.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("ROC curve plot: No tuned models available.")
+            return
+
+        X_test = self.preprocessor.X_test
+        y_test = self.preprocessor.y_test
+
+        if X_test is None or y_test is None:
+            self.add_bullet("ROC curve plot: Test data not available.")
+            return
+
+        for model_name, info in tuned_models.items():
+            model = info.get('optimized_model')
+            if model is None:
+                self.add_bullet(f"ROC curve plot: No model available for {model_name}. Skipping.")
+                continue
+
+            try:
+                from sklearn.metrics import roc_curve, auc
+                y_score = model.predict_proba(X_test)[:, 1]
+                fpr, tpr, _ = roc_curve(y_test, y_score)
+                roc_auc = auc(fpr, tpr)
+
+                plt.figure(figsize=(8, 6))
+                plt.plot(fpr, tpr, color='blue', label=f'ROC curve (area = {roc_auc:.2f})')
+                plt.plot([0, 1], [0, 1], color='red', linestyle='--')
+                plt.xlim([0.0, 1.0])
+                plt.ylim([0.0, 1.05])
+                plt.xlabel('False Positive Rate')
+                plt.ylabel('True Positive Rate')
+                plt.title(f'ROC Curve: {model_name}')
+                plt.legend(loc='lower right')
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+                    plt.savefig(tmpfile.name, bbox_inches='tight')
+                    plt.close()
+                    self.pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+            except Exception as e:
+                self.add_bullet(f"ROC curve plot: Error generating ROC curve for {model_name}: {str(e)}")
+
+    def plot_precision_recall_curve(self):
+        """Plots Precision-Recall curve for classification models."""
+        if self.preprocessor.task_type != 'classification':
+            self.add_bullet("Precision-Recall curve plot: Not applicable for regression task.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("Precision-Recall curve plot: No tuned models available.")
+            return
+
+        X_test = self.preprocessor.X_test
+        y_test = self.preprocessor.y_test
+
+        if X_test is None or y_test is None:
+            self.add_bullet("Precision-Recall curve plot: Test data not available.")
+            return
+
+        for model_name, info in tuned_models.items():
+            model = info.get('optimized_model')
+            if model is None:
+                self.add_bullet(f"Precision-Recall curve plot: No model available for {model_name}. Skipping.")
+                continue
+
+            try:
+                from sklearn.metrics import precision_recall_curve
+                y_score = model.predict_proba(X_test)[:, 1]
+                precision, recall, _ = precision_recall_curve(y_test, y_score)
+
+                plt.figure(figsize=(8, 6))
+                plt.plot(recall, precision, color='blue')
+                plt.xlabel('Recall')
+                plt.ylabel('Precision')
+                plt.title(f'Precision-Recall Curve: {model_name}')
+                plt.xlim([0.0, 1.0])
+                plt.ylim([0.0, 1.05])
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+                    plt.savefig(tmpfile.name, bbox_inches='tight')
+                    plt.close()
+                    self.pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+            except Exception as e:
+                self.add_bullet(f"Precision-Recall curve plot: Error generating Precision-Recall curve for {model_name}: {str(e)}")
+
+    def plot_classification_report(self):
+        """Plots classification report for tuned models."""
+        if self.preprocessor.task_type != 'classification':
+            self.add_bullet("Classification report plot: Not applicable for regression task.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("Classification report plot: No tuned models available.")
+            return
+
+        X_test = self.preprocessor.X_test
+        y_test = self.preprocessor.y_test
+
+        if X_test is None or y_test is None:
+            self.add_bullet("Classification report plot: Test data not available.")
+            return
+
+        for model_name, info in tuned_models.items():
+            model = info.get('optimized_model')
+            if model is None:
+                self.add_bullet(f"Classification report plot: No model available for {model_name}. Skipping.")
+                continue
+
+            try:
+                from sklearn.metrics import classification_report
+                y_pred_encoded = model.predict(X_test)
+                y_pred = self.preprocessor.decode_target(y_pred_encoded)
+                y_true = self.preprocessor.decode_target(y_test)
+
+                report = classification_report(y_true, y_pred, output_dict=True)
+                sns.heatmap(pd.DataFrame(report).iloc[:-1, :].T, annot=True, cmap='Blues')
+
+                plt.title(f'Classification Report: {model_name}')
+                plt.xlabel('Metrics')
+                plt.ylabel('Classes')
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+                    plt.savefig(tmpfile.name, bbox_inches='tight')
+                    plt.close()
+                    self.pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+            except Exception as e:
+                self.add_bullet(f"Classification report plot: Error generating classification report for {model_name}: {str(e)}")
+    
+    def plot_model_performance_bar_chart(self):
+        """Plots a bar chart of model performance metrics."""
+        if self.preprocessor.task_type not in ['classification', 'regression']:
+            self.add_bullet("Model performance bar chart: Not applicable for this task type.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("Model performance bar chart: No tuned models available.")
+            return
+
+        model_names = []
+        scores = []
+
+        for model_name, info in tuned_models.items():
+            best_score = info.get('best_score', None)
+            if best_score is not None:
+                model_names.append(model_name)
+                scores.append(best_score)
+
+        if not model_names:
+            self.add_bullet("Model performance bar chart: No scores available for tuned models.")
+            return
+
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x=model_names, y=scores, palette='viridis')
+        plt.title('Model Performance Comparison')
+        plt.xlabel('Models')
+        plt.ylabel('Best CV Score')
+        plt.xticks(rotation=45)
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+            plt.savefig(tmpfile.name, bbox_inches='tight')
+            plt.close()
+            self.pdf.image(tmpfile.name, x=15, w=180)
+        os.remove(tmpfile.name)
+
+    def plot_cv_score_boxplots(self):
+        """Plots boxplots of cross-validation scores for tuned models."""
+        if self.preprocessor.task_type not in ['classification', 'regression']:
+            self.add_bullet("CV score boxplots: Not applicable for this task type.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("CV score boxplots: No tuned models available.")
+            return
+
+        model_names = []
+        cv_scores = []
+
+        for model_name, info in tuned_models.items():
+            scores = info.get('cv_scores', [])
+            if scores:
+                model_names.append(model_name)
+                cv_scores.append(scores)
+
+        if not model_names:
+            self.add_bullet("CV score boxplots: No CV scores available for tuned models.")
+            return
+
+        plt.figure(figsize=(10, 6))
+        sns.boxplot(data=cv_scores)
+        plt.title('Cross-Validation Score Distribution')
+        plt.xlabel('Models')
+        plt.ylabel('CV Scores')
+        plt.xticks(range(len(model_names)), model_names, rotation=45)
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+            plt.savefig(tmpfile.name, bbox_inches='tight')
+            plt.close()
+            self.pdf.image(tmpfile.name, x=15, w=180)
+        os.remove(tmpfile.name)
+
+    def plot_residuals(self):
+        """Plots residuals for regression models."""
+        if self.preprocessor.task_type != 'regression':
+            self.add_bullet("Residuals plot: Not applicable for classification task.")
+            return
+
+        X_test = self.preprocessor.X_test
+        y_test = self.preprocessor.y_test
+
+        if X_test is None or y_test is None:
+            self.add_bullet("Residuals plot: Test data not available.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("Residuals plot: No tuned models available.")
+            return
+
+        for model_name, info in tuned_models.items():
+            model = info.get('optimized_model')
+            if model is None:
+                self.add_bullet(f"Residuals plot: No model available for {model_name}. Skipping.")
+                continue
+
+            try:
+                y_pred = model.predict(X_test)
+                residuals = y_test - y_pred
+
+                plt.figure(figsize=(8, 6))
+                sns.scatterplot(x=y_pred, y=residuals)
+                plt.axhline(0, color='red', linestyle='--')
+                plt.title(f'Residuals Plot: {model_name}')
+                plt.xlabel('Predicted Values')
+                plt.ylabel('Residuals')
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+                    plt.savefig(tmpfile.name, bbox_inches='tight')
+                    plt.close()
+                    self.pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+            except Exception as e:
+                self.add_bullet(f"Residuals plot: Error generating residuals plot for {model_name}: {str(e)}")
+
+    def plot_actual_vs_predicted(self):
+        """Plots actual vs predicted values for regression models."""
+        if self.preprocessor.task_type != 'regression':
+            self.add_bullet("Actual vs Predicted plot: Not applicable for classification task.")
+            return
+
+        X_test = self.preprocessor.X_test
+        y_test = self.preprocessor.y_test
+
+        if X_test is None or y_test is None:
+            self.add_bullet("Actual vs Predicted plot: Test data not available.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("Actual vs Predicted plot: No tuned models available.")
+            return
+
+        for model_name, info in tuned_models.items():
+            model = info.get('optimized_model')
+            if model is None:
+                self.add_bullet(f"Actual vs Predicted plot: No model available for {model_name}. Skipping.")
+                continue
+
+            try:
+                y_pred = model.predict(X_test)
+
+                plt.figure(figsize=(8, 6))
+                sns.scatterplot(x=y_test, y=y_pred)
+                plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color='red', linestyle='--')
+                plt.title(f'Actual vs Predicted: {model_name}')
+                plt.xlabel('Actual Values')
+                plt.ylabel('Predicted Values')
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+                    plt.savefig(tmpfile.name, bbox_inches='tight')
+                    plt.close()
+                    self.pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+            except Exception as e:
+                self.add_bullet(f"Actual vs Predicted plot: Error generating plot for {model_name}: {str(e)}")
+    
+    def plot_error_distribution(self):
+        """Plots the distribution of errors for regression models."""
+        if self.preprocessor.task_type != 'regression':
+            self.add_bullet("Error distribution plot: Not applicable for classification task.")
+            return
+
+        X_test = self.preprocessor.X_test
+        y_test = self.preprocessor.y_test
+
+        if X_test is None or y_test is None:
+            self.add_bullet("Error distribution plot: Test data not available.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("Error distribution plot: No tuned models available.")
+            return
+
+        for model_name, info in tuned_models.items():
+            model = info.get('optimized_model')
+            if model is None:
+                self.add_bullet(f"Error distribution plot: No model available for {model_name}. Skipping.")
+                continue
+
+            try:
+                y_pred = model.predict(X_test)
+                errors = y_test - y_pred
+
+                plt.figure(figsize=(8, 6))
+                sns.histplot(errors, kde=True, color='blue')
+                plt.title(f'Error Distribution: {model_name}')
+                plt.xlabel('Error')
+                plt.ylabel('Frequency')
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+                    plt.savefig(tmpfile.name, bbox_inches='tight')
+                    plt.close()
+                    self.pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+            except Exception as e:
+                self.add_bullet(f"Error distribution plot: Error generating plot for {model_name}: {str(e)}")
+
+
+    def plot_metrics_bar_chart(self):
+        """Plots a bar chart of regression metrics."""
+        if self.preprocessor.task_type != 'regression':
+            self.add_bullet("Metrics bar chart: Not applicable for classification task.")
+            return
+
+        tuned_models = self.modeler.results.get('tuned', {})
+        if not tuned_models:
+            self.add_bullet("Metrics bar chart: No tuned models available.")
+            return
+
+        model_names = []
+        metrics = []
+
+        for model_name, info in tuned_models.items():
+            train_score = info.get('train', None)
+            test_score = info.get('test', None)
+            if train_score is not None and test_score is not None:
+                model_names.append(model_name)
+                metrics.append((train_score, test_score))
+
+        if not model_names:
+            self.add_bullet("Metrics bar chart: No scores available for tuned models.")
+            return
+
+        train_scores, test_scores = zip(*metrics)
+
+        plt.figure(figsize=(10, 6))
+        x = range(len(model_names))
+        plt.bar(x, train_scores, width=0.4, label='Train Score', align='center')
+        plt.bar([i + 0.4 for i in x], test_scores, width=0.4, label='Test Score', align='center')
+        plt.title('Model Performance Comparison')
+        plt.xlabel('Models')
+        plt.ylabel('Scores')
+        plt.xticks([i + 0.2 for i in x], model_names, rotation=45)
+        plt.legend()
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+            plt.savefig(tmpfile.name, bbox_inches='tight')
+            plt.close()
+            self.pdf.image(tmpfile.name, x=15, w=180)
+        os.remove(tmpfile.name)
+
+    def save_report(self, filename="model_report.pdf"):
+        """Saves the generated PDF report to a file."""
+        if not filename.endswith('.pdf'):
+            filename += '.pdf'
+        self.pdf.output(filename)
+        logging.info(f"Report saved to {filename}")
 
     # Utility Methods
     def section_header(self, text):
@@ -208,12 +692,6 @@ class ReportingEngine:
         self.pdf.multi_cell(0, 8, text, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         self.pdf.set_font("Helvetica", size=12)
 
-    def subsubsection(self, title):
-        self.pdf.set_font("Helvetica", 'B', 12)
-        self.pdf.multi_cell(0, 8, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        self.pdf.ln(2)
-        self.pdf.set_font("Helvetica", size=12)
-
     def add_bullet(self, text):
-        self.pdf.multi_cell(10)
-        self.pdf.multi_cell(0, 8, f"- {text}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.pdf.set_x(self.pdf.get_x() + 5)
+        self.pdf.multi_cell(0, 8, f"\u2022 {text}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
