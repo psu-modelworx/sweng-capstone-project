@@ -105,7 +105,7 @@ def api_request_datasets(request):
     '''
     # Collecting all datasets for the user making the request and setting up the dataset information list for the response.
     user_datasets = Dataset.objects.filter(user = request.user)
-    dataset_information = ["Dataset Name, " + "Dataset File Name, " + "Preprocessed Dataset File Name", ""]
+    dataset_information = ["Dataset Name, " + "Dataset File Name, " + "Dataset ID, " + "Preprocessed Dataset File Name", ""]
     
     # Going through the datasets and checking if they are preprocessed.
     for dataset in user_datasets:
@@ -115,10 +115,10 @@ def api_request_datasets(request):
         try:
             # Trying to get the preprocessed file and appending it to the dataset information.
             pp_dataset_filename = PreprocessedDataSet.objects.get(original_dataset_id = dataset.id).filename()
-            dataset_information.append(dataset.name + ", " + dataset.filename() + ", " + pp_dataset_filename)
+            dataset_information.append(dataset.name + ", " + dataset.filename() + ", " + str(dataset.id) + ", " + pp_dataset_filename)
         except ObjectDoesNotExist:
             # If no preprocessed file exits, append that information to the dataset information list.
-            dataset_information.append(dataset.name + ", " + dataset.filename() + ", " + "No Preprocessed Dataset")
+            dataset_information.append(dataset.name + ", " + dataset.filename() + ", " + str(dataset.id) + ", " + "No Preprocessed Dataset")
 
     # Returning a response with the dataset information which can be printed out by the user.
     return Response(data=dataset_information, status=status.HTTP_200_OK)

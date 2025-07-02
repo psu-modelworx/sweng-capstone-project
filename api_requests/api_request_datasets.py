@@ -6,7 +6,7 @@ def api_request_datasets():
     '''
     # Setting up the URL and token to make the request.
     url = "http://localhost:8000/automodeler/api/request_datasets"
-    token = "6aa53ad83773ba8a42834ff9317933759ed0e86b"
+    token = "ad5c2121066a722d162ce9864ea99e7902371009"
 
     # The token needs to be in a header so the user can be authenticated.
     headers = { "Authorization": "Token " + token}

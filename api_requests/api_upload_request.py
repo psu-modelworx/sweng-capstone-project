@@ -10,7 +10,7 @@ def api_upload_request():
     '''
     # The url is where the API request is made and the token authenticates the user.
     url = "http://localhost:8000/automodeler/api/upload"
-    token = "6aa53ad83773ba8a42834ff9317933759ed0e86b"
+    token = "ad5c2121066a722d162ce9864ea99e7902371009"
 
     # Defining the path for the csv file and name of the dataset.
     csv_file = "C:\\Users\\jpdun\\Desktop\\personality_dataset.csv"
