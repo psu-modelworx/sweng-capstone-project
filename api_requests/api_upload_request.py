@@ -10,7 +10,7 @@ def api_upload_request():
     '''
     # The url is where the API request is made and the token authenticates the user.
     url = "http://localhost:8000/automodeler/api/upload"
-    token = "6aa53ad83773ba8a42834ff9317933759ed0e86b"
+    token = "ad5c2121066a722d162ce9864ea99e7902371009"
 
     # Defining the path for the csv file and name of the dataset.
     csv_file = "C:\\Users\\jpdun\\Desktop\\personality_dataset.csv"
@@ -34,7 +34,7 @@ def api_upload_request():
         input_features[features[x]] = feature_types[x]
 
     # Selecting the target variable from the name of a feature.
-    target_variable = "Post_frequency"
+    target_variable = "Personality"
 
     # Including csv file data and the authorization token as a header.
     data = {"name": name, "input_features": json.dumps(input_features), "target_variable": target_variable}
