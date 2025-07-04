@@ -48,24 +48,19 @@ class ReportingEngine:
         self.add_bullet(f"Final dataset shape after preprocessing: {final_shape}")
         self.add_bullet(f"Columns removed or dropped: {ppe.dropped_columns if ppe.dropped_columns else 'None'}")
         final_feature_count = len(ppe.final_columns) if ppe.final_columns else "Not computed yet"
-        self.add_bullet(f"Final feature count after encoding: {final_feature_count}")
+        self.add_bullet(f"Final feature count after encoding: {final_feature_count-1}") # exclude the target column
         self.add_bullet("Missing value handling: Imputed numeric columns with mean and categorical columns with mode if missing values were present.")
 
-        self.subsection("Encoding Details")
-        self.add_bullet(f"Categorical columns encoded: {ppe.categorical_columns if ppe.categorical_columns else 'None'}")
-        self.add_bullet(f"Encoding method: {str(ppe.feature_encoder)}")
 
         self.subsection("Encoding Details")
-
-        if not ppe.categorical_columns or not hasattr(ppe, 'encoded_categorical_columns') or not ppe.encoded_categorical_columns:
+        if not hasattr(ppe.feature_encoder, 'categories_') or len(ppe.feature_encoder.categories_) == 0:
             self.add_bullet("Categorical columns encoded: None")
             self.add_bullet("Encoding method: None (no categorical columns to encode)")
             self.add_bullet("New column names created: None")
         else:
-            self.add_bullet(f"Categorical columns encoded: {ppe.encoded_categorical_columns}")
+            self.add_bullet(f"Categorical columns encoded: {ppe.feature_encoder.feature_names_in_.tolist()}")
             try:
-                encoded_column_names = ppe.feature_encoder.get_feature_names_out(
-                    ppe.encoded_categorical_columns).tolist()
+                encoded_column_names = ppe.feature_encoder.get_feature_names_out().tolist()
                 self.add_bullet(f"New column names created: {encoded_column_names}")
             except Exception as e:
                 self.add_bullet(f"Failed to get encoded feature names: {str(e)}")
@@ -73,7 +68,12 @@ class ReportingEngine:
             self.add_bullet(f"Encoding method: {str(ppe.feature_encoder)}")
 
         self.add_bullet("Scaler used: StandardScaler")
-        self.add_bullet(f"Final feature names: {ppe.final_columns if ppe.final_columns else 'Not yet generated'}")
+        if ppe.final_columns:
+            feature_names = [col for col in ppe.final_columns if col != ppe.target_column]
+            self.add_bullet(f"Final feature names (excluding target): {feature_names}")
+        else:
+            self.add_bullet("Final feature names: Not yet generated")
+
 
         self.subsection("Column Information")
         self.add_bullet(f"original_columns: {ppe.original_columns}")
