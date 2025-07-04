@@ -81,11 +81,6 @@ class ReportingEngine:
         self.add_bullet(f"dropped_columns: {ppe.dropped_columns if ppe.dropped_columns else 'None'}")
         self.add_bullet(f"columns_to_remove: {ppe.columns_to_remove if ppe.columns_to_remove else 'None'}")
 
-    def write_train_test_split_info(self):
-        self.section_header("2. Train/Test Split Info")
-        self.add_bullet("Train/test set sizes: [placeholder]")
-        self.add_bullet("Random seed used: [placeholder]")
-
     def write_modeling_summary(self):
         self.section_header("3. Modeling Engine Summary")
         me = self.modeler
