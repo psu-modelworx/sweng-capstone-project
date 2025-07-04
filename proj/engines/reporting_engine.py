@@ -711,4 +711,4 @@ class ReportingEngine:
 
     def add_bullet(self, text):
         self.pdf.set_x(self.pdf.get_x() + 5)
-        self.pdf.multi_cell(0, 8, f"\u2022 {text}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.pdf.multi_cell(0, 8, f"- {text}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
