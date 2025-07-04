@@ -4,7 +4,10 @@ import tempfile
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 from matplotlib import pyplot as plt
-from sklearn.metrics import confusion_matrix
+import numpy as np
+import pandas as pd
+from sklearn.calibration import label_binarize
+from sklearn.metrics import auc, confusion_matrix, roc_curve
 import seaborn as sns
 
 class ReportingEngine:
