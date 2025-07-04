@@ -467,7 +467,7 @@ class ReportingEngine:
             return
 
         plt.figure(figsize=(10, 6))
-        sns.barplot(x=model_names, y=scores, palette='viridis')
+        sns.barplot(x=model_names, y=scores, hue=model_names, palette='viridis', legend=False)
         plt.title('Model Performance Comparison')
         plt.xlabel('Models')
         plt.ylabel('Best CV Score')
