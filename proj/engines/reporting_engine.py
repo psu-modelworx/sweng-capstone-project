@@ -100,6 +100,9 @@ class ReportingEngine:
         else:
             self.subsection("Untuned Models Performance")
             self.add_bullet(f"Number of untuned models evaluated: {len(untuned)}")
+            best_untuned = me.get_best_untuned_model()
+            if best_untuned:
+                self.add_bullet(f"Best untuned model: {best_untuned['model_name']} with mean CV score {best_untuned['mean_score']:.4f}")
             for model_name, info in untuned.items():
                 mean_score = info.get('mean_score', None)
                 cv_scores = info.get('cv_scores', [])
@@ -108,9 +111,7 @@ class ReportingEngine:
                     self.add_bullet(f"Mean CV score: {mean_score:.4f}")
                     self.add_bullet(f"CV scores: {', '.join(f'{s:.4f}' for s in cv_scores)}")
 
-            best_untuned = me.get_best_untuned_model()
-            if best_untuned:
-                self.add_bullet(f"Best untuned model: {best_untuned['model_name']} with mean CV score {best_untuned['mean_score']:.4f}")
+            
 
         # Tuned models summary
         tuned = me.results.get('tuned', {})
