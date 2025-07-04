@@ -109,6 +109,62 @@ def test_upload_api(client):
 #    assert results == "Valid Features"
 
 @pytest.mark.django_db
+def test_engine_manager_preprocessing_api(client):
+    '''
+    Testing teh preprocessing API to verify a user needs an authentication token and a valid dataset ID.
+
+    :param client: The client is used when making the post request to the URL.
+
+    :Test Cases: TC-66 & TC-67
+    '''
+    # Set up the URL to the preprocessing API endpoint.
+    url = reverse('ppe')
+
+    # Making a request to the URL and asserting that the user doesn't have access.
+    response = client.post(url)
+    assert response.status_code == 403
+    
+    # Making a test user and assigning them an authentication token.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Putting the authentication token in the header and assigning an invalid dataset ID.
+    headers = { "Authorization": "Token " + userToken.key}
+    data = {"dataset_id": 0}
+
+    # Getting the response from the URL request and asserting that the dataset is invalid.
+    response = client.post(url, headers=headers, data=data)
+    assert response.status_code == 404
+
+@pytest.mark.django_db
+def test_engine_manager_modeling_api(client):
+    '''
+    Testing the modeling API to verify a user needs a valid authentication token and dataset ID.
+
+    :param client: The client comes with the post request to the URL.
+
+    :Test Cases: TC-68 & TC-69
+    '''
+    # Setting up a URL to the modeling API endpoint.
+    url = reverse('ame')
+
+    # Getting the response from the URL request and asserting that the user doesn't have access.
+    response = client.post(url)
+    assert response.status_code == 403
+    
+    # Creating a test user and assigning them an authentication token.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Assigning the authentication token to the header and making an invalid dataset ID.
+    headers = { "Authorization": "Token " + userToken.key}
+    data = {"dataset_id": 0}
+
+    # Asserting that an request from the client will be a 404 status code because the dataset ID is invalid.
+    response = client.post(url, headers=headers, data=data)
+    assert response.status_code == 404
+
+@pytest.mark.django_db
 def test_account_page(client):
     # Defining the url that will be navigated to.
     url = reverse('account')
