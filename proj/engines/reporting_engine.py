@@ -145,24 +145,39 @@ class ReportingEngine:
         if self.preprocessor.task_type == 'classification':
             logging.info("Generating classification visualizations...")
 
+            self.subsection("Confusion Matrix Heatmap")
             self.generate_conf_matrix()
+            self.subsection("Class Distribution Plot")
             self.plot_class_distribution()
+            self.subsection("Feature Importance Plot")
             self.plot_feature_importance()
+            self.subsection("ROC Curve")
             self.plot_roc_curve()
+            self.subsection("Precision-Recall Curve")
             self.plot_precision_recall_curve()
+            self.subsection("Classification Report Heatmap")
             self.plot_classification_report()
+            self.subsection("Model Performance Bar Chart")
             self.plot_model_performance_bar_chart()
+            self.subsection("Cross-Validation Score Boxplots")
             self.plot_cv_score_boxplots()
 
-        elif self.preprocessorpe.task_type == 'regression':
+        elif self.preprocessor.task_type == 'regression':
             logging.info("Generating regression visualizations...")
 
+            self.subsection("Residuals Plot")
             self.plot_residuals()
+            self.subsection("Actual vs Predicted Plot")
             self.plot_actual_vs_predicted()
+            self.subsection("Error Distribution Plot")
             self.plot_error_distribution()
+            self.subsection("Feature Importance Plot")
             self.plot_feature_importance()
+            self.subsection("Metrics Bar Chart")
             self.plot_metrics_bar_chart()
+            self.subsection("Model Performance Bar Chart")
             self.plot_cv_score_boxplots()
+            self.subsection("Model Performance Bar Chart")
             self.plot_model_performance_bar_chart()
 
         else:
