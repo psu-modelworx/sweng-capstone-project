@@ -238,13 +238,16 @@ class ReportingEngine:
             self.add_bullet("Class distribution plot: Not applicable for regression task.")
             return
 
-        y = self.preprocessor.y
-        if y is None:
+        y_encoded = self.preprocessor.y
+        if y_encoded is None:
             self.add_bullet("Class distribution plot: Target variable not available.")
             return
 
+        # Decode target classes
+        y = self.preprocessor.decode_target(y_encoded)
+
         plt.figure(figsize=(8, 6))
-        sns.countplot(x=y, palette='viridis')
+        sns.countplot(x=y, hue=y, palette='viridis', legend=False)
         plt.title('Class Distribution')
         plt.xlabel('Classes')
         plt.ylabel('Count')
