@@ -163,6 +163,7 @@ def test_engine_manager_modeling_api(client):
     response = client.post(url, headers=headers, data=data)
     assert response.status_code == 404
 
+@pytest.mark.django_db
 def test_request_datasets(client):
     '''
     Testing the request datasets API request to ensure a valid user is needed and the response.
