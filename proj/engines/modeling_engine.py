@@ -27,6 +27,8 @@ class ModelingEngine:
             'kernel': ['linear', 'rbf']
         },
         'LinearRegression': {
+            'fit_intercept': [True, False],
+            'positive': [True, False]
         },
         'RandomForestRegressor': {
             'n_estimators': [50, 100, 200],
