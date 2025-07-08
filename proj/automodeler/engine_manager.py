@@ -3,6 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
 
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
 from .models import Dataset
 from .models import PreprocessedDataSet
 from .models import DatasetModel
@@ -17,7 +21,9 @@ import pickle
 import json
 
 
-@login_required
+@api_view(["POST"])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def start_preprocessing_request(request):
     print("Starting preprocessing")
     if request.method != 'POST':
@@ -103,7 +109,9 @@ def start_preprocessing_request(request):
     return HttpResponse("Preprocessing completed...")
 
 
-@login_required
+@api_view(["POST"])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def start_modeling_request(request):
     print("Starting modeling")
     if request.method != 'POST':
