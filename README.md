@@ -31,7 +31,7 @@ Open a browser and navigate to http://localhost:8000
 
 ## Running Celery and Redis (Task Queue Setup)
 
-This project uses **Celery** for background task processing and **Redis** as the message broker.
+This project uses **Celery** for background task processing and **RabbitMQ** as the message broker.
 
 ---
 
@@ -40,7 +40,7 @@ This project uses **Celery** for background task processing and **Redis** as the
 - Python virtual environment activated
 - Redis installed and available in your system path
 - Project dependencies installed (`pip install -r requirements`)
-- Redis and Celery must be run in separate terminals for runserver
+- RabbitMQ and Celery must be run in separate terminals for runserver
 
 ---
 
@@ -50,7 +50,7 @@ This project uses **Celery** for background task processing and **Redis** as the
 # On Linux
 rabbitmq-server
 
-# On Windows (if installed manually)
+# On Windows Powershell with Admin (if installed manually)
 rabbitmq-server start
 
 ---
