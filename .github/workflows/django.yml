@@ -45,7 +45,7 @@ jobs:
       env:
         DJANGO_SETTINGS_MODULE: modelworx.settings
         PYTHONPATH: ${{ github.workspace }}/proj
-        CELERY_BROKER_URL: redis://localhost:6379/0
+        CELERY_BROKER_URL: amqp://localhost
         CELERY_RESULT_BACKEND: django-db
       run: |
         pytest --cov=proj --cov-report=html
