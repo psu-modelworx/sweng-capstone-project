@@ -1,4 +1,3 @@
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseNotAllowed, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
@@ -23,14 +22,15 @@ def start_preprocessing_request(request):
     print("Starting preprocessing")
     if request.method != 'POST':
         print("Error: Non-POST Request received!")
-        return HttpResponseNotAllowed("Method not allowed")
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
     
     # Verify dataset exists
     dataset_id = request.POST.get('dataset_id')
     if not dataset_id:
         print("Error: Missing dataset_id in form!")
-        return HttpResponseBadRequest('Missing value: dataset_id')
-    print("Dataset ID: " + str(dataset_id))
+        return JsonResponse({'error': 'Missing value: dataset_id'}, status=400)
+    
+    #print("Dataset ID: " + str(dataset_id))
 
     # Launch celery task async
     async_results = start_preprocessing_task.apply_async(args=[dataset_id, request.user.id])
@@ -43,7 +43,6 @@ def start_preprocessing_request(request):
         dataset_id=dataset_id
     )   
   
-    #return HttpResponse(f"Preprocessing started, task id: {user_task.task_id}")
     return JsonResponse({"task_id": async_results.id})
 
 @api_view(["POST"])
@@ -53,13 +52,13 @@ def start_modeling_request(request):
     print("Starting modeling")
     if request.method != 'POST':
         print("Error: Non-POST Request received!")
-        return HttpResponseNotAllowed("Method not allowed")
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
     
     # Verify dataset exists
     dataset_id = request.POST.get('dataset_id')
     if not dataset_id:
         print("Error: Missing dataset_id in form!")
-        return HttpResponseBadRequest('Missing value: dataset_id')
+        return JsonResponse({'error': 'Missing value: dataset_id'}, status=400)
 
 
     # Launch celery task async
@@ -73,27 +72,27 @@ def start_modeling_request(request):
         dataset_id=dataset_id
     )
     
-    return HttpResponse(f"Modeling started, task id: {user_task.task_id}")
+    return JsonResponse({"task id": async_results.id})
 
 @login_required
 def run_model(request):
     print("Starting model run")
     if request.method != 'POST':
         print("Error: Non-POST Request received!")
-        return HttpResponseNotAllowed("Method not allowed")
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     # Verify model exists
     model_id = request.POST.get('model_id')
     if not model_id:
         print("Error: Missing model_id in form!")
-        return HttpResponseBadRequest('Missing value: model_id')
+        return JsonResponse({'error': 'Missing value: model_id'}, status=400)
 
     # Get dataset_id from model FK before launching the task
     try:
         tuned_model = TunedDatasetModel.objects.get(id=model_id, user=request.user)
         dataset_id = tuned_model.original_dataset_id
     except TunedDatasetModel.DoesNotExist:
-        return HttpResponseNotFound("Tuned model not found.")
+        return JsonResponse({"error": "Tuned model not found"}, status=404)
 
 
      # Get the data from the post request
@@ -101,7 +100,7 @@ def run_model(request):
     if not data:
         msg = 'Error:  missing data field'
         print(msg)
-        return HttpResponseBadRequest(msg)
+        return JsonResponse({'error': 'Missing value: data'}, status=400)
     data_dict = json.loads(data)
 
     # enqueue the celery task first without passing task_id

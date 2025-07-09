@@ -95,20 +95,26 @@ function preprocess_fetch_request(dataset_id) {
     });
 }
 
-    function pollTaskStatus(task_id, dataset_id, retries = 0) {
+function pollTaskStatus(task_id, dataset_id, retries = 0) {
     fetch(`/automodeler/check_task/${task_id}/`)
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        return response.json();
+     })
     .then(data => {
-        if (data.status === 'SUCCESS' || data.status === 200) {
-            updatePreprocessedCell(dataset_id, data);
-        } else if (data.status === 500 || data.status === 404 || data.status === "FAILURE") {
-            setStatusText(dataset_id, data.message);
-        } else {
+        if (data.status === 'PENDING') {
             if (retries < 30) {
                 setTimeout(() => pollTaskStatus(task_id, dataset_id, retries + 1), 1000);
             } else {
                 setStatusText(dataset_id, 'Timeout waiting for task');
             }
+        } else if (data.filename) {
+            // Task returned success result with filename
+            updatePreprocessedCell(dataset_id, data);
+        } else if (data.error) {
+            setStatusText(dataset_id, data.error);
+        } else {
+            setStatusText(dataset_id, 'Unexpected task result');
         }
     })
     .catch(error => {

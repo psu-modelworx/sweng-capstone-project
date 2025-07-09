@@ -197,9 +197,8 @@ if USE_S3:
         default_storage._wrapped = S3Boto3Storage()
 
 # Celery Broker URL: use env var, fallback to localhost Redis
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
-
-# Celery Result Backend: support django-db or redis
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='amqp://localhost')
+# Celery Result Backend: support django-db or rabbitmq
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='django-db')
 
 CELERY_ACCEPT_CONTENT = ['json']

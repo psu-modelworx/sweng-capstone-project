@@ -48,10 +48,10 @@ This project uses **Celery** for background task processing and **Redis** as the
 
 ```bash
 # On Linux
-redis-server
+rabbitmq-server
 
 # On Windows (if installed manually)
-redis-server.exe
+rabbitmq-server start
 
 ---
 
@@ -59,7 +59,7 @@ redis-server.exe
 
 ```bash
 # On Linux, dir where manage.py is located
-celery -A modelworx worker --loglevel=info
+celery -A modelworx worker --loglevel=info --pool=solo
 
 ---
 ### 3. Start Application 

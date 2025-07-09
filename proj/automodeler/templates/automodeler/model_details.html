@@ -86,68 +86,48 @@ function run_model_request(model_id) {
         headers: { 'X-CSRFToken': CSRF_TOKEN },
         body: formData
     })
-        .then(response => response.json())
-        .then(data => {
-            const task_id = data.task_id;
-            pollTaskResult(task_id);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById("result_text").textContent = "Error starting task.";
-        });
-    /*
-
-    let formData = new FormData()
-
-    var dataString = JSON.stringify(request_data)
-    
-    formData.append("model_id", model_id)
-    formData.append("data", dataString)
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': CSRF_TOKEN
-        },
-        body: formData
-    })
     .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error.  Status Code: ${response.status}`);
-        }
-        return response;
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        return response.json();
     })
-    .then(responseData => {
-        //console.log('Response data:', responseData);
-        //console.log('Response text:', responseData.text())
-        //window.location.reload()
-        responseData.text().then( text => {
-            result_text = document.getElementById("result_text");
-            result_text.textContent = text;
-        });
+    .then(data => {
+        if (data.task_id) {
+            pollTaskResult(data.task_id);
+        } else {
+            result_text.textContent = data.error || "Unexpected response from server.";
+        }
     })
     .catch(error => {
-        console.error('Fetch error:', error);
-        result_text = document.getElementById("result_text");
-        result_text.textContent = error;
-    })
-   */
-
+        console.error('Error:', error);
+        result_text.textContent = "Error starting task.";
+    });
 }
 
 function pollTaskResult(task_id) {
     fetch(`/automodeler/check_task/${task_id}/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "SUCCESS" || data.status === 200) {
-                document.getElementById("result_text").textContent = data.message;
-            } else if (data.status === 400 || data.status === 404 || data.status === "FAILURE" ) {
-                document.getElementById("result_text").textContent = data.message;
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === "PENDING") {
+            if (retries < 30) {
+                setTimeout(() => pollTaskResult(task_id, retries + 1), 2000);
             } else {
-                setTimeout(() => pollTaskResult(task_id), 2000); // Poll again in 2s
+                document.getElementById("result_text").textContent = "Prediction timeout.";
             }
-        });
+        } else if (data.message) {
+            document.getElementById("result_text").textContent = data.message;
+        } else if (data.error) {
+            document.getElementById("result_text").textContent = data.error;
+        } else {
+            document.getElementById("result_text").textContent = "Unexpected task result.";
+        }
+    })
+    .catch(error => {
+        console.error("Polling error:", error);
+        document.getElementById("result_text").textContent = "Error checking task status.";
+    });
 }
- 
 
 </script>

@@ -11,12 +11,13 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      redis:
-        image: redis:6
+      rabbitmq:
+        image: rabbitmq:3-management
         ports:
-          - 6379:6379
+          - 5672:5672
+          - 15672:15672   # Optional: RabbitMQ Management UI
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "rabbitmqctl status"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
