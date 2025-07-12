@@ -97,61 +97,94 @@ class ReportingEngine:
 
     def write_modeling_summary(self):
         self.section_header("3. Modeling Engine Summary")
-        me = self.modeler
 
-        self.subsection("Task Info")
-        self.add_bullet(f"Task type: {me.task_type.capitalize()}")
-
-        # Untuned models summary
-        untuned = me.results.get('untuned', {})
-        if not untuned:
-            self.add_bullet("No untuned model results available.")
+        self.subsection("Model Selection")
+        if self.modeler.task_type == 'classification':
+            self.add_bullet("Classification task detected. The following models were considered:")
+            self.add_bullet("LogisticRegression: A linear model for classification that estimates probabilities using the logistic (sigmoid) function.")
+            self.add_bullet("RandomForestClassifier: An ensemble of decision trees using bagging to improve accuracy and reduce overfitting.")
+            self.add_bullet("GradientBoostingClassifier: Builds a strong classifier by combining weak learners sequentially using gradient descent.")
+            self.add_bullet("SVC: A Support Vector Classifier that finds the optimal hyperplane to separate classes by maximizing the margin.")
         else:
-            self.subsection("Untuned Models Performance")
-            self.add_bullet(f"Number of untuned models evaluated: {len(untuned)}")
-            best_untuned = me.get_best_untuned_model()
-            if best_untuned:
-                self.add_bullet(f"Best untuned model: {best_untuned['model_name']} with mean CV score {best_untuned['mean_score']:.4f}")
-            for model_name, info in untuned.items():
-                mean_score = info.get('mean_score', None)
-                cv_scores = info.get('cv_scores', [])
-                if mean_score is not None:
-                    self.subsection(f"Model: {model_name}")
-                    self.add_bullet(f"Mean CV score: {mean_score:.4f}")
-                    self.add_bullet(f"CV scores: {', '.join(f'{s:.4f}' for s in cv_scores)}")
+            self.add_bullet("Regression task detected. The following models were considered:")
+            self.add_bullet("LinearRegression: A simple linear approach to model the relationship between features and a continuous target.")
+            self.add_bullet("RandomForestRegressor: An ensemble of regression trees that averages outputs to improve prediction robustness.")
+            self.add_bullet("GradientBoostingRegressor: Sequentially adds weak regressors to correct errors of previous models using gradient boosting.")
+            self.add_bullet("SVR: A Support Vector Regressor that fits the best line within a margin and penalizes points outside of it.")
 
-            
-
-        # Tuned models summary
-        tuned = me.results.get('tuned', {})
-        if not tuned:
-            self.add_bullet("No tuned model results available.")
+        self.subsection("Model Tuning")
+        self.add_bullet("Hyperparameter tuning was performed using cross-validation to find the best model parameters.")
+        self.add_bullet(f"The following hyperparameters were tuned using GridSearchCV:")
+        if self.modeler.task_type == 'classification':
+            self.add_bullet("LogisticRegression: C (inverse regularization strength), solver, max_iter")
+            self.add_bullet("RandomForestClassifier: n_estimators, max_depth, min_samples_split, min_samples_leaf")
+            self.add_bullet("GradientBoostingClassifier: n_estimators, learning_rate, max_depth, min_samples_split")
+            self.add_bullet("SVC: C (regularization), kernel, gamma")
         else:
-            self.subsection("Tuned Models Performance")
-            self.add_bullet(f"Number of tuned models evaluated: {len(tuned)}")
-            for model_name, info in tuned.items():
-                best_params = info.get('best_params', {})
-                best_score = info.get('best_score', None)
-                train_score = info.get('train', None)
-                test_score = info.get('test', None)
+            self.add_bullet("LinearRegression: fit-intercept, positive.")
+            self.add_bullet("RandomForestRegressor: n_estimators, max_depth, min_samples_split, min_samples_leaf")
+            self.add_bullet("GradientBoostingRegressor: n_estimators, learning_rate, max_depth, min_samples_split")
+            self.add_bullet("SVR: C (regularization), kernel, gamma")
+        
+        self.subsection("Model Evaluation")
+        # create a table of tuned model results         
+        data = []
+        tuned_results = self.modeler.results.get('tuned', {})
+        for model_name, info in tuned_results.items():
+            model = info.get('optimized_model')
+            if model is None:
+                continue  # skip if no model present
 
-                self.subsection(f"Model: {model_name}")
-                self.add_bullet(f"Best hyperparameters: {best_params if best_params else 'N/A'}")
-                if best_score is not None:
-                    self.add_bullet(f"Best CV score: {best_score:.4f}")
-                if train_score is not None:
-                    self.add_bullet(f"Train set performance: {train_score:.4f}")
-                if test_score is not None:
-                    self.add_bullet(f"Test set performance: {test_score:.4f}")
+            y_pred = model.predict(self.modeler.X_test)
 
-            best_tuned = me.get_best_tuned_model()
-            if best_tuned:
-                self.section_header("Best Tuned Model")
-                self.add_bullet(f"Model: {best_tuned['model_name']}")
-                self.add_bullet(f"Best score: {best_tuned['best_score']:.4f}")
-                self.add_bullet(f"Hyperparameters: {best_tuned['best_params']}")
-            else:
-                self.add_bullet("No best tuned model found.")
+            if self.modeler.task_type == 'classification':
+                headers = ["Model", "Accuracy", "Precision", "Recall", "F1 Score"]
+                accuracy = accuracy_score(self.modeler.y_test, y_pred)
+                precision = precision_score(self.modeler.y_test, y_pred, average='weighted', zero_division=0)
+                recall = recall_score(self.modeler.y_test, y_pred, average='weighted', zero_division=0)
+                f1 = f1_score(self.modeler.y_test, y_pred, average='weighted', zero_division=0)
+
+                data.append([
+                    model_name,
+                    f"{accuracy:.3f}",
+                    f"{precision:.3f}",
+                    f"{recall:.3f}",
+                    f"{f1:.3f}"
+                ])
+
+            elif self.modeler.task_type == 'regression':
+                headers = ["Model", "RMSE", "R² Score", "", ""]
+                rmse = np.sqrt(mean_squared_error(self.modeler.y_test, y_pred))
+                r2 = r2_score(self.modeler.y_test, y_pred)
+
+                data.append([
+                    model_name,
+                    f"{rmse:.3f}",
+                    f"{r2:.3f}",
+                    "",
+                    ""
+                ])
+
+        col_widths_reg = [60, 30, 30, 30, 30]
+        self.add_table(headers, data, col_widths_reg)
+
+        
+        self.subsection("Model Reccomendation")
+        best_info = self.modeler.get_best_tuned_model()
+        if best_info is None:
+            self.add_bullet("No tuned models available to evaluate.")
+            return
+
+        model_name = best_info["model_name"]
+        best_score = best_info["best_score"]
+        best_params = best_info["best_params"]
+
+        self.add_bullet(f"The best tuned model was **{model_name}**, which achieved the highest score of {best_score:.4f}.")
+        self.add_bullet("This model was selected based on its superior performance compared to other tuned models.")
+        self.add_bullet("Best hyperparameters found:")
+        for param, val in best_params.items():
+            self.add_bullet(f"{param}: {val}")
+
 
     def write_visuals_section(self):
         self.section_header("3. Figures and Visualizations")
