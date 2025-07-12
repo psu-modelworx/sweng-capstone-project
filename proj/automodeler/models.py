@@ -12,7 +12,7 @@ class Dataset(models.Model):
     features = models.JSONField(default=dict, null=True)
     target_feature = models.CharField(max_length=50, null=True)
     csv_file = models.FileField(upload_to='dataset_uploads/')
-    file_size = models.CharField(max_length=50, null=True)
+    file_size = models.FloatField(null=True)
     number_of_rows = models.IntegerField(null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
@@ -38,7 +38,7 @@ class PreprocessedDataSet(models.Model):
 
     name = models.CharField(max_length=100)
     csv_file = models.FileField(upload_to='preprocessed_datasets/')    
-    file_size = models.CharField(max_length=50, null=True)
+    file_size = models.FloatField(null=True)
     number_of_rows = models.IntegerField(null=True)
     number_of_removed_rows = models.IntegerField(null=True)
     removed_features = models.JSONField(default=dict, null=True)
