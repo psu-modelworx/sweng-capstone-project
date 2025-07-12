@@ -95,6 +95,11 @@ def test_signup_login_logout(client):
     response = client.post(url, signup_params)
     assert response.status_code == 302
 
+    # Get user and set them to enabled; This is because users need to be manually activated
+    user_obj = User.objects.get(username=username)
+    user_obj.is_active = True
+    user_obj.save()
+
     # Now we need to login using the form
     url = reverse('login')
     login_params = {"username": username, "password": password}
