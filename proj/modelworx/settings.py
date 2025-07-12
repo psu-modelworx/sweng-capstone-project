@@ -195,3 +195,15 @@ if USE_S3:
     if isinstance(default_storage, LazyObject) or isinstance(default_storage._wrapped, FileSystemStorage):
         default_storage._wrapped = S3Boto3Storage()
 
+# Email settings
+EMAIL_ENABLED = config('EMAIL_ENABLED')
+if EMAIL_ENABLED == True:
+  EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+  EMAIL_HOST = config('EMAIL_HOST')
+  EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+  EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+  EMAIL_PORT = 587
+  EMAIL_USE_TLS = True
+  EMAIL_USE_SSL = False
+  EMAIL_ADMINS = config('EMAIL_ADMINS')
+  EMAIL_SENDER = config('EMAIL_SENDER')
