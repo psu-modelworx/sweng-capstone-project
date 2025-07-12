@@ -29,12 +29,9 @@ def start_preprocessing_request(request):
     if not dataset_id:
         print("Error: Missing dataset_id in form!")
         return JsonResponse({'error': 'Missing value: dataset_id'}, status=400)
-
-    # Verify Target Feature is selected
-
-
-    # Verify that all features are labelled categorical or numerical
     
+    #print("Dataset ID: " + str(dataset_id))
+
     # Launch celery task async
     async_results = start_preprocessing_task.apply_async(args=[dataset_id, request.user.id])
     # Create UserTask
@@ -45,6 +42,8 @@ def start_preprocessing_request(request):
         status='PENDING',
         dataset_id=dataset_id
     )   
+
+    user_task.save() # Saving user task to DB as rff is complaining about it not being used
   
     return JsonResponse({"task_id": async_results.id})
 
@@ -74,6 +73,8 @@ def start_modeling_request(request):
         status='PENDING',
         dataset_id=dataset_id
     )
+
+    user_task.save() # Saving usertask to DB as ruff said it wasn't being used
     
     return JsonResponse({"task id": async_results.id})
 
@@ -117,6 +118,8 @@ def run_model(request):
         status='PENDING',
         dataset_id=dataset_id)
 
+    user_task.save() # Again, saving the task because of ruff
+    
     # Return JSON with the task ID so frontend can poll
     return JsonResponse({'task_id': async_result.id})
     

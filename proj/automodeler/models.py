@@ -4,7 +4,6 @@ from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 
 import os
-import json
 
 # Create your models here.
 class Dataset(models.Model):    
@@ -35,7 +34,7 @@ class Dataset(models.Model):
                 super().save(*args, **kwargs)
             else:
                 if not isinstance(self.features, dict):
-                    raise Excpetion("JSON was not a dictionary!")
+                    raise Exception("JSON was not a dictionary!")
                 for key, value in self.features.items():
                     if value not in self.FEATURE_LABELS:
                         raise Exception("Unknown label found, not saving to database!")
