@@ -23,6 +23,7 @@ class ReportingEngine:
 
     def generate_full_report(self):
         self.write_title("modelworx Job Report")
+        self.write_introduction()
         self.write_preprocessing_summary()
         self.write_modeling_summary()
         self.write_visuals_section()
@@ -33,6 +34,17 @@ class ReportingEngine:
         self.pdf.set_font("Helvetica", 'B', 16)
         self.pdf.multi_cell(0, 10, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
         self.pdf.ln(10)
+
+    def write_introduction(self):
+        self.section_header("Introduction")
+        self.pdf.set_font("Helvetica", size=12)
+        task_type = self.preprocessor.task_type.capitalize()
+        self.pdf.multi_cell(0, 10, 
+            f"This report summarizes the preprocessing and modeling steps performed during the modelworx job execution. "
+            f"It includes details about the data preprocessing engine, modeling generation, and model recommendation. "
+            f"The models generated are based on the provided dataset and the task type is set to: {task_type}."
+        )
+        self.pdf.ln(5)
 
     def write_preprocessing_summary(self):
         self.section_header("1. Preprocessing Engine Summary")
