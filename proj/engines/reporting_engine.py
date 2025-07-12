@@ -47,51 +47,53 @@ class ReportingEngine:
         self.pdf.ln(5)
 
     def write_preprocessing_summary(self):
-        self.section_header("1. Preprocessing Engine Summary")
+        self.section_header("Preprocessing Summary")
 
-        ppe = self.preprocessor
+        self.subsection("Initial Data Overview")
+        num_rows = self.preprocessor.df.shape[0]
+        num_columns = self.preprocessor.df.shape[1]
+        self.add_bullet(f"Number of rows in the dataset: {num_rows}")
+        self.add_bullet(f"Number of columns in the dataset: {num_columns}")
+        # Insert figures for data types and distribution
+        if self.preprocessor.task_type == 'classification':
+            self.plot_class_distribution()
 
-        self.subsection("General Information")
-        self.add_bullet(f"Target column and its type: {ppe.target_column} ({'categorical' if ppe.target_is_categorical else 'continuous'})")
-        self.add_bullet(f"Task type: {ppe.task_type}")
-        original_shape = ppe.original_df.shape
-        final_shape = ppe.final_df.shape if ppe.final_df is not None else ("Not available",)
-        self.add_bullet(f"Original dataset shape: {original_shape}")
-        self.add_bullet(f"Final dataset shape after preprocessing: {final_shape}")
-        self.add_bullet(f"Columns removed or dropped: {ppe.dropped_columns if ppe.dropped_columns else 'None'}")
-        final_feature_count = len(ppe.final_columns) if ppe.final_columns else "Not computed yet"
-        self.add_bullet(f"Final feature count after encoding: {final_feature_count-1}") # exclude the target column
-        self.add_bullet("Missing value handling: Imputed numeric columns with mean and categorical columns with mode if missing values were present.")
+        self.subsection("Data Cleaning")
+        self.add_bullet("Handled missing numerical values by replacing with mean.")
+        self.add_bullet("Handled missing categorical values by replacing with mode.")
+        removed = []
+        if hasattr(self.preprocessor, 'dropped_columns') and self.preprocessor.dropped_columns:
+            removed.extend(self.preprocessor.dropped_columns)
+        if hasattr(self.preprocessor, 'cols_to_remove') and self.preprocessor.cols_to_remove:
+            removed.extend(self.preprocessor.cols_to_remove)
+        removed = list(set(removed))
+        self.add_bullet(f"Removed columns from the dataset: {removed if removed else 'None'}")
+        # consider handling outliers
+        # consider checking for duplicates
 
-
-        self.subsection("Encoding Details")
-        if not hasattr(ppe.feature_encoder, 'categories_') or len(ppe.feature_encoder.categories_) == 0:
-            self.add_bullet("Categorical columns encoded: None")
-            self.add_bullet("Encoding method: None (no categorical columns to encode)")
-            self.add_bullet("New column names created: None")
+        self.subsection("Feature Engineering")
+        if hasattr(self.preprocessor.feature_encoder, "categories_"):
+            self.add_buller(f"Feature encoding method: {self.preprocessor.feature_encoder.__class__.__name__}")
+            for i, cats in enumerate(self.preprocessor.feature_encoder.categories_):
+                self.add_bullet(f"Categorical feature {i + 1} categories: {', '.join(map(str, cats))}")
+            self.add_bullet(f"Encoded column names: {', '.join(self.preprocessor.get_feature_names_out)}")
         else:
-            self.add_bullet(f"Categorical columns encoded: {ppe.feature_encoder.feature_names_in_.tolist()}")
-            try:
-                encoded_column_names = ppe.feature_encoder.get_feature_names_out().tolist()
-                self.add_bullet(f"New column names created: {encoded_column_names}")
-            except Exception as e:
-                self.add_bullet(f"Failed to get encoded feature names: {str(e)}")
-
-            self.add_bullet(f"Encoding method: {str(ppe.feature_encoder)}")
-
-        self.add_bullet("Scaler used: StandardScaler")
-        if ppe.final_columns:
-            feature_names = [col for col in ppe.final_columns if col != ppe.target_column]
-            self.add_bullet(f"Final feature names (excluding target): {feature_names}")
+            self.add_bullet("No feature encoding applied.")
+        if hasattr(self.preprocessor.scaler, 'scale_'):
+            self.add_bullet(f"Feature scaling applied using {self.preprocessor.scaler.__class__.__name__}.")
+            self.add_bullet(f"Feature scales: {', '.join([f'{s:.4f}' for s in self.preprocessor.scaler.scale_])}")
+        if hasattr(self.preprocessor.label_encoder, 'classes_'):
+            self.add_bullet(f"Label encoding applied for target variable: {self.preprocessor.label_encoder.__class__.__name__}")
+            self.add_bullet(f"Encoded target classes: {', '.join(map(str, self.preprocessor.label_encoder.classes_))}")
         else:
-            self.add_bullet("Final feature names: Not yet generated")
+            self.add_bullet("Target variable is not categorical. No label encoding applied for target variable.")
 
+        self.subsection("Data Splitting")
+        self.add_bullet(f"Train set size: {self.preprocessor.X_train.shape[0]} rows")
+        self.add_bullet(f"Test set size: {self.preprocessor.X_test.shape[0]} rows") 
+        
 
-        self.subsection("Column Information")
-        self.add_bullet(f"original_columns: {ppe.original_columns}")
-        self.add_bullet(f"final_columns: {ppe.final_columns if ppe.final_columns else 'Not yet generated'}")
-        self.add_bullet(f"dropped_columns: {ppe.dropped_columns if ppe.dropped_columns else 'None'}")
-        self.add_bullet(f"columns_to_remove: {ppe.columns_to_remove if ppe.columns_to_remove else 'None'}")
+        
 
     def write_modeling_summary(self):
         self.section_header("3. Modeling Engine Summary")
