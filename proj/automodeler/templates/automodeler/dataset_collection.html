@@ -1,4 +1,4 @@
-{% include "base/header.html" %}
+﻿{% include "base/header.html" %}
 <!-- JQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
@@ -36,8 +36,8 @@
                     {% endif %}
                 </td>
                 <td>
-                    <button class="btn btn-primary" onclick="preprocess_fetch_request( {{ ds_list.0.id }} )">Start Preprocessing!</button>
-                    <button class="btn btn-success" onclick="modeling_fetch_request( {{ds_list.0.id }} )">Start Modeling!</button>
+                    <button class="btn btn-primary" onclick="preprocess_fetch_request({{ ds_list.0.id }})">Start Preprocessing!</button>
+                    <button class="btn btn-success" onclick="modeling_fetch_request({{ds_list.0.id }})">Start Modeling!</button>
                     <form method="post" action="{% url 'dataset_delete' dataset_id=ds_list.0.id %}">
                         {% csrf_token %}
                         <button class="btn btn-danger" type="Submit">Delete</button>
@@ -68,6 +68,10 @@ function preprocess_fetch_request(dataset_id) {
     var url = '{% url 'ppe' %}';
     var CSRF_TOKEN = '{{ csrf_token }}';
 
+    const row = document.querySelector(`button[onclick="preprocess_fetch_request(${dataset_id})"]`).closest('tr');
+    const statusCell = row.children[2];
+    statusCell.innerHTML = 'Processing... <span class="spinner-border spinner-border-sm text-primary" role="status"></span>';
+
     let formData = new FormData();
     formData.append("dataset_id", dataset_id)
 
@@ -79,18 +83,56 @@ function preprocess_fetch_request(dataset_id) {
         body: formData
     })
     .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error.  Status Code: ${response.status}`);
-        }
-        return response;
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        return response.json();
     })
-    .then(responseData => {
-        console.log('Response data:', responseData);
-        window.location.reload()
+    .then(data => {
+        pollTaskStatus(data.task_id, dataset_id);
     })
     .catch(error => {
         console.error('Fetch error:', error);
+        statusCell.textContent = 'Failed to start preprocessing.';
+    });
+}
+
+function pollTaskStatus(task_id, dataset_id, retries = 0) {
+    fetch(`/automodeler/check_task/${task_id}/`)
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        return response.json();
+     })
+    .then(data => {
+        if (data.status === 'PENDING') {
+            if (retries < 30) {
+                setTimeout(() => pollTaskStatus(task_id, dataset_id, retries + 1), 1000);
+            } else {
+                setStatusText(dataset_id, 'Timeout waiting for task');
+            }
+        } else if (data.filename) {
+            // Task returned success result with filename
+            updatePreprocessedCell(dataset_id, data);
+        } else if (data.error) {
+            setStatusText(dataset_id, data.error);
+        } else {
+            setStatusText(dataset_id, 'Unexpected task result');
+        }
     })
+    .catch(error => {
+        console.error('Polling error:', error);
+        setStatusText(dataset_id, 'Error checking task status');
+    });
+}
+
+function setStatusText(dataset_id, text) {
+    const row = document.querySelector(`button[onclick="preprocess_fetch_request(${dataset_id})"]`).closest('tr');
+    const statusCell = row.children[2];
+    statusCell.textContent = text;
+}
+
+function updatePreprocessedCell(dataset_id, result) {
+    const row = document.querySelector(`button[onclick="preprocess_fetch_request(${dataset_id})"]`).closest('tr');
+    const statusCell = row.children[2];
+    statusCell.textContent = result.filename;
 }
 
 function modeling_fetch_request(dataset_id) {

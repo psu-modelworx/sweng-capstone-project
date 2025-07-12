@@ -22,3 +22,6 @@ django-storages==1.14.6
 psycopg[binary]
 boto3==1.34.89
 botocore==1.34.89
+celery>=5.2.0
+rabbitmq-server
+django-celery-results>=2.5

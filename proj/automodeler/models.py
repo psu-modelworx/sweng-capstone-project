@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 import os
 
@@ -78,4 +80,22 @@ class TunedDatasetModel(models.Model):
     original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     
     
-    
+class UserTask(models.Model):
+    TASK_TYPES = [
+        ('preprocessing', 'Preprocessing'),
+        ('modeling', 'Modeling'),
+        ('prediction', 'Prediction'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    task_id = models.CharField(max_length=255, unique=True)
+    task_type = models.CharField(max_length=50, choices=TASK_TYPES)
+    status = models.CharField(max_length=50, default='PENDING')
+    result_message = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, null=True, blank =True)
+
+@receiver(pre_delete, sender=Dataset)
+def delete_usertasks_with_dataset(sender, instance, **kwargs):
+    # Delete all UserTasks related to this dataset
+    UserTask.objects.filter(dataset=instance).delete()

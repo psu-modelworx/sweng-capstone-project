@@ -45,4 +45,5 @@ jobs:
           python manage.py migrate --noinput
 
           sudo systemctl restart gunicorn
+          sudo systemctl restart celery
         EOF

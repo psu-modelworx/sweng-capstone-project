@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'storages', # Django-storages for S3 compatibility
     'django_cleanup', # Django-cleanup to cleanup files; auto deletes files after they have been deleted
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -195,6 +196,14 @@ if USE_S3:
     if isinstance(default_storage, LazyObject) or isinstance(default_storage._wrapped, FileSystemStorage):
         default_storage._wrapped = S3Boto3Storage()
 
+# Celery Broker URL: use env var, fallback to localhost Redis
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='amqp://localhost')
+# Celery Result Backend: support django-db or rabbitmq
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='django-db')
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
 # Email settings
 EMAIL_ENABLED = config('EMAIL_ENABLED')
 if EMAIL_ENABLED == True:
@@ -207,3 +216,4 @@ if EMAIL_ENABLED == True:
   EMAIL_USE_SSL = False
   EMAIL_ADMINS = config('EMAIL_ADMINS')
   EMAIL_SENDER = config('EMAIL_SENDER')
+

@@ -5,12 +5,29 @@ from django.contrib.auth.models import User
 from rest_framework.test import APIRequestFactory
 from .permissions import DetermineIfStaffPermissions
 from rest_framework.authtoken.models import Token
+from unittest.mock import MagicMock, patch
+from automodeler.models import Dataset
+from django.contrib.auth import get_user_model
 
 # Commented out for lack of test
 #from .api import verify_features
 
 # Create your tests here.
 
+
+@pytest.fixture
+def user_factory(db):
+    User = get_user_model()
+    def create_user(**kwargs):
+        data = {
+            "username": "testuser",
+            "email": "testuser@example.com",
+            "password": "password123",
+            **kwargs,
+        }
+        user = User.objects.create_user(**data)
+        return user
+    return create_user
 
 @pytest.mark.django_db
 def test_login_form(client):
@@ -107,6 +124,79 @@ def test_upload_api(client):
 #    results = verify_features(features, input_features, file_target_feature)
 #    assert results == "Valid Features"
 
+@patch('automodeler.engine_manager.start_preprocessing_task.apply_async')
+@pytest.mark.django_db
+def test_engine_manager_preprocessing_api(mock_apply_async, client,user_factory):
+    '''
+    Testing the preprocessing API to verify a user needs an authentication token and a valid dataset ID.
+
+    :param client: The client is used when making the post request to the URL.
+
+    :Test Cases: TC-66 & TC-67
+    '''
+    user = user_factory()
+    dataset = Dataset.objects.create(name="MyData", user=user, features={'f1': 'C'}, target_feature='f1')
+
+    # Set up a fake return object for apply_async with a real `.id`
+    mock_result = MagicMock()
+    mock_result.id = "fake-task-id-123"
+    mock_apply_async.return_value = mock_result
+
+    # Set up the URL to the preprocessing API endpoint.
+    url = reverse('ppe')
+
+    # Making a request to the URL and asserting that the user doesn't have access.
+    response = client.post(url)
+    assert response.status_code == 403
+    
+    # Making a test user and assigning them an authentication token.
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Putting the authentication token in the header and assigning an invalid dataset ID.
+    headers = { "Authorization": "Token " + userToken.key}
+    #data = {"dataset_id": dataset.id}
+
+    # Getting the response from the URL request, logic to check if it is valid has been moved to the task
+    response = client.post(url, headers=headers, data={"dataset_id":dataset.id})
+    assert response.status_code == 200
+
+@patch('automodeler.engine_manager.start_modeling_task.apply_async')
+@pytest.mark.django_db
+def test_engine_manager_modeling_api(mock_apply_async, client, user_factory):
+
+    '''
+    Testing the modeling API to verify a user needs a valid authentication token and dataset ID.
+
+    :param client: The client comes with the post request to the URL.
+
+    :Test Cases: TC-68 & TC-69
+    '''
+    user = user_factory()
+    dataset = Dataset.objects.create(name="MyData", user=user, features={'f1': 'C'}, target_feature='f1')
+
+    # Setting up a URL to the modeling API endpoint.
+    # Set up a fake return object for apply_async with a real `.id`
+    mock_result = MagicMock()
+    mock_result.id = "fake-task-id-123"
+    mock_apply_async.return_value = mock_result
+
+    # Setting up a URL to the modeling API endpoint.
+    url = reverse('ame')
+
+    # Getting the response from the URL request and asserting that the user doesn't have access.
+    response = client.post(url)
+    assert response.status_code == 403
+    
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Assigning the authentication token to the header and making an invalid dataset ID.
+    headers = { "Authorization": "Token " + userToken.key}
+
+    # Asserting that an request from the client will be a 404 status code because the dataset ID is invalid.
+    response = client.post(url, headers=headers, data={"dataset_id":dataset.id})
+    assert response.status_code == 200
+
+
 @pytest.mark.django_db
 def test_request_datasets(client):
     '''
@@ -133,7 +223,6 @@ def test_request_datasets(client):
     # Asserting that this is a valid request but the response wouldn't have any data.
     response = client.post(url, headers=headers)
     assert response.status_code == 200
-
 
 @pytest.mark.django_db
 def test_account_page(client):
