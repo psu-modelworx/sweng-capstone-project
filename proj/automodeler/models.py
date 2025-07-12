@@ -8,7 +8,7 @@ import json
 
 # Create your models here.
 class Dataset(models.Model):    
-    FEATURES = {
+    FEATURES_LABESLS = {
         'C': 'Categorical',
         'N': 'Numerical'
     }
@@ -34,14 +34,13 @@ class Dataset(models.Model):
                 self.labeled = False
                 super().save(*args, **kwargs)
             else:
-                try:
-                    if not isinstance(features_dict, dict):
-                        raise Excpetion("JSON was not a dictionary!")
-                    for key,value in features.items():
-                        print(key)    
-                except Exception as e:
-                    print("Exception: {0}".format(e))
-                
+                if not isinstance(self.features, dict):
+                    raise Excpetion("JSON was not a dictionary!")
+                for key, value in self.features.items():
+                    if value not in FEATURE_LABELS:
+                        raise Exception("Unknown label found, not saving to database!")
+                super().save(*args, **kwargs)
+        
     
 class PreprocessedDataSet(models.Model):
     MODEL_METHODS = {
@@ -80,16 +79,14 @@ class PreprocessedDataSet(models.Model):
     
     def save(self, *args, **kwargs):
         # First, we need to validate that the available models are valid
-        try:
-          tmp_models_list = json.loads(self.available_models) # Verify it will load as a list
-          if not isinstance(tmp_models_list, list):
+        tmp_models_list = json.loads(self.available_models) # Verify it will load as a list
+        if not isinstance(tmp_models_list, list):
             raise Exception("Presented models are not a list") 
-          for model in tmp_models_list:
+        for model in tmp_models_list:
             if model not in MODEL_METHODS:
-              raise Exception("Invalid model found!")
-          super().save(*args, **kwargs) # Call original save function to save to DB
-        except Exception as e:
-            print("Exception: {0}".format(e))
+                raise Exception("Invalid model found!")
+        super().save(*args, **kwargs) # Call original save function to save to DB
+
 
 
 class DatasetModel(models.Model):
