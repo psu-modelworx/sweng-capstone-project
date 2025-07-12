@@ -111,7 +111,6 @@ def test_signup_login_logout(client):
     url = reverse('dataset_collection')
 
     # Validate user is authenticated
-    user = user = User.objects.get(username=username)
     result = client.post({"username": username, "password": password})
     assert result
     response = client.get(url)

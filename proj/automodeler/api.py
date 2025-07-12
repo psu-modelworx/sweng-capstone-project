@@ -110,7 +110,7 @@ def api_request_datasets(request):
     # Going through the datasets and checking if they are preprocessed.
     for dataset in user_datasets:
         # Resetting the preprocessed string with each iteration.
-        pp_dataset = ""
+        # pp_dataset = "" # Ruff mentioned to remove this?  If it breaks something, here's why
 
         try:
             # Trying to get the preprocessed file and appending it to the dataset information.

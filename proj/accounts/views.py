@@ -8,7 +8,6 @@ from .forms import UserRegisterForm
 from .forms import UserLoginForm
 
 from django.core.mail import EmailMessage
-from django.http import HttpResponse
 from django.conf import settings
 
 
@@ -21,11 +20,11 @@ class SignUpView(SuccessMessageMixin, CreateView):
 
   def form_valid(self, form):
     # Save the form
-    user = form.save()
+    form.save()
 
     # Send email to admins
     email_enabled = settings.EMAIL_ENABLED
-    if email_enabled == True:
+    if email_enabled:
       username = form.cleaned_data['username']
       email = form.cleaned_data['email']
       send_account_create_request_email(email, username)
