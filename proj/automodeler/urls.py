@@ -13,6 +13,7 @@ urlpatterns = [
     path("api/request_datasets", api.api_request_datasets, name="api_request_datasets"),
     path("dataset_delete/<int:dataset_id>", views.dataset_delete, name="dataset_delete"),
     path("dataset/<int:dataset_id>", views.dataset, name="dataset"),
+    path("dataset_details/<int:dataset_id>", views.dataset_details, name="dataset_details"),
     path("dataset_collection/", views.dataset_collection, name="dataset_collection"),
     path("model_collection/", views.model_collection, name="model_collection"),
     path("model_details/<int:model_id>", views.model_details, name="model_details"),

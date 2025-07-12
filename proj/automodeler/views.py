@@ -96,6 +96,10 @@ def dataset(request, dataset_id):
     else:
         return redirect(reverse('login'))
 
+def dataset_details(request, dataset_id):
+    return render(request, "automodeler/dataset_details.html", {})
+
+
 def account(request):
     """
     Ensuring a user is logged in before giving them access to the account page.
