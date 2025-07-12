@@ -29,9 +29,12 @@ def start_preprocessing_request(request):
     if not dataset_id:
         print("Error: Missing dataset_id in form!")
         return JsonResponse({'error': 'Missing value: dataset_id'}, status=400)
-    
-    #print("Dataset ID: " + str(dataset_id))
 
+    # Verify Target Feature is selected
+
+
+    # Verify that all features are labelled categorical or numerical
+    
     # Launch celery task async
     async_results = start_preprocessing_task.apply_async(args=[dataset_id, request.user.id])
     # Create UserTask

@@ -8,8 +8,14 @@ import json
 
 # Create your models here.
 class Dataset(models.Model):    
+    FEATURES = {
+        'C': 'Categorical',
+        'N': 'Numerical'
+    }
+
     name = models.CharField(max_length=50)
     features = models.JSONField(default=dict, null=True)
+    labeled = models.BooleanField(null=True)
     target_feature = models.CharField(max_length=50, null=True)
     csv_file = models.FileField(upload_to='dataset_uploads/')
     file_size = models.FloatField(null=True)
@@ -18,6 +24,22 @@ class Dataset(models.Model):
 
     def filename(self):
         return os.path.basename(self.csv_file.name)
+    
+    
+    def save(self, *args, **kwargs):
+        # If features has values in it, check that the labels are correct
+        if not (self.features is None or not self.features):
+            # If it's a list, there are not yet any categories
+            if isinstance(self.features, list):
+                self.labeled = False
+            else:
+                try:
+                    if not isinstance(features_dict, dict):
+                        raise Excpetion("JSON was not a dictionary!")
+                    for key,value in features.items():
+                        print(key)    
+                except Exception as e:
+                    print("Exception: {0}".format(e))
     
 class PreprocessedDataSet(models.Model):
     MODEL_METHODS = {

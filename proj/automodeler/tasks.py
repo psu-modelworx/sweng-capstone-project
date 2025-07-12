@@ -39,7 +39,39 @@ def start_preprocessing_task(self, dataset_id, user_id):
             task_record.save()
         return {"message": "Dataset not found", "status": 404}
 
-     # First, see if there is a preprocessed dataset already; if not, create one
+    # Check that target feature has been selected
+    try:
+        target_feature = dataset.target_feature
+        if target_feature is None or not target_feature:
+            raise Exception("Target_feature is None or empty")
+        if len(target_feature) == 0:
+            raise Exception("Target_feature is empty")
+    except Exception as e:
+        print('Exception {0}'.format(e))
+        if task_record:
+            task_record.status = "FAILURE"
+            task_record.result_message = "Target teature not selected"
+            task_record.save()
+        return {"message": "Target feature not selected", "status": 500}
+
+    # Check that all features have been labeled
+    try:
+        target_feature = dataset.target_feature
+        if target_feature is None or not target_feature:
+            raise Exception("Target_feature is None or empty")
+        if len(target_feature) == 0:
+            raise Exception("Target_feature is empty")
+    except Exception as e:
+        print('Exception {0}'.format(e))
+        if task_record:
+            task_record.status = "FAILURE"
+            task_record.result_message = "Target teature not selected"
+            task_record.save()
+        return {"message": "Target feature not selected", "status": 500}
+
+    except Exception as e:
+        print('Exception {0}'.format(e))
+    # First, see if there is a preprocessed dataset already; if not, create one
     try:
         pp_ds = PreprocessedDataSet.objects.get(original_dataset_id=dataset.id)
         
