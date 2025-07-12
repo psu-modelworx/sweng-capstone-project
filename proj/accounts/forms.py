@@ -15,6 +15,12 @@ class UserRegisterForm(UserCreationForm):
         attrs={'class' : 'form-control'})
     )
 
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.is_active = False
+        if commit:
+            user.save()
+        return user
 
 class UserLoginForm(AuthenticationForm):
     username = forms.CharField(label="Username", widget=forms.TextInput(

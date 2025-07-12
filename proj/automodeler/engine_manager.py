@@ -42,6 +42,8 @@ def start_preprocessing_request(request):
         status='PENDING',
         dataset_id=dataset_id
     )   
+
+    user_task.save() # Saving user task to DB as rff is complaining about it not being used
   
     return JsonResponse({"task_id": async_results.id})
 
@@ -71,6 +73,8 @@ def start_modeling_request(request):
         status='PENDING',
         dataset_id=dataset_id
     )
+
+    user_task.save() # Saving usertask to DB as ruff said it wasn't being used
     
     return JsonResponse({"task id": async_results.id})
 
@@ -114,6 +118,8 @@ def run_model(request):
         status='PENDING',
         dataset_id=dataset_id)
 
+    user_task.save() # Again, saving the task because of ruff
+    
     # Return JSON with the task ID so frontend can poll
     return JsonResponse({'task_id': async_result.id})
     
