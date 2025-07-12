@@ -8,7 +8,7 @@ import json
 
 # Create your models here.
 class Dataset(models.Model):    
-    FEATURES_LABESLS = {
+    FEATURE_LABELS = {
         'C': 'Categorical',
         'N': 'Numerical'
     }
@@ -37,7 +37,7 @@ class Dataset(models.Model):
                 if not isinstance(self.features, dict):
                     raise Excpetion("JSON was not a dictionary!")
                 for key, value in self.features.items():
-                    if value not in FEATURE_LABELS:
+                    if value not in self.FEATURE_LABELS:
                         raise Exception("Unknown label found, not saving to database!")
                 super().save(*args, **kwargs)
         
@@ -79,12 +79,23 @@ class PreprocessedDataSet(models.Model):
     
     def save(self, *args, **kwargs):
         # First, we need to validate that the available models are valid
-        tmp_models_list = json.loads(self.available_models) # Verify it will load as a list
-        if not isinstance(tmp_models_list, list):
-            raise Exception("Presented models are not a list") 
-        for model in tmp_models_list:
-            if model not in MODEL_METHODS:
-                raise Exception("Invalid model found!")
+        # Actually, what we need to do is set the list of available models
+        if self.model_type == 'regression':
+            self.available_models = [
+                "LinearRegression",
+                "RandomForestRegressor",
+                "GradientBoostingRegressor",
+                "SVR"
+                ]
+        elif self.model_type == 'classification':
+            self.available_models = [
+                "LogisticRegression",
+                "RandomForestClassifier",
+                "GradientBoostingClassifier",
+                "SVC"
+                ]
+        #else:
+        #    raise Exception('Invalid Model Type!')
         super().save(*args, **kwargs) # Call original save function to save to DB
 
 
