@@ -32,6 +32,7 @@ class Dataset(models.Model):
             # If it's a list, there are not yet any categories
             if isinstance(self.features, list):
                 self.labeled = False
+                super().save(*args, **kwargs)
             else:
                 try:
                     if not isinstance(features_dict, dict):
@@ -40,6 +41,7 @@ class Dataset(models.Model):
                         print(key)    
                 except Exception as e:
                     print("Exception: {0}".format(e))
+                
     
 class PreprocessedDataSet(models.Model):
     MODEL_METHODS = {
