@@ -19,7 +19,7 @@ def api_request_datasets():
 
     # Looping through the response and making a list of results.
     for item in response.json():
-        results += item + "\n"
+        results += item + "\n\n"
 
     # The results contain the dataset name, dataset file name, and preprocessed dataset file name.
     print(results)
