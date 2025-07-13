@@ -36,6 +36,7 @@ class ReportingEngine:
         self.pdf.ln(10)
 
     def write_introduction(self):
+        logging.info("Writing introduction section to report...")
         self.section_header("Introduction")
         self.pdf.set_font("Helvetica", size=12)
         task_type = self.preprocessor.task_type.capitalize()
@@ -47,6 +48,7 @@ class ReportingEngine:
         self.pdf.ln(5)
 
     def write_preprocessing_summary(self):
+        logging.info("Writing preprocessing summary to report...")
         self.section_header("Preprocessing Summary")
 
         self.subsection("Initial Data Overview")
@@ -96,6 +98,7 @@ class ReportingEngine:
         
 
     def write_modeling_summary(self):
+        logging.info("Writing modeling summary to report...")
         self.section_header("3. Modeling Engine Summary")
 
         self.subsection("Model Selection")
