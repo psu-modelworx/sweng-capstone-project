@@ -383,6 +383,15 @@ class ReportingEngine:
         if X_test is None or y_test is None:
             self.add_bullet("ROC curve plot: Test data not available.")
             return
+        
+        classes = np.unique(y_test)
+        n_classes = len(classes)
+
+        # Binarize the output for multiclass
+        if n_classes > 2:
+            y_test_bin = label_binarize(y_test, classes=classes)
+        else:
+            y_test_bin = None  # not needed for binary
 
         for model_name, info in tuned_models.items():
             model = info.get('optimized_model')
@@ -391,13 +400,23 @@ class ReportingEngine:
                 continue
 
             try:
-                from sklearn.metrics import roc_curve, auc
-                y_score = model.predict_proba(X_test)[:, 1]
-                fpr, tpr, _ = roc_curve(y_test, y_score)
-                roc_auc = auc(fpr, tpr)
+                # Predict probabilities for all classes if multiclass, else use [:,1] for positive class
+                y_score = model.predict_proba(X_test)
 
                 plt.figure(figsize=(8, 6))
-                plt.plot(fpr, tpr, color='blue', label=f'ROC curve (area = {roc_auc:.2f})')
+                if n_classes == 2:
+                    # Binary classification
+                    fpr, tpr, _ = roc_curve(y_test, y_score[:, 1])
+                    roc_auc = auc(fpr, tpr)
+                    plt.plot(fpr, tpr, color='blue', label=f'ROC curve (area = {roc_auc:.2f})')
+
+                else:
+                    # Multiclass classification: One-vs-rest ROC curves
+                    for i in range(n_classes):
+                        fpr, tpr, _ = roc_curve(y_test_bin[:, i], y_score[:, i])
+                        roc_auc = auc(fpr, tpr)
+                        plt.plot(fpr, tpr, label=f'Class {classes[i]} (area = {roc_auc:.2f})')
+
                 plt.plot([0, 1], [0, 1], color='red', linestyle='--')
                 plt.xlim([0.0, 1.0])
                 plt.ylim([0.0, 1.05])
