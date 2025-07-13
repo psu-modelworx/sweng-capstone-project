@@ -56,9 +56,10 @@ class ReportingEngine:
         num_columns = self.preprocessor.df.shape[1]
         self.add_bullet(f"Number of rows in the dataset: {num_rows}")
         self.add_bullet(f"Number of columns in the dataset: {num_columns}")
-        # Insert figures for data types and distribution
         if self.preprocessor.task_type == 'classification':
             self.plot_class_distribution()
+        else:
+            self.plot_reg_distribution()
 
         self.subsection("Data Cleaning")
         self.add_bullet("Handled missing numerical values by replacing with mean.")
@@ -233,6 +234,20 @@ class ReportingEngine:
         else:
             logging.warning("Unsupported task type for visualizations: %s", ppe.task_type)
 
+    def plot_reg_distribution(self):
+        """Plots the distribution of the target variable for regression tasks."""
+
+        plt.figure(figsize=(8, 6))
+        sns.histplot(self.preprocessor.y, kde=True, bins=30)
+        plt.title("Target Variable Distribution")
+        plt.xlabel("Target Value")
+        plt.ylabel("Frequency")
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+            plt.savefig(tmpfile.name, bbox_inches='tight')
+            plt.close()
+            self.pdf.image(tmpfile.name, x=15, w=180)
+        os.remove(tmpfile.name)
 
     def generate_conf_matrix(self):
         """Generates confusion matrix heatmaps for tuned models."""
