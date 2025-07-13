@@ -198,8 +198,6 @@ class ReportingEngine:
 
             self.subsection("Confusion Matrix Heatmap")
             self.generate_conf_matrix()
-            self.subsection("Class Distribution Plot")
-            self.plot_class_distribution()
             self.subsection("Feature Importance Plot")
             self.plot_feature_importance()
             self.subsection("ROC Curve")
