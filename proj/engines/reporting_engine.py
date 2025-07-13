@@ -76,15 +76,14 @@ class ReportingEngine:
 
         self.subsection("Feature Engineering")
         if hasattr(self.preprocessor.feature_encoder, "categories_"):
-            self.add_buller(f"Feature encoding method: {self.preprocessor.feature_encoder.__class__.__name__}")
+            self.add_bullet(f"Feature encoding method: {self.preprocessor.feature_encoder.__class__.__name__}")
             for i, cats in enumerate(self.preprocessor.feature_encoder.categories_):
                 self.add_bullet(f"Categorical feature {i + 1} categories: {', '.join(map(str, cats))}")
-            self.add_bullet(f"Encoded column names: {', '.join(self.preprocessor.get_feature_names_out)}")
+            self.add_bullet(f"Encoded column names: {', '.join(self.preprocessor.feature_encoder.get_feature_names_out())}")
         else:
             self.add_bullet("No feature encoding applied.")
         if hasattr(self.preprocessor.scaler, 'scale_'):
             self.add_bullet(f"Feature scaling applied using {self.preprocessor.scaler.__class__.__name__}.")
-            self.add_bullet(f"Feature scales: {', '.join([f'{s:.4f}' for s in self.preprocessor.scaler.scale_])}")
         if hasattr(self.preprocessor.label_encoder, 'classes_'):
             self.add_bullet(f"Label encoding applied for target variable: {self.preprocessor.label_encoder.__class__.__name__}")
             self.add_bullet(f"Encoded target classes: {', '.join(map(str, self.preprocessor.label_encoder.classes_))}")
@@ -183,7 +182,7 @@ class ReportingEngine:
         best_score = best_info["best_score"]
         best_params = best_info["best_params"]
 
-        self.add_bullet(f"The best tuned model was **{model_name}**, which achieved the highest score of {best_score:.4f}.")
+        self.add_bullet(f"The best tuned model was {model_name}, which achieved the highest score of {best_score:.4f} during cross validation.")
         self.add_bullet("This model was selected based on its superior performance compared to other tuned models.")
         self.add_bullet("Best hyperparameters found:")
         for param, val in best_params.items():
@@ -191,7 +190,7 @@ class ReportingEngine:
 
 
     def write_visuals_section(self):
-        self.section_header("3. Figures and Visualizations")
+        self.section_header("3. Additional Visuals")
 
         if self.preprocessor.task_type == 'classification':
             logging.info("Generating classification visualizations...")
@@ -230,7 +229,7 @@ class ReportingEngine:
             self.plot_model_performance_bar_chart()
 
         else:
-            logging.warning("Unsupported task type for visualizations: %s", ppe.task_type)
+            logging.warning("Unsupported task type for visualizations: %s", self.preprocessor.task_type)
 
     def plot_reg_distribution(self):
         """Plots the distribution of the target variable for regression tasks."""
