@@ -225,6 +225,34 @@ def test_request_datasets(client):
     assert response.status_code == 200
 
 @pytest.mark.django_db
+def test_request_model(client):
+    '''
+    Testing an API request to get a user's models.
+    There is a test case with and without a user's authentication token.
+
+    parm client: The client is used to run the post request to the API URL endpoint.
+
+    :Test Cases: TC-70 & TC-71
+    '''
+    # Set up the API enpoint to the request models URL and making a request without an authentication token.
+    url = reverse('api_request_models')
+    response = client.post(url)
+
+    # Asserting that the user isn't given access becuase they aren't authenticated.
+    assert response.status_code == 401
+    
+    # Set up a testr user with a test username and password. Assigning the user a token to authenticate them.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Assigning the header to the request and getting its response.
+    headers = { "Authorization": "Token " + userToken.key}
+    response = client.post(url, headers=headers)
+
+    # Asserting that the user was given access and it would have all their models.
+    assert response.status_code == 200
+
+@pytest.mark.django_db
 def test_account_page(client):
     # Defining the url that will be navigated to.
     url = reverse('account')
