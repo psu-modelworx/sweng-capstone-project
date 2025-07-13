@@ -103,7 +103,7 @@ function run_model_request(model_id) {
     });
 }
 
-function pollTaskResult(task_id) {
+function pollTaskResult(task_id, retries=0) {
     fetch(`/automodeler/check_task/${task_id}/`)
     .then(response => {
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
