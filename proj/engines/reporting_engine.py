@@ -433,6 +433,15 @@ class ReportingEngine:
             self.add_bullet("Precision-Recall curve plot: Test data not available.")
             return
 
+
+        classes = np.unique(y_test)
+        n_classes = len(classes)
+
+        if n_classes > 2:
+            y_test_bin = label_binarize(y_test, classes=classes)
+        else:
+            y_test_bin = None  # not needed for binary
+
         for model_name, info in tuned_models.items():
             model = info.get('optimized_model')
             if model is None:
@@ -440,17 +449,35 @@ class ReportingEngine:
                 continue
 
             try:
-                from sklearn.metrics import precision_recall_curve
-                y_score = model.predict_proba(X_test)[:, 1]
-                precision, recall, _ = precision_recall_curve(y_test, y_score)
+                # Try to get scores: prefer predict_proba, else decision_function if available
+                if hasattr(model, "predict_proba"):
+                    y_score = model.predict_proba(X_test)
+                elif hasattr(model, "decision_function"):
+                    y_score = model.decision_function(X_test)
+                    # decision_function might be shape (n_samples,) for binary
+                    # make sure to reshape if needed
+                    if n_classes == 2 and y_score.ndim == 1:
+                        y_score = np.vstack([1 - y_score, y_score]).T
+                else:
+                    self.add_bullet(f"Precision-Recall curve plot: Model {model_name} has no method to get scores. Skipping.")
+                    continue
 
                 plt.figure(figsize=(8, 6))
-                plt.plot(recall, precision, color='blue')
+
+                if n_classes == 2:
+                    precision, recall, _ = precision_recall_curve(y_test, y_score[:, 1])
+                    avg_prec = average_precision_score(y_test, y_score[:, 1])
+                    plt.plot(recall, precision, color='blue', label=f'PR curve (AP = {avg_prec:.2f})')
+                else:
+                    for i in range(n_classes):
+                        precision, recall, _ = precision_recall_curve(y_test_bin[:, i], y_score[:, i])
+                        avg_prec = average_precision_score(y_test_bin[:, i], y_score[:, i])
+                        plt.plot(recall, precision, label=f'Class {classes[i]} (AP = {avg_prec:.2f})')
+
                 plt.xlabel('Recall')
                 plt.ylabel('Precision')
                 plt.title(f'Precision-Recall Curve: {model_name}')
-                plt.xlim([0.0, 1.0])
-                plt.ylim([0.0, 1.05])
+                plt.legend(loc='lower left')
 
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
                     plt.savefig(tmpfile.name, bbox_inches='tight')
