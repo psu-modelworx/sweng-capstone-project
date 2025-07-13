@@ -25,7 +25,8 @@ router.register('modelworx', ModelWorxViewSet, basename='modelworx') # Routing t
 urlpatterns = [
     path("automodeler/", include("automodeler.urls")),
     path('admin/', admin.site.urls),
-    path('accounts/', include("accounts.urls")), # Used with middleware below
     path('accounts/', include("django.contrib.auth.urls")),
-    path('', include(router.urls)),
+    path('accounts/', include("accounts.urls")), # Used with middleware below
+    #path('', include(router.urls)),
+    path('', include("automodeler.urls")),
 ]

@@ -1,0 +1,133 @@
+{% include 'base/header.html' %}
+{% include 'base/navbar.html' %}
+
+{% if model %}
+
+Model Name: {{ model.name }}
+<br />
+Model Method: {{ model.method }}
+<br />
+Model Type: {{ model.type }}
+<br />
+
+<form id="model_parameters_form">
+    
+    <div class="col-md-2 mb-2">
+
+    
+{% for f in model.features %}
+    <label for="{{ f }}" class="form-label">{{ f }}</label>
+    <input type="text" class="form-control" id="{{ f }}" name="{{ f }}" />
+    
+{% endfor %}
+    </div>
+</form>
+
+<button class="btn btn-success" onclick="run_model_request( {{ model.id }} )">Run Model!</button>
+
+<br />
+<br />
+
+<h3 class="text-success-emphasis" id="result_text"></h3>
+
+{% else %}
+<h2>No model id provided</h2>
+{% endif %}
+
+
+{% include 'base/footer.html' %}
+
+
+<script>
+    
+function run_model_request(model_id) {
+    var url = '{% url 'run_model' %}';
+    var CSRF_TOKEN = '{{ csrf_token }}';
+
+    // Show immediate loading message
+    const result_text = document.getElementById("result_text");
+    result_text.textContent = "Getting Prediction...";
+
+    // Get the form
+    const input_form = document.getElementById("model_parameters_form");
+
+    const form_inputs_elements = input_form.getElementsByTagName("input");
+
+    const form_inputs_array = Array.from(form_inputs_elements);
+
+    // Loop through form elements to get inputs
+    var input_data = []
+
+    /*
+    // Method to create list of dictionaries if needed in the future...
+    form_inputs_array.forEach( input_obj => {
+        input_data.push({
+            key: input_obj.id ,
+            value: input_obj.value
+        });
+    });
+    */
+
+    form_inputs_array.forEach( input_obj => {
+        input_data.push(input_obj.value);
+    });
+
+    request_data = {
+        values: input_data
+    }
+
+    let formData = new FormData();
+    formData.append("model_id", model_id);
+    formData.append("data", JSON.stringify(request_data));
+    
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF_TOKEN },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        if (data.task_id) {
+            pollTaskResult(data.task_id);
+        } else {
+            result_text.textContent = data.error || "Unexpected response from server.";
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        result_text.textContent = "Error starting task.";
+    });
+}
+
+function pollTaskResult(task_id, retries=0) {
+    fetch(`/automodeler/check_task/${task_id}/`)
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === "PENDING") {
+            if (retries < 30) {
+                setTimeout(() => pollTaskResult(task_id, retries + 1), 2000);
+            } else {
+                document.getElementById("result_text").textContent = "Prediction timeout.";
+            }
+        } else if (data.message) {
+            document.getElementById("result_text").textContent = data.message;
+        } else if (data.error) {
+            document.getElementById("result_text").textContent = data.error;
+        } else {
+            document.getElementById("result_text").textContent = "Unexpected task result.";
+        }
+    })
+    .catch(error => {
+        console.error("Polling error:", error);
+        document.getElementById("result_text").textContent = "Error checking task status.";
+    });
+}
+
+</script>

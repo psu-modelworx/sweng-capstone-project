@@ -2,57 +2,33 @@
 
 {% include "base/navbar.html" %}
 
+{% block title %}Sign up{% endblock %}
+
+{% block content %}
 
 <h2>Sign up</h2>
-<div class="container">
-    <form method="post">
-        {% csrf_token %}
-    
-        <div class="col-md-3 mb-3">
-            <label for="id_username">Username</label>
-            <input type="text" class="form-control" name="username" autofocus autocapitalize="none" maxlength="150" required id="id_username">
-            {% if 'username' in form_errors.keys %}
-            <div class="text text-danger">
-              {% for msg in form_errors.username %}
-                <br />
-                {{ msg }}
-              {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="id_password1">Password</label>
-            <input type="password" class="form-control" name="password1" autocomplete="current-password" maxlength="150" required id="id_password1" aria-describedby="id_password_helptext">
-            <div class="form-text" id="id_password_helptext">
-              <li>Your password can't be too similar to your other personal information.</li>
-              <li>Your password must contain at least 8 characters.</li>
-              <li>Your password must can't be a commonly used password.</li>
-              <li>Your password must contain a mix of alphanumeric characters and symbols.</li>
-            </div>
-            {% if 'password1' in form_errors.keys %}
-            <div class="text text-danger">
-              {% for msg in form_errors.password1 %}
-                <br />
-                {{ msg }}
-              {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="id_password2">Password Confirmation</label>
-            <input type="password" class="form-control" name="password2" autocomplete="current-password" maxlength="150" required id="id_password2" aria-describedby="id_password2_helptext">
-            <div class="form-text" id="id_password2_helptext">Please enter your password for confirmation</div>
-            {% if 'password2' in form_errors.keys %}
-            <div class="text text-danger">
-              {% for msg in form_errors.password2 %}
-                <br />  
-                {{ msg }}
-              {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        <button type="submit" class="btn btn-primary">Sign up!</button>
-    </form>    
+
+<div class="container col-md-3">
+  <form  method="post">
+    {% csrf_token %}
+
+    {% for field in form %}
+
+      <div>
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.errors %}
+          <ul class="errorlist">
+            {% for error in field.errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+      </div>
+    {% endfor %}
+    <button class="btn btn-info m-3" type="submit">Sign up</button>
+  </form>
 </div>
 
+{% endblock %}
 {% include "base/footer.html" %}

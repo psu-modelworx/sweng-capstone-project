@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 import os
 
@@ -52,5 +54,48 @@ class DatasetModel(models.Model):
     original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     
     
-
+class TunedDatasetModel(models.Model):
+    MODEL_METHODS = {
+        "LogisticRegression": "Logistic Regression",
+        "RandomForestClassifier": "Random Forest Classifier",
+        "GradientBoostingClassifier": "Gradient Boosting Classifier",
+        "SVC": "SVC",
+        "LinearRegression": "Linear Regression",
+        "RandomForestRegressor": "Random Forest Regressor",
+        "GradientBoostingRegressor": "Gradient Boosting Regressor",
+        "SVR": "SVR"    
+    }
     
+    MODEL_TYPES = {
+        "regression": "Regression",
+        "classification": "Classification"
+    }
+    
+    name = models.CharField(max_length=100)
+    model_file = models.FileField(upload_to='models/')
+    model_method = models.CharField(max_length=30, choices=MODEL_METHODS)
+    model_type = models.CharField(max_length=15, choices=MODEL_TYPES)
+    untuned_model = models.OneToOneField(DatasetModel, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    
+    
+class UserTask(models.Model):
+    TASK_TYPES = [
+        ('preprocessing', 'Preprocessing'),
+        ('modeling', 'Modeling'),
+        ('prediction', 'Prediction'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    task_id = models.CharField(max_length=255, unique=True)
+    task_type = models.CharField(max_length=50, choices=TASK_TYPES)
+    status = models.CharField(max_length=50, default='PENDING')
+    result_message = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, null=True, blank =True)
+
+@receiver(pre_delete, sender=Dataset)
+def delete_usertasks_with_dataset(sender, instance, **kwargs):
+    # Delete all UserTasks related to this dataset
+    UserTask.objects.filter(dataset=instance).delete()

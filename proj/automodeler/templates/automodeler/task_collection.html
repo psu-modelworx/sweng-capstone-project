@@ -3,15 +3,55 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
 <!-- DataTables -->
-<link rel="stylesheet" href="https://cdn.datatables.net/2.3.1/css/dataTables.dataTables.css" />
-<script src="https://cdn.datatables.net/2.3.1/js/dataTables.js"></script>
-
+<link rel="stylesheet" href="https://cdn.datatables.net/2.3.1/css/dataTables.dataTables.min.css" />
+<script src="https://cdn.datatables.net/2.3.1/js/jquery.dataTables.min.js"></script>
 
 {% include "base/navbar.html" %}
 
-
 <h1>Task Collection Page</h1>
+<h2>Task History</h2>
 
+<table id="tasks_table" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Dataset Name</th>
+            <th>Result</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in user_tasks %}
+        <tr>
+            <td>{{ task.task_type }}</td>
+            <td>{{ task.status }}</td>
+            <td>
+                {% if task.dataset %}
+                {{ task.dataset.name }} (ID: {{ task.dataset.id }})
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            <td>{{ task.result_message|default:"-" }}</td>
+            <td>{{ task.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 {% include "base/footer.html" %}
 
+<script>
+    $(document).ready(function () {
+        $('#tasks_table').DataTable({
+            paging: true,
+            searching: true,
+            ordering: true,
+            order: [[4, 'desc']],  // order by created date desc
+            columnDefs: [
+                { targets: [2], width: "25%" }  // make dataset column wider
+            ]
+        });
+    });
+</script>
