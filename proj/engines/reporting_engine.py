@@ -777,3 +777,18 @@ class ReportingEngine:
     def add_bullet(self, text):
         self.pdf.set_x(self.pdf.get_x() + 5)
         self.pdf.multi_cell(0, 8, f"- {text}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    def add_table(self, header, data, col_widths):
+        self.pdf.set_font("Helvetica", "B", 10)
+        # Header
+        for i in range(len(header)):
+            self.pdf.cell(col_widths[i], 8, header[i], 1, 0, "C")
+        self.pdf.ln()
+        self.pdf.set_font("Helvetica", "", 10)
+        # Data rows
+        for row in data:
+            for i in range(len(row)):
+                self.pdf.cell(col_widths[i], 8, str(row[i]), 1, 0, "C")
+            self.pdf.ln()
+        self.pdf.ln(5)
+
