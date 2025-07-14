@@ -23,11 +23,7 @@ from django.core.files.storage import FileSystemStorage
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Set ENVIRONMENT - production or development
-# Determine which env file to load
-if os.getenv("DJANGO_ENV") == 'production':
-    ENV_PATH = BASE_DIR / 'modelworx' / '.env.production'
-else:
-    ENV_PATH = BASE_DIR / 'modelworx' / '.env'
+ENV_PATH = BASE_DIR / 'modelworx' / '.env'
 
 config = Config(RepositoryEnv(str(ENV_PATH)))
 
