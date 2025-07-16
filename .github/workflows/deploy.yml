@@ -19,17 +19,44 @@ jobs:
         echo  "${{ secrets.KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
-    
+
     - name: Upload project to VPS via rsync
       run: |
         rsync -az --delete \
         --exclude='venv/' \
         --exclude='db.sqlite3' \
-        --exclude='proj/modelworx/.env.production' \
         --exclude='__pycache__/' \
         --exclude='*.pyc' \
         ./ ${{ secrets.USERNAME}}@${{ secrets.HOST }}:/home/deploy/sweng-capstone-project
     
+
+    - name: Overwrite .env for Production with GitHub Secrets
+      run: |
+        ssh ${{ secrets.USERNAME }}@${{ secrets.HOST }} << EOF
+        cd /home/deploy/sweng-capstone-project/proj
+        cat > modelworx/.env <<-EOT
+        ENVIRONMENT=${{ secrets.ENVIRONMENT }}
+        DJANGO_DEBUG=${{ secrets.DJANGO_DEBUG }}
+        DJANGO_ALLOWED_HOSTS=${{ secrets.DJANGO_ALLOWED_HOSTS }}
+
+        DB_ENGINE=${{ secrets.DB_ENGINE }}
+        DB_NAME=${{ secrets.DB_NAME }}
+        DB_USER=${{ secrets.DB_USER }}
+        DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+        DB_HOST=${{ secrets.DB_HOST }}
+        DB_PORT=${{ secrets.DB_PORT }}
+
+        USE_S3=${{ secrets.USE_S3 }}
+        AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_STORAGE_BUCKET_NAME=${{ secrets.AWS_STORAGE_BUCKET_NAME }}
+        AWS_S3_ENDPOINT_URL=${{ secrets.AWS_S3_ENDPOINT_URL }}
+
+        CELERY_BROKER_URL=${{ secrets.CELERY_BROKER_URL }}
+        CELERY_RESULT_BACKEND=${{ secrets.CELERY_RESULT_BACKEND }}
+        EOT
+        EOF
+
     - name: SSH into VPS and restart Gunicorn
       run: |
         ssh ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
@@ -37,9 +64,6 @@ jobs:
           source venv/bin/activate
           pip install -r requirements
           cd proj/
-
-          # load production env variables
-          set -a && source modelworx/.env.production && set +a
 
           python manage.py collectstatic --noinput
           python manage.py migrate --noinput

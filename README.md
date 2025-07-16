@@ -29,7 +29,7 @@ python manage.py runserver
 
 Open a browser and navigate to http://localhost:8000
 
-## Running Celery and Redis (Task Queue Setup)
+## Running Celery and RabbitMQ (Task Queue Setup)
 
 This project uses **Celery** for background task processing and **RabbitMQ** as the message broker.
 
@@ -38,13 +38,13 @@ This project uses **Celery** for background task processing and **RabbitMQ** as 
 ### Prerequisites
 
 - Python virtual environment activated
-- Redis installed and available in your system path
+- RabbitMQ and ERLANG installed and available in your system path
 - Project dependencies installed (`pip install -r requirements`)
-- RabbitMQ and Celery must be run in separate terminals for runserver
+- RabbitMQ and Celery must be run in separate terminals for runserver (see instructions below)
 
 ---
 
-### 1. Start Redis
+### Start RabbitMQ
 
 ```bash
 # On Linux
@@ -52,19 +52,23 @@ rabbitmq-server
 
 # On Windows Powershell with Admin (if installed manually)
 rabbitmq-server start
-
+```
 ---
 
-### 2. Start Celery
-
+### Start Celery
 ```bash
-# On Linux, dir where manage.py is located
+# On Linux, dir where manage.py is located (proj)
 celery -A modelworx worker --loglevel=info --pool=solo
 
+# For development, only one thread will be running, tasks will be queued in the one thread.
+```
+
 ---
-### 3. Start Application 
+
+### Start Application 
 ```bash
 # On Linux
 python manage.py makemigrations  # to capture latest models changes
 python manage.py migrate
 python manage.py runserver
+```
