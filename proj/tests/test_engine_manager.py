@@ -61,7 +61,7 @@ def test_run_model_system(client, user_factory):
     user = user_factory()
     client.force_login(user)
 
-    dataset = Dataset.objects.create(name="Test", user=user, features={"f1": "float"})
+    dataset = Dataset.objects.create(name="Test", user=user, features={"f1": "N"})
 
     untuned_model = DatasetModel.objects.create(
         user=user,

@@ -35,11 +35,11 @@ def extract_features_from_inMemoryUploadedFile(in_mem_file):
 def sanitize_dataset(in_mem_file):
     """
     sanitize_dataset reads an in-memory file object, and attempts to sanitize by removing html data.  Then, it tries to load
-    into a pandas dataframe to verify it can be used.
+    into a pandas dataframe to verify it can be used.  It returns the number of rows in the dataset as proof
 
     :param in_mem_file: InMemoryFile object to read
 
-    :return sanitized_dataset: Sanitized dataset to be saved
+    :return number_of_rows: Returns the number of rows in the dataset
     """
     file_data = in_mem_file.read().decode('utf-8')
     the_file = io.StringIO(file_data)
@@ -47,4 +47,5 @@ def sanitize_dataset(in_mem_file):
     if not df.empty:
         # Return reading pointer to beginning of memory array
         in_mem_file.seek(0)
-        return True
+        number_of_rows = len(df)
+        return number_of_rows
