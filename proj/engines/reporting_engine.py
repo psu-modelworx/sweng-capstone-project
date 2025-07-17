@@ -77,9 +77,12 @@ class ReportingEngine:
         self.subsection("Feature Engineering")
         if hasattr(self.preprocessor.feature_encoder, "categories_"):
             self.add_bullet(f"Feature encoding method: {self.preprocessor.feature_encoder.__class__.__name__}")
-            for i, cats in enumerate(self.preprocessor.feature_encoder.categories_):
-                self.add_bullet(f"Categorical feature {i + 1} categories: {', '.join(map(str, cats))}")
-            self.add_bullet(f"Encoded column names: {', '.join(self.preprocessor.feature_encoder.get_feature_names_out())}")
+            if hasattr(self.preprocessor.feature_encoder, 'feature_names_in_'):
+                feature_names = self.preprocessor.feature_encoder.feature_names_in_
+            else:
+                feature_names = [f"Feature {i + 1}" for i in range(len(self.preprocessor.feature_encoder.categories_))]
+            for feature_name, categories in zip(feature_names, self.preprocessor.feature_encoder.categories_):
+                self.add_bullet(f"{feature_name}: {', '.join(map(str, categories))}")
         else:
             self.add_bullet("No feature encoding applied.")
         if hasattr(self.preprocessor.scaler, 'scale_'):
