@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.calibration import label_binarize
-from sklearn.metrics import auc, average_precision_score, confusion_matrix, f1_score, mean_squared_error, precision_recall_curve, precision_score, recall_score, roc_curve, accuracy_score, r2_score
+from sklearn.metrics import auc, average_precision_score, classification_report, confusion_matrix, f1_score, mean_absolute_error, mean_squared_error, precision_recall_curve, precision_score, recall_score, roc_curve, accuracy_score, r2_score
 import seaborn as sns
 
 class ReportingEngine:
