@@ -210,38 +210,22 @@ class ReportingEngine:
         if self.preprocessor.task_type == 'classification':
             logging.info("Generating classification visualizations...")
 
-            self.subsection("Confusion Matrix Heatmap")
             self.generate_conf_matrix()
-            self.subsection("Feature Importance Plot")
             self.plot_feature_importance()
-            self.subsection("ROC Curve")
             self.plot_roc_curve()
-            self.subsection("Precision-Recall Curve")
             self.plot_precision_recall_curve()
-            self.subsection("Classification Report Heatmap")
             self.plot_classification_report()
-            self.subsection("Model Performance Bar Chart")
-            self.plot_model_performance_bar_chart()
-            self.subsection("Cross-Validation Score Boxplots")
+            self.plot_classification_model_performance_bar_chart()
             self.plot_cv_score_boxplots()
 
         elif self.preprocessor.task_type == 'regression':
             logging.info("Generating regression visualizations...")
 
-            self.subsection("Residuals Plot")
             self.plot_residuals()
-            self.subsection("Actual vs Predicted Plot")
             self.plot_actual_vs_predicted()
-            self.subsection("Error Distribution Plot")
             self.plot_error_distribution()
-            self.subsection("Feature Importance Plot")
             self.plot_feature_importance()
-            self.subsection("Metrics Bar Chart")
-            self.plot_metrics_bar_chart()
-            self.subsection("Model Performance Bar Chart")
             self.plot_cv_score_boxplots()
-            self.subsection("Model Performance Bar Chart")
-            self.plot_model_performance_bar_chart()
 
         else:
             logging.warning("Unsupported task type for visualizations: %s", self.preprocessor.task_type)
@@ -263,6 +247,10 @@ class ReportingEngine:
 
     def generate_conf_matrix(self):
         """Generates confusion matrix heatmaps for tuned models."""
+
+        self.subsection("Confusion Matrix Heatmap")
+        self.add_bullet("A confusion matrix heatmap visualizes the number of correct and incorrect predictions for each class, helping to identify patterns of misclassification.")
+
         if self.preprocessor.task_type != 'classification':
             self.add_bullet("Confusion matrix heatmap: Not applicable for regression task.")
             return
@@ -337,6 +325,10 @@ class ReportingEngine:
 
     def plot_feature_importance(self):
         """Plots feature importance for tuned models."""
+
+        self.subsection("Feature Importance Plot")
+        self.add_bullet("A feature importance plot highlights which input features had the most influence on the model's predictions, offering insights into key drivers of the outcome.")
+            
         if self.preprocessor.task_type not in ['classification', 'regression']:
             self.add_bullet("Feature importance plot: Not applicable for this task type.")
             return
@@ -380,6 +372,10 @@ class ReportingEngine:
 
     def plot_roc_curve(self):
         """Plots ROC curve for classification models."""
+
+        self.subsection("ROC Curve")
+        self.add_bullet("The ROC (Receiver Operating Characteristic) curve illustrates the trade-off between true positive rate and false positive rate across different thresholds, helping assess the model’s ability to distinguish between classes.")
+
         if self.preprocessor.task_type != 'classification':
             self.add_bullet("ROC curve plot: Not applicable for regression task.")
             return
@@ -448,6 +444,10 @@ class ReportingEngine:
 
     def plot_precision_recall_curve(self):
         """Plots Precision-Recall curve for classification models."""
+
+        self.subsection("Precision-Recall Curve")
+        self.add_bullet("The Precision-Recall curve shows the tradeoff between precision and recall for different decision thresholds, helping assess model performance on imbalanced classification tasks.")
+        
         if self.preprocessor.task_type != 'classification':
             self.add_bullet("Precision-Recall curve plot: Not applicable for regression task.")
             return
@@ -521,6 +521,10 @@ class ReportingEngine:
 
     def plot_classification_report(self):
         """Plots classification report for tuned models."""
+
+        self.subsection("Classification Report Heatmap")
+        self.add_bullet("The classification report heatmap visualizes key metrics like precision, recall, and F1-score for each class, making it easier to compare performance across categories.")
+
         if self.preprocessor.task_type != 'classification':
             self.add_bullet("Classification report plot: Not applicable for regression task.")
             return
@@ -544,7 +548,6 @@ class ReportingEngine:
                 continue
 
             try:
-                from sklearn.metrics import classification_report
                 y_pred_encoded = model.predict(X_test)
                 y_pred = self.preprocessor.decode_target(y_pred_encoded)
                 y_true = self.preprocessor.decode_target(y_test)
@@ -564,74 +567,47 @@ class ReportingEngine:
 
             except Exception as e:
                 self.add_bullet(f"Classification report plot: Error generating classification report for {model_name}: {str(e)}")
-    
-    def plot_model_performance_bar_chart(self):
-        """Plots a bar chart of model performance metrics."""
-        if self.preprocessor.task_type not in ['classification', 'regression']:
-            self.add_bullet("Model performance bar chart: Not applicable for this task type.")
-            return
 
-        tuned_models = self.modeler.results.get('tuned', {})
-        if not tuned_models:
-            self.add_bullet("Model performance bar chart: No tuned models available.")
-            return
-
-        model_names = []
-        scores = []
-
-        for model_name, info in tuned_models.items():
-            best_score = info.get('best_score', None)
-            if best_score is not None:
-                model_names.append(model_name)
-                scores.append(best_score)
-
-        if not model_names:
-            self.add_bullet("Model performance bar chart: No scores available for tuned models.")
-            return
-
-        plt.figure(figsize=(10, 6))
-        sns.barplot(x=model_names, y=scores, hue=model_names, palette='viridis', legend=False)
-        plt.title('Model Performance Comparison')
-        plt.xlabel('Models')
-        plt.ylabel('Best CV Score')
-        plt.xticks(rotation=45)
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
-            plt.savefig(tmpfile.name, bbox_inches='tight')
-            plt.close()
-            self.pdf.image(tmpfile.name, x=15, w=180)
-        os.remove(tmpfile.name)
 
     def plot_cv_score_boxplots(self):
-        """Plots boxplots of cross-validation scores for tuned models."""
+        """Plots boxplots of cross-validation scores for untuned models."""
+
+        self.subsection("Cross-Validation Score Boxplots")
+        self.add_bullet("The cross-validation box plot visualizes the distribution of scores across CV folds for each model, highlighting variability, consistency, and potential outliers in performance.")
+        
         if self.preprocessor.task_type not in ['classification', 'regression']:
             self.add_bullet("CV score boxplots: Not applicable for this task type.")
             return
 
-        tuned_models = self.modeler.results.get('tuned', {})
-        if not tuned_models:
-            self.add_bullet("CV score boxplots: No tuned models available.")
+        untuned_models = self.modeler.results.get('untuned', {})
+        if not untuned_models:
+            self.add_bullet("CV score boxplots: No untuned models available.")
             return
 
         model_names = []
         cv_scores = []
 
-        for model_name, info in tuned_models.items():
+        for model_name, info in untuned_models.items():
             scores = info.get('cv_scores', [])
             if scores:
-                model_names.append(model_name)
-                cv_scores.append(scores)
+                model_names.extend([model_name] * len(scores))
+                cv_scores.extend(scores)
 
         if not model_names:
-            self.add_bullet("CV score boxplots: No CV scores available for tuned models.")
+            self.add_bullet("CV score boxplots: No CV scores available for untuned models.")
             return
 
+        df = pd.DataFrame({
+            "Model": model_names,
+            "CV Score": cv_scores
+        })
+
         plt.figure(figsize=(10, 6))
-        sns.boxplot(data=cv_scores)
-        plt.title('Cross-Validation Score Distribution')
+        sns.boxplot(x="Model", y="CV Score", data=df, hue="Model", palette='pastel', legend=False)
+        plt.title('Cross-Validation Score Distribution (Untuned Models)')
         plt.xlabel('Models')
         plt.ylabel('CV Scores')
-        plt.xticks(range(len(model_names)), model_names, rotation=45)
+        plt.xticks(rotation=45)
 
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
             plt.savefig(tmpfile.name, bbox_inches='tight')
@@ -641,6 +617,10 @@ class ReportingEngine:
 
     def plot_residuals(self):
         """Plots residuals for regression models."""
+
+        self.subsection("Residuals Plot")
+        self.add_bullet("The residuals plot displays the difference between predicted and actual values, helping to diagnose non-linearity, unequal error variance, and outliers in regression models.")
+            
         if self.preprocessor.task_type != 'regression':
             self.add_bullet("Residuals plot: Not applicable for classification task.")
             return
@@ -685,6 +665,11 @@ class ReportingEngine:
 
     def plot_actual_vs_predicted(self):
         """Plots actual vs predicted values for regression models."""
+
+        self.subsection("Actual vs. Predicted Plot")
+        self.add_bullet("The actual vs. predicted plot compares the model's predictions to the true values, providing a visual assessment of prediction accuracy and potential bias in regression models.")
+
+
         if self.preprocessor.task_type != 'regression':
             self.add_bullet("Actual vs Predicted plot: Not applicable for classification task.")
             return
@@ -728,6 +713,10 @@ class ReportingEngine:
     
     def plot_error_distribution(self):
         """Plots the distribution of errors for regression models."""
+
+        self.subsection("Error Distribution Plot")
+        self.add_bullet("The error distribution plot shows the frequency distribution of prediction errors, helping to evaluate model bias and detect if errors are normally distributed.")
+
         if self.preprocessor.task_type != 'regression':
             self.add_bullet("Error distribution plot: Not applicable for classification task.")
             return
@@ -770,10 +759,14 @@ class ReportingEngine:
                 self.add_bullet(f"Error distribution plot: Error generating plot for {model_name}: {str(e)}")
 
 
-    def plot_metrics_bar_chart(self):
-        """Plots a bar chart of regression metrics."""
-        if self.preprocessor.task_type != 'regression':
-            self.add_bullet("Metrics bar chart: Not applicable for classification task.")
+    def plot_classification_model_performance_bar_chart(self):
+        """Plots a bar chart of classification train and test scores."""
+
+        self.subsection("Metrics Bar Chart")
+        self.add_bullet("The metrics bar chart compares train and test scores for each classification model, helping assess potential overfitting and generalization performance.")
+
+        if self.preprocessor.task_type != 'classification':
+            self.add_bullet("Metrics bar chart: Not applicable for regression task.")
             return
 
         tuned_models = self.modeler.results.get('tuned', {})
@@ -799,14 +792,15 @@ class ReportingEngine:
 
         plt.figure(figsize=(10, 6))
         x = range(len(model_names))
-        plt.bar(x, train_scores, width=0.4, label='Train Score', align='center')
-        plt.bar([i + 0.4 for i in x], test_scores, width=0.4, label='Test Score', align='center')
-        plt.title('Model Performance Comparison')
+        plt.bar(x, train_scores, width=0.4, label='Train Accuracy', align='center')
+        plt.bar([i + 0.4 for i in x], test_scores, width=0.4, label='Test Accuracy', align='center')
+        plt.title('Classification Model Performance Comparison')
         plt.xlabel('Models')
-        plt.ylabel('Scores')
+        plt.ylabel('Accuracy')
         plt.xticks([i + 0.2 for i in x], model_names, rotation=45)
         plt.legend()
 
+        import tempfile, os
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
             plt.savefig(tmpfile.name, bbox_inches='tight')
             plt.close()
@@ -840,13 +834,13 @@ class ReportingEngine:
         self.pdf.set_font("Helvetica", "B", 10)
         # Header
         for i in range(len(header)):
-            self.pdf.cell(col_widths[i], 8, header[i], 1, 0, "C")
+            self.pdf.cell(col_widths[i], 8, header[i], border=1, new_x=XPos.RIGHT, new_y=YPos.TOP, align="C")
         self.pdf.ln()
         self.pdf.set_font("Helvetica", "", 10)
         # Data rows
         for row in data:
             for i in range(len(row)):
-                self.pdf.cell(col_widths[i], 8, str(row[i]), 1, 0, "C")
+                self.pdf.cell(col_widths[i], 8, str(row[i]), border=1, new_x=XPos.RIGHT, new_y=YPos.TOP, align="C")
             self.pdf.ln()
         self.pdf.ln(5)
 
