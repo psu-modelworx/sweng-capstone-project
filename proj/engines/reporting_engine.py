@@ -152,10 +152,10 @@ class ReportingEngine:
 
                 data.append([
                     model_name,
-                    f"{accuracy:.3f}",
-                    f"{precision:.3f}",
-                    f"{recall:.3f}",
-                    f"{f1:.3f}"
+                    f"{accuracy:.2%}",
+                    f"{precision:.2%}",
+                    f"{recall:.2%}",
+                    f"{f1:.2%}"
                 ])
 
             elif self.modeler.task_type == 'regression':
