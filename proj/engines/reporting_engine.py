@@ -381,7 +381,7 @@ class ReportingEngine:
         """Plots ROC curve for classification models."""
 
         self.subsection("ROC Curve")
-        self.add_bullet("The ROC (Receiver Operating Characteristic) curve illustrates the trade-off between true positive rate and false positive rate across different thresholds, helping assess the model’s ability to distinguish between classes.")
+        self.add_bullet("The ROC (Receiver Operating Characteristic) curve illustrates the trade-off between true positive rate and false positive rate across different thresholds, helping assess the model's ability to distinguish between classes.")
 
         if self.preprocessor.task_type != 'classification':
             self.add_bullet("ROC curve plot: Not applicable for regression task.")
