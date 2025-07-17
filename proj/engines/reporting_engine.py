@@ -156,19 +156,34 @@ class ReportingEngine:
                 ])
 
             elif self.modeler.task_type == 'regression':
-                headers = ["Model", "RMSE", "R² Score", "", ""]
-                rmse = np.sqrt(mean_squared_error(self.modeler.y_test, y_pred))
+                headers = ["Model", "RMSE", "R² Score", "MSE", "MAE"]
+                mse = mean_squared_error(self.modeler.y_test, y_pred)
+                mae = mean_absolute_error(self.modeler.y_test, y_pred)
+                rmse = np.sqrt(mse)
                 r2 = r2_score(self.modeler.y_test, y_pred)
 
                 data.append([
                     model_name,
                     f"{rmse:.3f}",
                     f"{r2:.3f}",
-                    "",
-                    ""
+                    f"{mse:.3f}",
+                    f"{mae:.3f}"
                 ])
 
-        col_widths_reg = [60, 30, 30, 30, 30]
+        if self.modeler.task_type == 'classification':
+            self.add_bullet("Accuracy measures the proportion of correct predictions out of all predictions made by the model.")
+            self.add_bullet("Precision indicates the proportion of true positive predictions among all positive predictions, reflecting the model's exactness.")
+            self.add_bullet("Recall (Sensitivity) measures the proportion of true positive predictions out of all actual positive cases, reflecting the model's completeness.")
+            self.add_bullet("F1 Score is the harmonic mean of precision and recall, balancing both metrics into a single performance measure.")
+
+        elif self.modeler.task_type == 'regression':
+            self.add_bullet("Root Mean Squared Error (RMSE) is the square root of the Mean Squared Error, providing an error metric in the same units as the target variable and indicating typical prediction error size.")
+            self.add_bullet("R-squared (R²) measures the proportion of variance in the target variable explained by the regression model, indicating how well the model fits the data.")
+            self.add_bullet("Mean Squared Error (MSE) measures the average squared difference between predicted and actual values, quantifying overall prediction error magnitude in regression models.")
+            self.add_bullet("Mean Absolute Error (MAE) measures the average absolute difference between predicted and actual values, providing a straightforward metric of prediction accuracy in regression models.")
+
+
+        col_widths_reg = [60, 30, 30, 30, 30]       
         self.add_table(headers, data, col_widths_reg)
 
         
