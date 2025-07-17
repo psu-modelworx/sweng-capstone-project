@@ -200,7 +200,11 @@ class ReportingEngine:
         best_score = best_info["best_score"]
         best_params = best_info["best_params"]
 
-        self.add_bullet(f"The best tuned model was {model_name}, which achieved the highest score of {best_score:.4f} during cross validation.")
+        if self.preprocessor.task_type == "classification":
+            self.add_bullet(f"The best tuned model was {model_name}, which achieved the highest cross-validated accuracy of {best_score:.2%}.")
+        elif self.preprocessor.task_type == "regression":
+            self.add_bullet(f"The best tuned model was {model_name}, which achieved the highest cross-validated R² score of {best_score:.4f}.")
+
         self.add_bullet("This model was selected based on its superior performance compared to other tuned models.")
         self.add_bullet("Best hyperparameters found:")
         for param, val in best_params.items():
