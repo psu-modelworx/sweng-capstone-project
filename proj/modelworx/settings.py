@@ -43,6 +43,7 @@ ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", default="localhost").split(",")
 
 INSTALLED_APPS = [
     'automodeler.apps.AutomodelerConfig',
+    'admin_two_factor.apps.TwoStepVerificationConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -215,4 +216,8 @@ if EMAIL_ENABLED:
   EMAIL_USE_SSL = False
   EMAIL_ADMINS = config('EMAIL_ADMINS')
   EMAIL_SENDER = config('EMAIL_SENDER')
+
+
+# Two Factor App Name
+ADMIN_TWO_FACTOR_NAME = 'Modelworx'
 

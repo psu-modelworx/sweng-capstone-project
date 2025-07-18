@@ -29,4 +29,5 @@ urlpatterns = [
     path('accounts/', include("accounts.urls")), # Used with middleware below
     #path('', include(router.urls)),
     path('', include("automodeler.urls")),
+    path('two_factor/', include(('admin_two_factor.urls', 'admin_two_factor'), namespace='two_factor')),
 ]
