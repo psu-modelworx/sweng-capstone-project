@@ -11,6 +11,10 @@ from .models import Dataset, PreprocessedDataSet, DatasetModel, TunedDatasetMode
 from .forms import DatasetForm
 from . import helper_functions
 
+import logging
+logger = logging.getLogger('django_file')
+
+
 # Create your views here.
 
 def index(request):
@@ -20,6 +24,7 @@ def index(request):
 
     :param request: This is the HTTP request object containing the HTTP request information
     """
+    logger.info('Test log message!')
     return render(request, "automodeler/index.html")
 
 def upload(request):

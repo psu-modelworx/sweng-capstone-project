@@ -29,4 +29,6 @@ urlpatterns = [
     path('accounts/', include("accounts.urls")), # Used with middleware below
     #path('', include(router.urls)),
     path('', include("automodeler.urls")),
+    path('logviewer/', include('logviewer.urls', namespace='logviewer')),
+
 ]
