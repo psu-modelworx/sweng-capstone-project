@@ -231,9 +231,9 @@ LOGGING = {
             "class": "logging.StreamHandler",
         },
         "file": {
-            "level": "DEBUG",
+            "level": config("FILE_MAX_LOG_LEVEL"),
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": "proj/logs/automodeler.log",
+            "filename": config('LOGVIEWER_LOG_FILE'),
             'when': 'midnight',
             'interval': 1,
             'backupCount': 14,
@@ -242,17 +242,17 @@ LOGGING = {
     },
     "root": {
         "handlers": ["console"],
-        "level": "DEBUG",
+        "level": config("CONSOLE_MAX_LOG_LEVEL"),
     },
     "loggers": {
-        "django": {
+        "django_console": {
             "handlers": ["console"],
-            "level": config("DJANGO_LOG_LEVEL", default="WARNING"),
+            "level": config("CONSOLE_MAX_LOG_LEVEL"),
             "propogate": False,
         },
         "django_file": {
             "handlers": ["file"],
-            "level": "DEBUG",
+            "level": config("FILE_MAX_LOG_LEVEL"),
             "propogate": True,
         },
     },
@@ -260,7 +260,7 @@ LOGGING = {
 
 # Log Viewer
 
-LOGVIEWER_LOGS = ["proj/logs/automodeler.log"]
-LOGVIEWER_REFRESH_INTERVAL = 1000
+LOGVIEWER_LOGS = [config('LOGVIEWER_LOG_FILE')]
+LOGVIEWER_REFRESH_INTERVAL = config('LOGVIEWER_REFRESH_INTERVAL')
 
 
