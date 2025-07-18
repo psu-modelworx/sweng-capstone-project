@@ -6,6 +6,7 @@ from engines.reporting_engine import ReportingEngine
 
 
 def test_initialization():
+    """TC-75: Ensure ReportingEngine initializes with preprocessor and modeler."""
     preprocessor_mock = MagicMock()
     modeler_mock = MagicMock()
     re = ReportingEngine(preprocessor=preprocessor_mock, modeler=modeler_mock)
@@ -16,7 +17,7 @@ def test_initialization():
 
 
 def test_write_title(tmp_path):
-    """TC-52: Ensure write_title writes a title to the PDF and the content is correct."""
+    """TC-76: Ensure title is written to PDF."""
     dummy_preprocessor = MagicMock()
     dummy_modeler = MagicMock()
 
@@ -37,12 +38,11 @@ def test_write_title(tmp_path):
 
     assert "My Report Title" in text
 
-
 def normalize_text(text):
     return re.sub(r'\s+', ' ', text).strip()
 
-
 def test_write_introduction_section(tmp_path):
+    """TC-77: Ensure introduction section is written to PDF."""
     dummy_preprocessor = MagicMock()
     dummy_preprocessor.task_type = "classification"
     dummy_modeler = MagicMock()
@@ -66,6 +66,7 @@ def test_write_introduction_section(tmp_path):
 
 
 def test_section_header(tmp_path):
+    """TC-78: Ensure section header is written to PDF."""
     dummy_preprocessor = MagicMock()
     dummy_modeler = MagicMock()
     report = ReportingEngine(dummy_preprocessor, dummy_modeler)
@@ -80,6 +81,7 @@ def test_section_header(tmp_path):
 
 
 def test_subsection(tmp_path):
+    """TC-79: Ensure subsection is written to PDF."""
     dummy_preprocessor = MagicMock()
     dummy_modeler = MagicMock()
     report = ReportingEngine(dummy_preprocessor, dummy_modeler)
@@ -94,6 +96,7 @@ def test_subsection(tmp_path):
 
 
 def test_add_bullet(tmp_path):
+    """TC-80: Ensure bullet point is added to PDF."""
     dummy_preprocessor = MagicMock()
     dummy_modeler = MagicMock()
     report = ReportingEngine(dummy_preprocessor, dummy_modeler)
@@ -108,6 +111,7 @@ def test_add_bullet(tmp_path):
 
 
 def test_add_table(tmp_path):
+    """TC-81: Ensure table is added to PDF."""
     dummy_preprocessor = MagicMock()
     dummy_modeler = MagicMock()
     report = ReportingEngine(dummy_preprocessor, dummy_modeler)
@@ -128,69 +132,69 @@ def test_add_table(tmp_path):
 
 
 def test_write_preprocessing_summary():
+    """TC-82: Ensure preprocessing summary is written to PDF."""
+    # set up
+    mock_preprocessor = MagicMock()
+    mock_preprocessor.df.shape = (100, 10)
+    mock_preprocessor.task_type = 'classification'
+    mock_preprocessor.dropped_columns = ['col']
+    mock_preprocessor.cols_to_remove = []
+    mock_preprocessor.feature_encoder.categories_ = [
+        ['A', 'B'], ['X', 'Y']]
+    mock_preprocessor.feature_encoder.__class__.__name__ = 'OneHotEncoder'
+    mock_preprocessor.feature_encoder.feature_names_in_ = [
+        'feature1', 'feature2']
+    mock_preprocessor.scaler.scale_ = [1.0, 2.0]
+    mock_preprocessor.scaler.__class__.__name__ = 'StandardScaler'
+    mock_preprocessor.label_encoder.classes_ = ['yes', 'no']
+    mock_preprocessor.label_encoder.__class__.__name__ = 'LabelEncoder'
+    mock_preprocessor.X_train.shape = (80, 10)
+    mock_preprocessor.X_test.shape = (20, 10)
+    mock_modeler = MagicMock()
+    report = ReportingEngine(mock_preprocessor, mock_modeler)
+    report.preprocessor = mock_preprocessor
+    report.section_header = MagicMock()
+    report.subsection = MagicMock()
+    report.add_bullet = MagicMock()
+    report.plot_class_distribution = MagicMock()
+    report.plot_reg_distribution = MagicMock()
 
-        # set up
-        mock_preprocessor = MagicMock()
-        mock_preprocessor.df.shape = (100, 10)
-        mock_preprocessor.task_type = 'classification'
-        mock_preprocessor.dropped_columns = ['col']
-        mock_preprocessor.cols_to_remove = []
-        mock_preprocessor.feature_encoder.categories_ = [
-            ['A', 'B'], ['X', 'Y']]
-        mock_preprocessor.feature_encoder.__class__.__name__ = 'OneHotEncoder'
-        mock_preprocessor.feature_encoder.feature_names_in_ = [
-            'feature1', 'feature2']
-        mock_preprocessor.scaler.scale_ = [1.0, 2.0]
-        mock_preprocessor.scaler.__class__.__name__ = 'StandardScaler'
-        mock_preprocessor.label_encoder.classes_ = ['yes', 'no']
-        mock_preprocessor.label_encoder.__class__.__name__ = 'LabelEncoder'
-        mock_preprocessor.X_train.shape = (80, 10)
-        mock_preprocessor.X_test.shape = (20, 10)
-        mock_modeler = MagicMock()
-        report = ReportingEngine(mock_preprocessor, mock_modeler)
-        report.preprocessor = mock_preprocessor
-        report.section_header = MagicMock()
-        report.subsection = MagicMock()
-        report.add_bullet = MagicMock()
-        report.plot_class_distribution = MagicMock()
-        report.plot_reg_distribution = MagicMock()
+    # run
+    report.write_preprocessing_summary()
 
-        # run
-        report.write_preprocessing_summary()
-
-        # assertions
-        report.section_header.assert_called_with("Preprocessing Summary")
-        report.subsection.assert_any_call("Initial Data Overview")
-        report.add_bullet.assert_any_call("Number of rows in the dataset: 100")
-        report.add_bullet.assert_any_call(
-            "Number of columns in the dataset: 10")
-        report.plot_class_distribution.assert_called_once()
-        report.plot_reg_distribution.assert_not_called()
-        report.subsection.assert_any_call("Data Cleaning")
-        report.add_bullet.assert_any_call(
-            "Handled missing numerical values by replacing with mean.")
-        report.add_bullet.assert_any_call(
-            "Removed columns from the dataset: ['col']")
-        report.subsection.assert_any_call("Feature Engineering")
-        report.add_bullet.assert_any_call(
-            "Feature encoding method: OneHotEncoder")
-        report.add_bullet.assert_any_call("feature1: A, B")
-        report.add_bullet.assert_any_call("feature2: X, Y")
-        report.add_bullet.assert_any_call(
-            "Feature scaling applied using StandardScaler.")
-        report.add_bullet.assert_any_call(
-            "Label encoding applied for target variable: LabelEncoder")
-        report.add_bullet.assert_any_call("Encoded target classes: yes, no")
-        report.subsection.assert_any_call("Data Splitting")
-        report.add_bullet.assert_any_call("Train set size: 80 rows")
-        report.add_bullet.assert_any_call("Test set size: 20 rows")
+    # assertions
+    report.section_header.assert_called_with("Preprocessing Summary")
+    report.subsection.assert_any_call("Initial Data Overview")
+    report.add_bullet.assert_any_call("Number of rows in the dataset: 100")
+    report.add_bullet.assert_any_call(
+        "Number of columns in the dataset: 10")
+    report.plot_class_distribution.assert_called_once()
+    report.plot_reg_distribution.assert_not_called()
+    report.subsection.assert_any_call("Data Cleaning")
+    report.add_bullet.assert_any_call(
+        "Handled missing numerical values by replacing with mean.")
+    report.add_bullet.assert_any_call(
+        "Removed columns from the dataset: ['col']")
+    report.subsection.assert_any_call("Feature Engineering")
+    report.add_bullet.assert_any_call(
+        "Feature encoding method: OneHotEncoder")
+    report.add_bullet.assert_any_call("feature1: A, B")
+    report.add_bullet.assert_any_call("feature2: X, Y")
+    report.add_bullet.assert_any_call(
+        "Feature scaling applied using StandardScaler.")
+    report.add_bullet.assert_any_call(
+        "Label encoding applied for target variable: LabelEncoder")
+    report.add_bullet.assert_any_call("Encoded target classes: yes, no")
+    report.subsection.assert_any_call("Data Splitting")
+    report.add_bullet.assert_any_call("Train set size: 80 rows")
+    report.add_bullet.assert_any_call("Test set size: 20 rows")
 
 def test_classification_modeling():
+    """TC-83: Ensure classification modeling summary is written to PDF."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.modeler.task_type = 'classification'
     report.add_bullet = MagicMock()
-
 
     dummy_model = MagicMock()
     dummy_model.predict.return_value = np.array([1, 0, 1, 1])
@@ -221,6 +225,7 @@ def test_classification_modeling():
     report.add_bullet.assert_any_call("The best tuned model was LogisticRegression, which achieved the highest cross-validated accuracy of 85.00%.")
 
 def test_regression_modeling():
+    """TC-84: Ensure regression modeling summary is written to PDF."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'regression'
     report.modeler.task_type = 'regression'
@@ -256,6 +261,7 @@ def test_regression_modeling():
     report.add_bullet.assert_any_call("The best tuned model was LinearRegression, which achieved the highest cross-validated R² score of 0.9100.")
 
 def test_write_visuals_section_classification():
+    """TC-85: Ensure visuals section is written for classification tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
 
@@ -280,6 +286,7 @@ def test_write_visuals_section_classification():
     report.plot_cv_score_boxplots.assert_called_once()
 
 def test_write_visuals_section_regression():
+    """TC-86: Ensure visuals section is written for regression tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'regression'
 
@@ -300,6 +307,7 @@ def test_write_visuals_section_regression():
     report.plot_cv_score_boxplots.assert_called_once()
 
 def test_plot_reg_distribution():
+    """TC-87: Ensure regression distribution plot is generated."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.y = [1, 2, 3, 4, 5]
     report.pdf = MagicMock()
@@ -309,7 +317,8 @@ def test_plot_reg_distribution():
 
     report.pdf.image.assert_called_once()
 
-def test_plot_residuals_basic():
+def test_plot_residuals():
+    """TC-88: Ensure residuals plot is generated for regression tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'regression'
     report.preprocessor.X_test = np.array([[1], [2], [3]])
@@ -333,6 +342,7 @@ def test_plot_residuals_basic():
     report.pdf.image.assert_called_once()
 
 def test_plot_actual_vs_predicted():
+    """TC-89: Ensure actual vs predicted plot is generated for regression tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'regression'
     report.preprocessor.X_test = np.array([[1], [2], [3]])
@@ -351,6 +361,7 @@ def test_plot_actual_vs_predicted():
     report.pdf.image.assert_called_once()
 
 def test_plot_error_distribution():
+    """TC-90: Ensure error distribution plot is generated for regression tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'regression'
     report.preprocessor.X_test = np.array([[1], [2], [3]])
@@ -369,6 +380,7 @@ def test_plot_error_distribution():
     report.pdf.image.assert_called_once()
 
 def test_plot_class_distribution():
+    """TC-91: Ensure class distribution plot is generated for classification tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.preprocessor.y = np.array([0, 1, 1, 0, 2])
@@ -383,6 +395,7 @@ def test_plot_class_distribution():
     report.pdf.image.assert_called_once()
 
 def test_generate_conf_matrix():
+    """TC-92: Ensure confusion matrix heatmap is generated for classification tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.preprocessor.X_test = np.array([[1], [2]])
@@ -402,13 +415,13 @@ def test_generate_conf_matrix():
     report.pdf.image.assert_called_once()
 
 def test_plot_roc_curve():
+    """TC-93: Ensure ROC curve is generated for classification tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.preprocessor.X_test = np.array([[1], [2], [3], [4]])
     report.preprocessor.y_test = np.array([0, 1, 0, 1])
     report.modeler.results = {'tuned': {'ModelA': {'optimized_model': MagicMock()}}}
     
-    # Mock predict_proba returning shape (n_samples, n_classes)
     report.modeler.results['tuned']['ModelA']['optimized_model'].predict_proba.return_value = np.array([
         [0.6, 0.4],
         [0.3, 0.7],
@@ -428,6 +441,7 @@ def test_plot_roc_curve():
     report.pdf.image.assert_called_once()
 
 def test_plot_precision_recall_curve():
+    """TC-94: Ensure precision-recall curve is generated for classification tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.preprocessor.X_test = np.array([[1], [2], [3], [4]])
@@ -454,6 +468,7 @@ def test_plot_precision_recall_curve():
 
 
 def test_plot_classification_report():
+    """TC-95: Ensure classification report heatmap is generated for classification tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.preprocessor.X_test = np.array([[1], [2]])
@@ -482,6 +497,7 @@ def test_plot_classification_report():
 
 
 def test_plot_classification_model_performance_bar_chart():
+    """TC-96: Ensure classification model performance bar chart is generated."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.modeler.results = {
@@ -502,6 +518,7 @@ def test_plot_classification_model_performance_bar_chart():
     report.pdf.image.assert_called_once()
 
 def test_plot_feature_importance():
+    """TC-97: Ensure feature importance plot is generated for classification tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.preprocessor.X_train = np.array([[1, 2], [3, 4]])
@@ -523,6 +540,7 @@ def test_plot_feature_importance():
     report.pdf.image.assert_called_once()
 
 def test_plot_cv_score_boxplots():
+    """TC-98: Ensure cross-validation score boxplots are generated for regression tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'regression'
     report.modeler.results = {
