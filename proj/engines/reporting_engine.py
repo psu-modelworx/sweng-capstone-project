@@ -748,12 +748,13 @@ class ReportingEngine:
             try:
                 importances = model.feature_importances_
                 feature_names = self.preprocessor.final_columns
-                indices = importances.argsort()[::-1][:10] # only include top 10 features for readability
+                top_n = min(10, len(importances))
+                indices = importances.argsort()[::-1][:top_n]
 
                 plt.figure(figsize=(10, 6))
                 plt.title(f'Feature Importance: {model_name}')
-                plt.bar(range(10), importances[indices], align='center')
-                plt.xticks(range(10), [feature_names[i] for i in indices], rotation=45, ha='right')
+                plt.bar(range(top_n), importances[indices], align='center')
+                plt.xticks(range(top_n), [feature_names[i] for i in indices], rotation=45, ha='right')
                 plt.xlabel('Features')
                 plt.ylabel('Importance')
 
