@@ -117,7 +117,7 @@ class ReportingEngine:
 
         self.subsection("Model Tuning")
         self.add_bullet("Hyperparameter tuning was performed using cross-validation to find the best model parameters.")
-        self.add_bullet(f"The following hyperparameters were tuned using GridSearchCV:")
+        self.add_bullet("The following hyperparameters were tuned using GridSearchCV:")
         if self.modeler.task_type == 'classification':
             self.add_bullet("LogisticRegression: C (inverse regularization strength), solver, max_iter")
             self.add_bullet("RandomForestClassifier: n_estimators, max_depth, min_samples_split, min_samples_leaf")
