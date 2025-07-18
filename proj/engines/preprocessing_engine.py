@@ -43,6 +43,7 @@ class PreprocessingEngine:
         self.label_encoder = LabelEncoder()
         # Default to empty list
         self.columns_to_remove = columns_to_remove if columns_to_remove else []
+        self.dropped_columns = []  # Store columns dropped during preprocessing
         self.X, self.y = None, None  # Placeholders for features and target
         self.X_train, self.X_test = None, None  # Placeholders for train-test split features
         self.y_train, self.y_test = None, None  # Placeholders for train-test split target
