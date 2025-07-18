@@ -1,6 +1,5 @@
 import re
 from unittest.mock import MagicMock, patch
-
 import numpy as np
 from pypdf import PdfReader
 from engines.reporting_engine import ReportingEngine

@@ -3,7 +3,9 @@ import os
 import tempfile
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
-from matplotlib import pyplot as plt
+import matplotlib 
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.calibration import label_binarize
@@ -710,7 +712,6 @@ class ReportingEngine:
         plt.xticks([i + 0.2 for i in x], model_names, rotation=45)
         plt.legend()
 
-        import tempfile, os
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
             plt.savefig(tmpfile.name, bbox_inches='tight')
             plt.close()
