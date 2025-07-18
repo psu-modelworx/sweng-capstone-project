@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'storages', # Django-storages for S3 compatibility
     'django_cleanup', # Django-cleanup to cleanup files; auto deletes files after they have been deleted
     'django_celery_results',
+    "logviewer",
 ]
 
 MIDDLEWARE = [
@@ -202,7 +203,6 @@ CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='django-db')
 
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-
 # Email settings
 EMAIL_ENABLED = config('EMAIL_ENABLED')
 if EMAIL_ENABLED:
@@ -215,4 +215,52 @@ if EMAIL_ENABLED:
   EMAIL_USE_SSL = False
   EMAIL_ADMINS = config('EMAIL_ADMINS')
   EMAIL_SENDER = config('EMAIL_SENDER')
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": "proj/logs/automodeler.log",
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 14,
+            'formatter': 'verbose',            
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": config("DJANGO_LOG_LEVEL", default="WARNING"),
+            "propogate": False,
+        },
+        "django_file": {
+            "handlers": ["file"],
+            "level": "DEBUG",
+            "propogate": True,
+        },
+    },
+}
+
+# Log Viewer
+
+LOGVIEWER_LOGS = ["proj/logs/automodeler.log"]
+LOGVIEWER_REFRESH_INTERVAL = 1000
+
 
