@@ -203,7 +203,10 @@ CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='django-db')
 
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+
 # Email settings
+
 EMAIL_ENABLED = config('EMAIL_ENABLED')
 if EMAIL_ENABLED:
   EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -216,6 +219,12 @@ if EMAIL_ENABLED:
   EMAIL_ADMINS = config('EMAIL_ADMINS')
   EMAIL_SENDER = config('EMAIL_SENDER')
 
+
+# Logging Settings
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+
+if not os.path.exists(LOG_DIR): # Create LOG_DIR if it does not exist
+    os.makedirs(LOG_DIR)
 
 LOGGING = {
     "version": 1,
