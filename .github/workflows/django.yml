@@ -48,7 +48,8 @@ jobs:
         CELERY_BROKER_URL: amqp://localhost
         CELERY_RESULT_BACKEND: django-db
       run: |
-        pytest --cov=proj --cov-report=html
+        coverage run --rcfile=.coveragerc -m pytest
+        coverage html
 
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
