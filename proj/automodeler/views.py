@@ -106,9 +106,6 @@ def dataset(request, dataset_id):
     else:
         return redirect(reverse('login'))
 
-def dataset_details(request, dataset_id):
-    return render(request, "automodeler/dataset_details.html", {})
-
 
 def account(request):
     """
@@ -173,10 +170,34 @@ def dataset_delete(request, dataset_id):
         url = reverse("dataset_collection")
         return redirect(url)
 
+
+@login_required
+def dataset_details(request, dataset_id):
+    ds_details = {}
+    
+    user = request.user
+    dataset = get_object_or_404(Dataset, pk=dataset_id, user=user)
+    ds_details["ds"] = dataset
+
+    try:
+        pp_dataset = PreprocessedDataSet.objects.get(original_dataset = dataset)
+        ds_details["pp_ds"] = pp_dataset
+    except Exception as e:
+        print("Exception e: {0}".format(e))
+    
+    try:
+        ds_models = DatasetModel.objects.filter(original_dataset=dataset)
+        ds_details["models"] = ds_models
+    except Exception as e:
+        print("Exception e: {0}".format(e))
+    
+    return render(request, "automodeler/dataset_details.html", { "ds_details": ds_details })
+
+
 @login_required
 def model_collection(request):
     auth_user = request.user
-    user_models = TunedDatasetModel.objects.filter(user=auth_user)
+    user_models = DatasetModel.objects.filter(user=auth_user, tuned=True)
     return render(request, "automodeler/model_collection.html", {"models": user_models})
 
 @login_required
@@ -195,7 +216,7 @@ def model_delete(request):
 @login_required
 def model_details(request, model_id):
     try:
-        dataset_model = TunedDatasetModel.objects.get(id=model_id)
+        dataset_model = DatasetModel.objects.get(id=model_id, tuned=True)
     except Exception as e:
         print("Exception {0}".format(e))
         msg = "Error retrieving model by:  id={0}".format(model_id)

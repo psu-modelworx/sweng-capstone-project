@@ -36,6 +36,7 @@
                     {% endif %}
                 </td>
                 <td>
+                    <a class="btn btn-warning" href="{% url 'dataset_details' dataset_id=ds_list.0.id %}">Details</a>
                     <button class="btn btn-primary" onclick="preprocess_fetch_request({{ ds_list.0.id }})">Start Preprocessing!</button>
                     <button class="btn btn-success" onclick="modeling_fetch_request({{ds_list.0.id }})">Start Modeling!</button>
                     <form method="post" action="{% url 'dataset_delete' dataset_id=ds_list.0.id %}">
