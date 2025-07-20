@@ -9,6 +9,9 @@
         </div>
         <div class="col">
             <h2>Preprocessing Details</h2>
+            {% if ds_details.pp_ds %}
+            {{ ds_details.pp_ds.meta_data }}
+            {% endif %}
         </div>
     </div>
     <div class="row text-center">
