@@ -3,6 +3,8 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authtoken.models import Token
 
@@ -10,6 +12,10 @@ from rest_framework.authtoken.models import Token
 from .models import Dataset, PreprocessedDataSet, DatasetModel, TunedDatasetModel, UserTask
 from .forms import DatasetForm
 from . import helper_functions
+
+import logging
+logger = logging.getLogger('django_file')
+
 
 # Create your views here.
 
@@ -20,6 +26,7 @@ def index(request):
 
     :param request: This is the HTTP request object containing the HTTP request information
     """
+    logger.info('Test log message!')
     return render(request, "automodeler/index.html")
 
 def upload(request):
@@ -39,16 +46,26 @@ def upload(request):
                 print("valid form")
                 file_name = request.POST.get('name')
                 csv_file = request.FILES['csv_file']
+                file_size = csv_file.size / 1073741824 # This will convert to Gigabytes
                 user_id = request.user.id
+
+                number_of_rows = 0
                 try:
-                    helper_functions.sanitize_dataset(csv_file)
+                    number_of_rows = helper_functions.sanitize_dataset(csv_file)
                 except Exception as e:
                     url = reverse('upload')
                     print("Exception: {0}".format(e))
                     return render(request, url, {"form": form, "err_msg": "CSV File failed sanitation!"})
-                    #return HttpResponse("Error sanitizing file!")
                 features = helper_functions.extract_features_from_inMemoryUploadedFile(csv_file)
-                dataset_model = Dataset.objects.create(name=file_name, features=features, csv_file=csv_file, user_id=user_id)
+
+                dataset_model = Dataset.objects.create(
+                  name=file_name, 
+                  features=features, 
+                  csv_file=csv_file,
+                  file_size=file_size,
+                  number_of_rows=number_of_rows,
+                  user_id=user_id
+                  )
                 dataset_model.save()
                 
                 dataset_model_id = dataset_model.id
@@ -96,6 +113,13 @@ def dataset(request, dataset_id):
     else:
         return redirect(reverse('login'))
 
+
+@login_required
+def dataset_details(request, dataset_id):
+    return render(request, "automodeler/dataset_details.html", {})
+
+
+@login_required
 def account(request):
     """
     Ensuring a user is logged in before giving them access to the account page.
@@ -124,6 +148,19 @@ def account(request):
         # If a user isn't authenticated, navigate to the login page.
         url = reverse("login")
         return HttpResponseRedirect(url)
+
+
+@login_required
+def account_delete(request):
+    if request.method == 'POST':
+        user = request.user
+        logout (request)
+        user.delete()
+        messages.success(request, "Your account has been deleted.")
+        return redirect('index')
+
+    return render(request, 'automodeler/account_delete_confirm.html')
+    
 
 @login_required
 def dataset_collection(request):

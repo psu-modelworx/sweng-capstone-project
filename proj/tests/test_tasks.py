@@ -91,7 +91,7 @@ def test_start_modeling_success(mock_obj_to_pkl, mock_modeling_engine_cls, mock_
     dataset = Dataset.objects.create(
         name='TestDataset',
         user_id=user.id,
-        features={'f1': 'int'}
+        features={'f1': 'C'}
     )
     mock_dataset_get.return_value = dataset
 

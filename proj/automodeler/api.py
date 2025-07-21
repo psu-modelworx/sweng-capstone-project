@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Dataset, PreprocessedDataSet
+from .models import Dataset, PreprocessedDataSet, TunedDatasetModel
 from .forms import DatasetForm
 from . import helper_functions
 
@@ -105,12 +105,12 @@ def api_request_datasets(request):
     '''
     # Collecting all datasets for the user making the request and setting up the dataset information list for the response.
     user_datasets = Dataset.objects.filter(user = request.user)
-    dataset_information = ["Dataset Name, " + "Dataset File Name, " + "Dataset ID, " + "Preprocessed Dataset File Name", ""]
+    dataset_information = ["Dataset Name, " + "Dataset File Name, " + "Dataset ID, " + "Preprocessed Dataset File Name"]
     
     # Going through the datasets and checking if they are preprocessed.
     for dataset in user_datasets:
         # Resetting the preprocessed string with each iteration.
-        pp_dataset = ""
+        # pp_dataset = "" # Ruff mentioned to remove this?  If it breaks something, here's why
 
         try:
             # Trying to get the preprocessed file and appending it to the dataset information.
@@ -122,3 +122,25 @@ def api_request_datasets(request):
 
     # Returning a response with the dataset information which can be printed out by the user.
     return Response(data=dataset_information, status=status.HTTP_200_OK)
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_request_models(request):
+    '''
+    The function gets the models from the user and puts them in a list for a response.
+
+    :param request: The request parameter is used to get the user's models.
+    '''
+    # Getting the user's models.
+    user_models = TunedDatasetModel.objects.filter(user=request.user)
+    
+    # Setting up a list to format the response. It contains the model ID which will be helpful in running the model.
+    model_information = ["Model Name, " + "Model File Name, " + "Model Method, " + "Model Type" + "Model ID"]
+
+    # Lopping through the models and adding their data to the model_information list.
+    for model in user_models:
+        model_information.append(model.name + ", " + str(model.model_file) + ", " + model.model_method + ", " + model.model_type + "," + str(model.id))
+
+    # Returning a response with the model information and letting the user know that everything was successful.
+    return Response(data=model_information, status=status.HTTP_200_OK)

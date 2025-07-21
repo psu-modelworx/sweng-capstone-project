@@ -1,0 +1,13 @@
+{% include "base/header.html" %}
+{% include "base/navbar.html" %}
+
+
+<h2>Are you sure that you wish to delete your account?</h2>
+<br />
+<h3>All of your associated datasets and models will be deleted</h3>
+<form method="POST">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Confirm Deletion</button>
+</form>
+
+{% include "base/footer.html" %}

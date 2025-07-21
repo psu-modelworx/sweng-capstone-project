@@ -2,6 +2,7 @@ asgiref==3.8.1
 coverage==7.8.0
 Django==5.2.1
 django-filter==25.1
+django-admin-logviewer==0.1.5
 djangorestframework==3.16.0
 iniconfig==2.1.0
 Markdown==3.8
@@ -29,3 +30,5 @@ django-celery-results>=2.5
 matplotlib==3.10.3
 seaborn==0.13.2
 pypdf==5.7.0
+django-admin-two-factor==0.1.1
+
