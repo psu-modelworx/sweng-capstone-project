@@ -258,6 +258,14 @@ def model_delete(request):
         url = reverse(request.POST.get('prev_page'), args=(ds_model.original_dataset.id,))
     else:
         url = reverse("model_collection")
+    
+    # first delete the TunedDatasetModel before deleting DatasetModel
+    try:
+        tuned_model = TunedDatasetModel.objects.get(untuned_model=ds_model)
+        tuned_model.delete()
+    except TunedDatasetModel.DoesNotExist:
+        pass  # No tuned model linked, so nothing to delete
+
     ds_model.delete()
     return redirect(url)
 
