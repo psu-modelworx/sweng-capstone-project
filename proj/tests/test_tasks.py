@@ -8,7 +8,6 @@ from automodeler.models import TunedDatasetModel, Dataset
 from django.core.files.base import ContentFile
 import pandas as pd
 import pickle
-import io
 
 
 @pytest.fixture
