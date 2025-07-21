@@ -46,7 +46,8 @@ def upload(request):
                 print("valid form")
                 file_name = request.POST.get('name')
                 csv_file = request.FILES['csv_file']
-                file_size = csv_file.size / 1073741824 # This will convert to Gigabytes
+                #file_size = csv_file.size / 1073741824 # This will convert to Gigabytes
+                file_size = csv_file.size
                 user_id = request.user.id
 
                 number_of_rows = 0
@@ -197,6 +198,43 @@ def dataset_details(request, dataset_id):
     
     user = request.user
     dataset = get_object_or_404(Dataset, pk=dataset_id, user=user)
+    ds = {}
+    ds["target_feature"] = dataset.target_feature
+    ds["file_size"] = helper_functions.file_size_for_humans(dataset.file_size)
+    ds["number_of_rows"] = dataset.number_of_rows
+    ds["features"] = dataset.features
+    ds_details["ds"] = ds
+
+    try:
+        pp_dataset = PreprocessedDataSet.objects.get(original_dataset=dataset)
+        pp_ds = {}
+        pp_ds['number_of_rows'] = pp_dataset.number_of_rows
+        pp_ds['number_of_removed_rows'] = pp_dataset.number_of_removed_rows
+        pp_ds['file_size'] = helper_functions.file_size_for_humans(pp_dataset.file_size)
+        pp_ds['removed_features'] = pp_dataset.removed_features
+        pp_ds['new_target_feature'] = pp_dataset.meta_data['target_column']
+        pp_ds['task_type'] = pp_dataset.meta_data['task_type']
+        ds_details["pp_ds"] = pp_ds
+    except Exception as e:
+        print("Exception e: {0}".format(e))
+    
+    try:
+        ds_models = DatasetModel.objects.filter(original_dataset=dataset)
+        md = {}
+        ds_details["models"] = ds_models
+    except Exception as e:
+        print("Exception e: {0}".format(e))
+
+    return render(request, "automodeler/dataset_details.html", { "ds_details": ds_details })
+
+
+"""
+@login_required
+def dataset_details(request, dataset_id):
+    ds_details = {}
+    
+    user = request.user
+    dataset = get_object_or_404(Dataset, pk=dataset_id, user=user)
     ds_details["ds"] = dataset
 
     try:
@@ -212,7 +250,7 @@ def dataset_details(request, dataset_id):
         print("Exception e: {0}".format(e))
     
     return render(request, "automodeler/dataset_details.html", { "ds_details": ds_details })
-
+"""
 
 @login_required
 def model_collection(request):
