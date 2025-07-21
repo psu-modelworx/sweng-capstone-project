@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'storages', # Django-storages for S3 compatibility
     'django_cleanup', # Django-cleanup to cleanup files; auto deletes files after they have been deleted
     'django_celery_results',
+    "logviewer",
 ]
 
 MIDDLEWARE = [
@@ -204,6 +205,7 @@ CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='django-db')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
+
 # Email settings
 EMAIL_ENABLED = config('EMAIL_ENABLED')
 if EMAIL_ENABLED:
@@ -217,7 +219,59 @@ if EMAIL_ENABLED:
   EMAIL_ADMINS = config('EMAIL_ADMINS')
   EMAIL_SENDER = config('EMAIL_SENDER')
 
+# Logging Settings
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+
+if not os.path.exists(LOG_DIR): # Create LOG_DIR if it does not exist
+    os.makedirs(LOG_DIR)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+        "file": {
+            "level": config("FILE_MAX_LOG_LEVEL"),
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": config('LOGVIEWER_LOG_FILE'),
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 14,
+            'formatter': 'verbose',            
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": config("CONSOLE_MAX_LOG_LEVEL"),
+    },
+    "loggers": {
+        "django_console": {
+            "handlers": ["console"],
+            "level": config("CONSOLE_MAX_LOG_LEVEL"),
+            "propogate": False,
+        },
+        "django_file": {
+            "handlers": ["file"],
+            "level": config("FILE_MAX_LOG_LEVEL"),
+            "propogate": True,
+        },
+    },
+}
+
+# Log Viewer
+LOGVIEWER_LOGS = [config('LOGVIEWER_LOG_FILE')]
+LOGVIEWER_REFRESH_INTERVAL = config('LOGVIEWER_REFRESH_INTERVAL')
 
 # Two Factor App Name
 ADMIN_TWO_FACTOR_NAME = 'Modelworx'
+
+
 
