@@ -49,3 +49,12 @@ def sanitize_dataset(in_mem_file):
         in_mem_file.seek(0)
         number_of_rows = len(df)
         return number_of_rows
+
+# Credit to the following:
+# https://stackoverflow.com/questions/1094841/get-a-human-readable-version-of-a-file-size
+def file_size_for_humans(filesize, suffix="B"):
+    for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
+        if abs(filesize) < 1024.0:
+            return f"{filesize:3.1f}{unit}{suffix}"
+        filesize /= 1024.0
+    return f"{filesize:.1f}Yi{suffix}"
