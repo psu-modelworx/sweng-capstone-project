@@ -3,6 +3,8 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authtoken.models import Token
 
@@ -111,10 +113,13 @@ def dataset(request, dataset_id):
     else:
         return redirect(reverse('login'))
 
+
+@login_required
 def dataset_details(request, dataset_id):
     return render(request, "automodeler/dataset_details.html", {})
 
 
+@login_required
 def account(request):
     """
     Ensuring a user is logged in before giving them access to the account page.
@@ -143,6 +148,19 @@ def account(request):
         # If a user isn't authenticated, navigate to the login page.
         url = reverse("login")
         return HttpResponseRedirect(url)
+
+
+@login_required
+def account_delete(request):
+    if request.method == 'POST':
+        user = request.user
+        logout (request)
+        user.delete()
+        messages.success(request, "Your account has been deleted.")
+        return redirect('index')
+
+    return render(request, 'automodeler/account_delete_confirm.html')
+    
 
 @login_required
 def dataset_collection(request):
