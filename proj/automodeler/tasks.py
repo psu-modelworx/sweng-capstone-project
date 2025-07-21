@@ -1,4 +1,5 @@
 from celery import shared_task
+
 from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import get_user_model
@@ -50,7 +51,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         print('Exception {0}'.format(e))
         if task_record:
             task_record.status = "FAILURE"
-            task_record.result_message = "Target teature not selected"
+            task_record.result_message = "Target feature not selected"
             task_record.save()
         return {"message": "Target feature not selected", "status": 500}
 
@@ -65,7 +66,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         print('Exception {0}'.format(e))
         if task_record:
             task_record.status = "FAILURE"
-            task_record.result_message = "Target teature not selected"
+            task_record.result_message = "Target feature not selected"
             task_record.save()
         return {"message": "Target feature not selected", "status": 500}
 
@@ -131,6 +132,13 @@ def start_preprocessing_task(self, dataset_id, user_id):
     pp_ds.name = pp_ds_name
     pp_ds.csv_file = temp_file
 
+    pp_ds.file_size = temp_file.size
+    pp_ds.number_of_rows
+    pp_ds.number_of_removed_rows
+    pp_ds.removed_features = ppe.dropped_columns
+    pp_ds.model_type = ppe.task_type
+    
+
     # Get important objects from PPE, pickle them, and create ContentFiles for storage
     pp_ds.feature_encoder = obj_to_pkl_file(ppe.feature_encoder, f"{pp_ds_name}_fe_enc.bin")
     pp_ds.scaler = obj_to_pkl_file(ppe.scaler, f"{pp_ds_name}_sca.bin")
@@ -138,8 +146,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
     
     pp_ds.original_dataset = dataset
     pp_ds.meta_data = ppe.to_meta_dict()
-    pp_ds.removed_features = ppe.dropped_columns
-
+    
     # Available models
     
 
