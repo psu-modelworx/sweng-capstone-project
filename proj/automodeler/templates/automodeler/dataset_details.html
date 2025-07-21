@@ -6,12 +6,24 @@
     <div class="row">
         <div class="col">
             <h2>Dataset Details</h2>
+            <ul>
+                <li>Target Feature - {{ ds_details.ds.target_feature }}</li>
+                <li>File Size - {{ ds_details.ds.file_size }}</li>
+                <li>Number of Rows - {{ ds_details.ds.number_of_rows }}</li>
+                <li>Features: </li>
+            </ul>
         </div>
         <div class="col">
             <h2>Preprocessing Details</h2>
-            {% if ds_details.pp_ds %}
-            {{ ds_details.pp_ds.meta_data }}
-            {% endif %}
+            <ul>
+                <li>New Target Features - {{ ds_details.pp_ds.new_target_features }}</li>
+                <li>Task Type - {{ ds_details.pp_ds.task_type }}</li>
+                <li>Number of Rows - {{ ds_details.pp_ds.number_of_rows }}</li>
+                <li>Number of Rows Removed - {{ ds_details.pp_ds.number_of_removed_rows }}</li>
+                <li>File Size - {{ ds_details.pp_ds.file_size }}</li>
+                <li>Removed Features</li>
+                <li>New Features</li>
+            </ul>
         </div>
     </div>
     <div class="row text-center">
