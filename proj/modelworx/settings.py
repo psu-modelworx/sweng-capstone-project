@@ -207,7 +207,7 @@ CELERY_TASK_SERIALIZER = 'json'
 
 
 # Email settings
-EMAIL_ENABLED = config('EMAIL_ENABLED')
+EMAIL_ENABLED = config('EMAIL_ENABLED', default='False')
 if EMAIL_ENABLED:
   EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
   EMAIL_HOST = config('EMAIL_HOST')
