@@ -71,7 +71,7 @@ class ModelingEngine:
             'LogisticRegression': LogisticRegression(max_iter=1000),
             'RandomForestClassifier': RandomForestClassifier(),
             'GradientBoostingClassifier': GradientBoostingClassifier(),
-            'SVC': SVC()
+            'SVC': SVC(probability=True)
         }
         regressors = {
             'LinearRegression': LinearRegression(),
