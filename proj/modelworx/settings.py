@@ -43,6 +43,7 @@ ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", default="localhost").split(",")
 
 INSTALLED_APPS = [
     'automodeler.apps.AutomodelerConfig',
+    'admin_two_factor.apps.TwoStepVerificationConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -206,7 +207,6 @@ CELERY_TASK_SERIALIZER = 'json'
 
 
 # Email settings
-
 EMAIL_ENABLED = config('EMAIL_ENABLED')
 if EMAIL_ENABLED:
   EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -218,7 +218,6 @@ if EMAIL_ENABLED:
   EMAIL_USE_SSL = False
   EMAIL_ADMINS = config('EMAIL_ADMINS')
   EMAIL_SENDER = config('EMAIL_SENDER')
-
 
 # Logging Settings
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
@@ -268,8 +267,11 @@ LOGGING = {
 }
 
 # Log Viewer
-
 LOGVIEWER_LOGS = [config('LOGVIEWER_LOG_FILE')]
 LOGVIEWER_REFRESH_INTERVAL = config('LOGVIEWER_REFRESH_INTERVAL')
+
+# Two Factor App Name
+ADMIN_TWO_FACTOR_NAME = 'Modelworx'
+
 
 
