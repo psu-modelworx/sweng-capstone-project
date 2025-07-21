@@ -1,5 +1,3 @@
-from django.contrib.auth.decorators import login_required
-
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -78,7 +76,9 @@ def start_modeling_request(request):
     
     return JsonResponse({"task id": async_results.id})
 
-@login_required
+@api_view(["POST"])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def run_model(request):
     print("Starting model run")
     if request.method != 'POST':
@@ -125,7 +125,9 @@ def run_model(request):
     
 
 
-@login_required
+@api_view(["GET", "POST"])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def check_task_result(request, task_id):
     result = AsyncResult(task_id)
     if result.ready():

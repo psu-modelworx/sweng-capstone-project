@@ -253,6 +253,62 @@ def test_request_model(client):
     assert response.status_code == 200
 
 @pytest.mark.django_db
+def test_run_model(client):
+    '''
+    This tests the run model API endpoint. There is a test to verify a user needs to be authenticated.
+    There is another test ensuring an authenticated user has access but they need to send a model ID.
+
+    parm client: The client is used to make API requests and sends back responses with status codes.
+
+    :Test Cases: TC-106 & TC-107
+    '''
+    # Set the URL test the run model API endpoint and getting the response from a request.
+    url = reverse('run_model')
+    response = client.post(url)
+
+    # Asserting that the response is a 403 status code because the user isn't authenticated.
+    assert response.status_code == 403
+    
+    # Creating a test user and assigning them an authentication token.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Adding the authentication token to the header and getting the response from an API request.
+    headers = { "Authorization": "Token " + userToken.key}
+    response = client.post(url, headers=headers)
+
+    # Asserting that there is a 400 status code response because the user did not send a model ID in their request.
+    assert response.status_code == 400
+
+@pytest.mark.django_db
+def test_api_check_task_result(client):
+    '''
+    This is used to test the API enpoint which gets a tasks status. There is a test to verify a user needs to be authenticated.
+    There is also a test to for an authenticated user to verify they have access.
+
+    parm client: The client is used to make the API request and get responses.
+
+    :Test Cases: TC-108 & TC-109
+    '''
+    # Set up a URL to the check task results API endpoint. Put a required argument for the task ID and getting the response from the request.
+    url = reverse('check_task_result', args=["task_id"])
+    response = client.post(url)
+
+    # Asserting that there is a 403 status code response because the user is not authenticated.
+    assert response.status_code == 403
+    
+    # Defining a test user and assigning them an authentication token.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Putting the authentication token in the header to authenticate the user.
+    headers = { "Authorization": "Token " + userToken.key}
+    response = client.post(url, headers=headers)
+
+    # Asserting that this was a valid request, even though a valid task ID wasn't used.
+    assert response.status_code == 200
+
+@pytest.mark.django_db
 def test_account_page(client):
     # Defining the url that will be navigated to.
     url = reverse('account')
