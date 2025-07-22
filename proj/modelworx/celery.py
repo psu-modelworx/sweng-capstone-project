@@ -3,7 +3,6 @@ from celery import Celery
 from celery.signals import setup_logging
 
 import logging
-from logging.config import dictConfig
 
 from django.conf import settings
 
