@@ -41,7 +41,9 @@ def test_start_preprocessing_success(mock_obj_to_pkl, mock_engine_cls, mock_pp_d
         user=user,
         features={'f1': 'C'},
         target_feature='f1',
-        csv_file='mock.csv'
+        csv_file='mock.csv',
+        number_of_rows=150,
+        file_size=100
     )
     mock_dataset_get.return_value = dataset
 
@@ -54,8 +56,9 @@ def test_start_preprocessing_success(mock_obj_to_pkl, mock_engine_cls, mock_pp_d
     mock_ppe_instance.feature_encoder = MagicMock()
     mock_ppe_instance.scaler = MagicMock()
     mock_ppe_instance.label_encoder = MagicMock()
+    mock_ppe_instance.dropped_columns = {}
     mock_ppe_instance.to_meta_dict.return_value = {}
-
+    mock_ppe_instance.task_type = 'classification'
     mock_engine_cls.return_value = mock_ppe_instance
 
     # make sure the `run_preprocessing_engine()` doesn't fail
@@ -150,7 +153,7 @@ def test_run_model_task_tuned_model_not_found(mock_user_task_filter, mock_tuned_
    assert "Tuned model not found" in result.get("message", "")
 
 @pytest.mark.django_db
-@patch('automodeler.tasks.TunedDatasetModel.objects.get')
+@patch('automodeler.tasks.DatasetModel.objects.get')
 def test_run_model_task_invalid_feature_count(mock_tuned_model_get, user_factory):
     """TC-57 Test run_model_task with invalid feature count input."""
     user = user_factory()
@@ -161,7 +164,7 @@ def test_run_model_task_invalid_feature_count(mock_tuned_model_get, user_factory
          patch('automodeler.tasks.PreprocessedDataSet.objects.get') as mock_pp_ds_get, \
          patch('automodeler.tasks.UserTask.objects.filter') as mock_user_task_filter:
 
-        mock_dataset = MagicMock(features={'f1': 'int', 'f2': 'int'})
+        mock_dataset = MagicMock(id=1, features={'f1': 'C', 'f2': 'N'})
         mock_dataset_get.return_value = mock_dataset
         mock_pp_ds_get.return_value = MagicMock()
         mock_task = MagicMock()
