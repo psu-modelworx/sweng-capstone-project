@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from django.core.exceptions import ObjectDoesNotExist
 from automodeler.tasks import start_preprocessing_task, start_modeling_task, run_model_task,reconstruct_ppe, obj_to_pkl_file, pkl_file_to_obj
 
-from automodeler.models import TunedDatasetModel, Dataset
+from automodeler.models import Dataset, DatasetModel
 from django.core.files.base import ContentFile
 import pandas as pd
 import pickle
@@ -140,7 +140,7 @@ def test_start_modeling_dataset_not_found(mock_user_task_filter, mock_dataset_ge
     assert mock_task.status == "FAILURE"
 
 @pytest.mark.django_db
-@patch('automodeler.tasks.TunedDatasetModel.objects.get', side_effect=TunedDatasetModel.DoesNotExist)
+@patch('automodeler.tasks.DatasetModel.objects.get', side_effect=DatasetModel.DoesNotExist)
 @patch('automodeler.tasks.UserTask.objects.filter')
 def test_run_model_task_tuned_model_not_found(mock_user_task_filter, mock_tuned_model_get, user_factory):
    """TC-56 Test run_model_task returns 404 if tuned model not found."""
