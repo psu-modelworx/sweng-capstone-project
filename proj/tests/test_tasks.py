@@ -178,7 +178,7 @@ def test_run_model_task_invalid_feature_count(mock_tuned_model_get, user_factory
         assert mock_task.status == "FAILURE"
 
 @pytest.mark.django_db
-@patch('automodeler.tasks.TunedDatasetModel.objects.get')
+@patch('automodeler.tasks.DatasetModel.objects.get')
 @patch('automodeler.tasks.Dataset.objects.get')
 @patch('automodeler.tasks.PreprocessedDataSet.objects.get')
 @patch('automodeler.tasks.UserTask.objects.filter')
@@ -190,7 +190,7 @@ def test_run_model_task_success(mock_df, mock_pkl_file_to_obj, mock_reconstruct_
                                mock_tuned_model_get, user_factory):
     """TC-58 Test successful run_model_task prediction workflow."""
     user = user_factory()
-    mock_tuned_model = MagicMock(id=1, original_dataset_id=1, user_id=user.id, model_type='classification', model_file='dummy')
+    mock_tuned_model = MagicMock(id=1, original_dataset_id=1, user_id=user.id, model_type='classification', model_file='dummy', tuned=True)
     mock_tuned_model_get.return_value = mock_tuned_model
     mock_dataset = MagicMock(id=1, name='TestDataset', features={'f1': 'float'})
     mock_dataset_get.return_value = mock_dataset
