@@ -106,7 +106,7 @@ def dataset(request, dataset_id):
             dataset.features = inputFeatures
             dataset.target_feature = targetFeature
             dataset.save()
-            url = reverse("dataset_collection")
+            url = reverse('dataset_details', kwargs={'dataset_id': dataset_id})
             return redirect(url)
             #return render(request, "automodeler/index.html", {})
         else:
@@ -199,6 +199,8 @@ def dataset_details(request, dataset_id):
     user = request.user
     dataset = get_object_or_404(Dataset, pk=dataset_id, user=user)
     ds = {}
+    ds["ds_id"] = dataset.id
+    ds["name"] = dataset.name
     ds["target_feature"] = dataset.target_feature
     ds["file_size"] = helper_functions.file_size_for_humans(dataset.file_size)
     ds["number_of_rows"] = dataset.number_of_rows
@@ -227,30 +229,6 @@ def dataset_details(request, dataset_id):
 
     return render(request, "automodeler/dataset_details.html", { "ds_details": ds_details })
 
-
-"""
-@login_required
-def dataset_details(request, dataset_id):
-    ds_details = {}
-    
-    user = request.user
-    dataset = get_object_or_404(Dataset, pk=dataset_id, user=user)
-    ds_details["ds"] = dataset
-
-    try:
-        pp_dataset = PreprocessedDataSet.objects.get(original_dataset = dataset)
-        ds_details["pp_ds"] = pp_dataset
-    except Exception as e:
-        print("Exception e: {0}".format(e))
-    
-    try:
-        ds_models = DatasetModel.objects.filter(original_dataset=dataset)
-        ds_details["models"] = ds_models
-    except Exception as e:
-        print("Exception e: {0}".format(e))
-    
-    return render(request, "automodeler/dataset_details.html", { "ds_details": ds_details })
-"""
 
 @login_required
 def model_collection(request):
