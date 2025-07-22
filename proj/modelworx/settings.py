@@ -225,7 +225,8 @@ LOG_DIR = os.path.join(BASE_DIR, 'logs')
 if not os.path.exists(LOG_DIR): # Create LOG_DIR if it does not exist
     os.makedirs(LOG_DIR)
 
-LOGGING_FILE = ''.join([LOG_DIR, '/' , config('LOGVIEWER_LOG_FILE', default='automodeler.log')])
+AM_LOGGING_FILE = ''.join([LOG_DIR, '/' , config('AUTOMODELER_LOG_FILE', default='automodeler.log')])
+CELERY_LOGGING_FILE = ''.join([LOG_DIR, '/' , config('CELERY_LOG_FILE', default='celery.log')])
 
 LOGGING = {
     "version": 1,
@@ -249,7 +250,7 @@ LOGGING = {
         "file": {
             "level": config("FILE_MAX_LOG_LEVEL", default="INFO"),
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": LOGGING_FILE,
+            "filename": AM_LOGGING_FILE,
             'when': 'midnight',
             'interval': 1,
             'backupCount': 14,
@@ -259,7 +260,7 @@ LOGGING = {
         'celery': {
             "level": config("FILE_MAX_LOG_LEVEL", default="INFO"),
             "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": ''.join([LOG_DIR , '/celery.log']),
+            "filename": CELERY_LOGGING_FILE,
             'when': 'midnight',
             'interval': 1,
             'backupCount': 14,
@@ -269,19 +270,19 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console", "file"],
-            "level": config("CONSOLE_MAX_LOG_LEVEL"),
+            "level": config("CONSOLE_MAX_LOG_LEVEL", default="INFO"),
             "propogate": False,
         },
         'celery': {
             "handlers": ["console", "celery"],
-            "level": "INFO",
+            "level": config("FILE_MAX_LOG_LEVEL", default="INFO"),
             "propogate": False,
         },
     },
 }
 
 # Log Viewer
-LOGVIEWER_LOGS = [LOGGING_FILE, ''.join([LOG_DIR , '/celery.log'])]
+LOGVIEWER_LOGS = [AM_LOGGING_FILE, CELERY_LOGGING_FILE]
 LOGVIEWER_REFRESH_INTERVAL = config('LOGVIEWER_REFRESH_INTERVAL', default=1000)
 
 # Two Factor App Name
