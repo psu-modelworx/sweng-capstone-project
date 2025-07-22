@@ -280,7 +280,7 @@ def model_details(request, model_id):
 
 @login_required
 def model_download(request, model_id):
-    ds_model = get_object_or_404(DatasetModel, pk=model_id)
+    ds_model = get_object_or_404(DatasetModel, pk=model_id, user=request.user)
     file_path = ds_model.model_file.path
     response = FileResponse(open(file_path, 'rb'))
     response['Content-Type'] = 'application/octet-stream'
