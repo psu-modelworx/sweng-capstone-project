@@ -276,7 +276,7 @@ def test_start_preprocessing_run_engine_exception(mock_engine_cls, mock_read_csv
 @pytest.mark.django_db
 @patch('automodeler.tasks.Dataset.objects.get', side_effect=ObjectDoesNotExist)
 @patch('automodeler.tasks.UserTask.objects.filter')
-def test_start_modeling_dataset_not_found(mock_user_task_filter, mock_dataset_get, user_factory):
+def test_start_modeling_dataset_not_found_two(mock_user_task_filter, mock_dataset_get, user_factory):
     """TC-101 """
     user = user_factory()
     mock_task = MagicMock()
