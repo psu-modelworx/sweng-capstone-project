@@ -1,5 +1,13 @@
 {% include "base/header.html" %}
 
+<!-- JQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/2.3.1/css/dataTables.dataTables.css" />
+<script src="https://cdn.datatables.net/2.3.1/js/dataTables.js"></script>
+
+
 {% include "base/navbar.html" %}
 
 <div class="container">
@@ -10,28 +18,116 @@
                 <li>Target Feature - {{ ds_details.ds.target_feature }}</li>
                 <li>File Size - {{ ds_details.ds.file_size }}</li>
                 <li>Number of Rows - {{ ds_details.ds.number_of_rows }}</li>
-                <li>Features: </li>
+                
             </ul>
+
+            
+
         </div>
         <div class="col">
             <h2>Preprocessing Details</h2>
             <ul>
-                <li>New Target Features - {{ ds_details.pp_ds.new_target_features }}</li>
+                <li>New Target Feature - {{ ds_details.pp_ds.new_target_feature }}</li>
                 <li>Task Type - {{ ds_details.pp_ds.task_type }}</li>
                 <li>Number of Rows - {{ ds_details.pp_ds.number_of_rows }}</li>
                 <li>Number of Rows Removed - {{ ds_details.pp_ds.number_of_removed_rows }}</li>
                 <li>File Size - {{ ds_details.pp_ds.file_size }}</li>
-                <li>Removed Features</li>
-                <li>New Features</li>
             </ul>
         </div>
     </div>
+    <div class="row">
+        <h2>Feature Details</h2>
+        <div class="col text-left">
+            <div class="accordion" id="ds_features_accordion">
+                <div class="accordion-item">
+                    <h4 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#ds_collapseOne" aria-expanded="false" aria-controls="ds_collapseOne">
+                            All Features
+                        </button>
+                    </h4>
+                    <div id="ds_collapseOne" class="accordion-collapse collapse" data-bs-parent="ds_features_accordion">
+                        <div class="accordion-body">
+                            <ul>
+                                {% for key, value in ds_details.ds.features.items %}
+                                <li>{{ key }} - {{ value }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="accordion" id="pp_ds_removed_features_accordion">
+                <div class="accordion-item">
+                    <h4 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#pp_ds_collapseOne" aria-expanded="false" aria-controls="pp_ds_collapseOne">
+                            Removed Features
+                        </button>
+                    </h4>
+                    <div id="pp_ds_collapseOne" class="accordion-collapse collapse" data-bs-parent="pp_ds_removed_features_accordion">
+                        <div class="accordion-body">
+                            <ul>
+                                {% for key, value in ds_details.pp_ds.removed_features.items %}
+                                <li>{{ key }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row text-center">
-
         <h2>Related Models</h2>
-
+        {% if ds_details.models %}
+        <table class="table" id="id_models_table" name="models_table">
+                <thead>
+                    <tr>
+                        <th scope="col">Model Name</th>
+                        <th scope="col">Model File Name</th>
+                        <th scope="col">Model Method</th>
+                        <th scope="col">Model Type</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for model in ds_details.models %}
+                    <tr>
+                        <td>{{ model.name }}</td>
+                        <td>{{ model.model_file }}</td>
+                        <td>{{ model.model_method }}</td>
+                        <td>{{ model.model_type }}</td>
+                        <td>
+                            <a class="btn btn-primary" href="{% url 'model_details' model_id=model.id %}">View Details</a>
+                            <form method="POST" action="{% url 'model_delete' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="model_id" id="model_id" value="{{ model.id }}"/>
+                                <button type="Submit" class="btn btn-danger">Delete model</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}        
+                </tbody>
+            </table>
+        {% else %}
+        
+        <h2>User currently has no models!</h2>
+        <br />
+        <h3>Models are available after uploading a dataset, preprocessing the dataset, and running the model engine!</h3>
+        
+        {% endif %}
     </div>
 </div>
 
+<script>
+    $(document).ready( function () {
+    $('#id_models_table').DataTable({
+        searching: true
+    });
+} );
+</script>
 
 {% include 'base/footer.html' %}
