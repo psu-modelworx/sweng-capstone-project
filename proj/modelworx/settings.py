@@ -236,9 +236,15 @@ LOGGING = {
             'style': '{',
         }
     },
+    'filters': {
+        'uri_filter': {
+            '()': 'automodeler.filters.UriFilter',
+        }
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            'filters': ['uri_filter'],
         },
         "file": {
             "level": config("FILE_MAX_LOG_LEVEL", default="INFO"),
@@ -247,29 +253,35 @@ LOGGING = {
             'when': 'midnight',
             'interval': 1,
             'backupCount': 14,
-            'formatter': 'verbose',            
+            'formatter': 'verbose',
+            'filters': ['uri_filter'],
         },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": config("CONSOLE_MAX_LOG_LEVEL", default="INFO"),
+        'celery': {
+            "level": config("FILE_MAX_LOG_LEVEL", default="INFO"),
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": ''.join([LOG_DIR , '/celery.log']),
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 14,
+            'formatter': 'verbose',      
+        }
     },
     "loggers": {
-        "django_console": {
-            "handlers": ["console"],
-            "level": config("CONSOLE_MAX_LOG_LEVEL", default="INFO"),
+        "django": {
+            "handlers": ["console", "file"],
+            "level": config("CONSOLE_MAX_LOG_LEVEL"),
             "propogate": False,
         },
-        "django_file": {
-            "handlers": ["file"],
-            "level": config("FILE_MAX_LOG_LEVEL", default="INFO"),
-            "propogate": True,
+        'celery': {
+            "handlers": ["console", "celery"],
+            "level": "INFO",
+            "propogate": False,
         },
     },
 }
 
 # Log Viewer
-LOGVIEWER_LOGS = [LOGGING_FILE]
+LOGVIEWER_LOGS = [LOGGING_FILE, ''.join([LOG_DIR , '/celery.log'])]
 LOGVIEWER_REFRESH_INTERVAL = config('LOGVIEWER_REFRESH_INTERVAL', default=1000)
 
 # Two Factor App Name

@@ -1,4 +1,5 @@
 from celery import shared_task
+from celery.utils.log import get_task_logger
 
 from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
@@ -11,11 +12,14 @@ from .models import UserTask
 
 from engines.preprocessing_engine import PreprocessingEngine
 from engines.modeling_engine import ModelingEngine
+from engines.reporting_engine import ReportingEngine
 
 import pandas as pd
 import os
 import pickle
 
+import logging
+logger = get_task_logger(__name__)
 
 @shared_task(bind=True)
 def start_preprocessing_task(self, dataset_id, user_id):
@@ -336,6 +340,44 @@ def run_model_task(self, model_id, user_id, data_dict):
         task_record.save()
 
     return {"message": f"Predicted result: {results[0]}", "status": 200}
+
+@shared_task(bind=True)
+def start_report_generation_task(self, dataset_id, pp_dataset_id, user_id):
+    print("in task preprocessing")
+    ## Update Tasks
+    #task_record = UserTask.objects.get(task_id=self.request.id)
+    task_record = UserTask.objects.filter(task_id=self.request.id).first()
+    if task_record:
+        task_record.status = "STARTED"
+        task_record.save()
+    
+    try:
+        dataset = Dataset.objects.get(id=dataset_id, user=user_id)
+    except ObjectDoesNotExist:
+        msg = "Error retrieving dataset for user."
+        print(msg)
+        if task_record:
+            task_record.status = "FAILURE"
+            task_record.result_message = msg
+            task_record.save()
+        return {"message": msg, "status": 404}
+    
+    try:
+        pp_dataset = PreprocessedDataSet.objects.get(id=pp_dataset_id, dataset=dataset, user=user_id)
+    except ObjectDoesNotExist:
+        msg = "Error retrieving preprocessed dataset for user."
+        print(msg)
+        if task_record:
+            task_record.status = "FAILURE"
+            task_record.result_message = msg
+            task_record.save()
+        return {"message": msg, "status": 404}
+        
+    # reconstruct ppe
+    ppe = reconstruct_ppe(pp_dataset)
+
+
+
 
 
 def reconstruct_ppe(pp_ds):
