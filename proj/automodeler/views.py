@@ -219,7 +219,7 @@ def dataset_details(request, dataset_id):
         print("Exception e: {0}".format(e))
     
     try:
-        ds_models = DatasetModel.objects.filter(original_dataset=dataset)
+        ds_models = DatasetModel.objects.filter(original_dataset=dataset, tuned=True)
         md = {}
         ds_details["models"] = ds_models
     except Exception as e:

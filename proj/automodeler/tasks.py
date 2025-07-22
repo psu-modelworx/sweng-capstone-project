@@ -133,8 +133,8 @@ def start_preprocessing_task(self, dataset_id, user_id):
     pp_ds.csv_file = temp_file
 
     pp_ds.file_size = temp_file.size
-    pp_ds.number_of_rows
-    pp_ds.number_of_removed_rows
+    pp_ds.number_of_removed_rows = len(ppe.dropped_columns)
+    pp_ds.number_of_rows = dataset.number_of_rows - pp_ds.number_of_removed_rows
     pp_ds.removed_features = ppe.dropped_columns
     pp_ds.model_type = ppe.task_type
     
