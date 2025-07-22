@@ -18,6 +18,7 @@ urlpatterns = [
     path("dataset_collection/", views.dataset_collection, name="dataset_collection"),
     path("model_collection/", views.model_collection, name="model_collection"),
     path("model_details/<int:model_id>", views.model_details, name="model_details"),
+    path("model_download/<int:model_id>", views.model_download, name="model_download"),
     path("model_delete/", views.model_delete, name="model_delete"),
     path("task_collection/", views.task_collection, name="task_collection"),
     path("account/", views.account, name="account"),

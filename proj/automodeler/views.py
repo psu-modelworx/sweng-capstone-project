@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound, HttpResponseServerError, FileResponse
 from django.urls import reverse
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -277,6 +277,15 @@ def model_details(request, model_id):
         "features": ds_features
     }
     return render(request, "automodeler/model_details.html", { "model": model_details })
+
+@login_required
+def model_download(request, model_id):
+    ds_model = get_object_or_404(DatasetModel, pk=model_id)
+    file_path = ds_model.model_file.path
+    response = FileResponse(open(file_path, 'rb'))
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment; filename="{0}"'.format(ds_model.name)
+    return response
 
 @login_required
 def task_collection(request):
