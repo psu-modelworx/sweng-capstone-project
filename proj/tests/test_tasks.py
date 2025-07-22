@@ -304,14 +304,14 @@ def test_start_modeling_pp_ds_not_found(mock_user_task_filter, mock_pp_ds_get, m
     assert "preprocessed" in result['message'].lower()
 
 @pytest.mark.django_db
-@patch('automodeler.tasks.TunedDatasetModel.objects.get')
+@patch('automodeler.tasks.DatasetModel.objects.get')
 @patch('automodeler.tasks.Dataset.objects.get', side_effect=ObjectDoesNotExist)
 @patch('automodeler.tasks.UserTask.objects.filter')
 def test_run_model_task_preprocessed_dataset_not_found(mock_user_task_filter, mock_dataset_get, mock_tuned_model_get, user_factory):
     """ TC-103 """ 
     user = user_factory()
     # Mock the tuned model to have original_dataset_id
-    mock_tuned_model = MagicMock(original_dataset_id=999, user_id=user.id)
+    mock_tuned_model = MagicMock(original_dataset_id=999, user_id=user.id, tuned=True)
     mock_tuned_model_get.return_value = mock_tuned_model
 
     # Dataset.objects.get will raise ObjectDoesNotExist (simulate failure here)
