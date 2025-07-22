@@ -7,7 +7,6 @@ from django.contrib.auth import get_user_model
 from .models import Dataset
 from .models import PreprocessedDataSet
 from .models import DatasetModel
-from .models import TunedDatasetModel
 from .models import UserTask
 
 from engines.preprocessing_engine import PreprocessingEngine

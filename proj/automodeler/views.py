@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authtoken.models import Token
 
 
-from .models import Dataset, PreprocessedDataSet, DatasetModel, TunedDatasetModel, UserTask
+from .models import Dataset, PreprocessedDataSet, DatasetModel, UserTask
 from .forms import DatasetForm
 from . import helper_functions
 
@@ -222,7 +222,7 @@ def dataset_details(request, dataset_id):
     
     try:
         ds_models = DatasetModel.objects.filter(original_dataset=dataset, tuned=True)
-        md = {}
+        # md = {} # Will use this when model details are calculated
         ds_details["models"] = ds_models
     except Exception as e:
         print("Exception e: {0}".format(e))
