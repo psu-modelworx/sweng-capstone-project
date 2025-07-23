@@ -1,6 +1,5 @@
 from celery import shared_task
 
-from django.core.files import File
 from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import get_user_model
@@ -14,8 +13,6 @@ from .models import ModelingReport
 from engines.preprocessing_engine import PreprocessingEngine
 from engines.modeling_engine import ModelingEngine
 from engines.reporting_engine import ReportingEngine
-
-from io import BytesIO
 
 import pandas as pd
 import os
