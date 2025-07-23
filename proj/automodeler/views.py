@@ -246,8 +246,12 @@ def model_delete(request):
         return HttpResponse("Empty model id!")
 
     ds_model = DatasetModel.objects.get(id=model_id)
+
+    if request.POST.get('prev_page'):
+        url = reverse(request.POST.get('prev_page'), args=(ds_model.original_dataset.id,))
+    else:
+        url = reverse("model_collection")
     ds_model.delete()
-    url = reverse("model_collection")
     return redirect(url)
 
 @login_required

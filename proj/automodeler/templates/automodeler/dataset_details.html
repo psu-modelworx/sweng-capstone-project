@@ -132,6 +132,7 @@
                                             <form method="POST" action="{% url 'model_delete' %}">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="model_id" id="model_id" value="{{ model.id }}"/>
+                                                <input type="hidden" name="prev_page" value="dataset_details" >
                                                 <button type="Submit" class="btn btn-danger">Delete model</button>
                                             </form>
                                             <a class="btn btn-success" href="{% url 'model_download' model_id=model.id %}">Download Model</a>
