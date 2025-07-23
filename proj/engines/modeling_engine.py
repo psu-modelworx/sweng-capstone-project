@@ -140,15 +140,26 @@ class ModelingEngine:
             "y_test_pred": y_test_pred,
         })
 
-        # Add predicted probabilities if classification and supported
-        if self.task_type == 'classification' and hasattr(model, "predict_proba"):
-            self.results['tuned'][model_name].update({
-                "y_train_proba": model.predict_proba(self.X_train),
-                "y_test_proba": model.predict_proba(self.X_test),
-            })
-
         # Compute and store metrics
         if self.task_type == 'classification':
+            if hasattr(model, "predict_proba"):
+                self.results['tuned'][model_name].update({
+                    "y_train_proba": model.predict_proba(self.X_train),
+                    "y_test_proba": model.predict_proba(self.X_test),
+                })
+            elif hasattr(model, "decision_function"):
+                y_train_scores = model.decision_function(self.X_train)
+                y_test_scores = model.decision_function(self.X_test)
+
+                n_classes = len(np.unique(self.y_train))
+                if n_classes == 2 and y_train_scores.ndim == 1:
+                    y_train_scores = np.vstack([1 - y_train_scores, y_train_scores]).T
+                    y_test_scores = np.vstack([1 - y_test_scores, y_test_scores]).T
+
+                self.results['tuned'][model_name].update({
+                    "y_train_decision": y_train_scores,
+                    "y_test_decision": y_test_scores,
+                })
             acc = accuracy_score(self.y_test, y_test_pred)
             prec = precision_score(self.y_test, y_test_pred, average='weighted', zero_division=0)
             rec = recall_score(self.y_test, y_test_pred, average='weighted', zero_division=0)
