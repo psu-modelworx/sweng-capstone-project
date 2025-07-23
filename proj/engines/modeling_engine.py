@@ -1,8 +1,9 @@
+import numpy as np
 from sklearn.model_selection import cross_val_score, GridSearchCV
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, RandomForestRegressor, GradientBoostingRegressor
 from sklearn.svm import SVC, SVR
-from sklearn.metrics import accuracy_score, r2_score
+from sklearn.metrics import f1_score, mean_absolute_error, mean_squared_error, precision_score, recall_score, accuracy_score, r2_score
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -120,23 +121,70 @@ class ModelingEngine:
         logging.info(f"Model {model.__class__.__name__} fitted to training data.")
 
     def evaluate_model(self, model=None):
-        """ Evaluates the model on both training and test datasets. """
+        """Evaluates the model on training and test sets, computes and stores predictions and metrics."""
         if not model:
             logging.error("No model available for evaluation.")
             return
-        
+
+        model_name = model.__class__.__name__
+
+        # Predictions
         y_train_pred = model.predict(self.X_train)
         y_test_pred = model.predict(self.X_test)
 
-        metric_fn = accuracy_score if self.task_type == 'classification' else r2_score
-        model_name = model.__class__.__name__
+        self.results.setdefault('tuned', {}).setdefault(model_name, {})
+
+        # Store predictions
         self.results['tuned'][model_name].update({
-        "train": metric_fn(self.y_train, y_train_pred),
-        "test": metric_fn(self.y_test, y_test_pred)
+            "y_train_pred": y_train_pred,
+            "y_test_pred": y_test_pred,
         })
 
-        logging.info(f"{model_name} Train Score: {self.results['tuned'][model_name]['train']:.4f}")
-        logging.info(f"{model_name} Test Score: {self.results['tuned'][model_name]['test']:.4f}")
+        # Add predicted probabilities if classification and supported
+        if self.task_type == 'classification' and hasattr(model, "predict_proba"):
+            self.results['tuned'][model_name].update({
+                "y_train_proba": model.predict_proba(self.X_train),
+                "y_test_proba": model.predict_proba(self.X_test),
+            })
+
+        # Compute and store metrics
+        if self.task_type == 'classification':
+            acc = accuracy_score(self.y_test, y_test_pred)
+            prec = precision_score(self.y_test, y_test_pred, average='weighted', zero_division=0)
+            rec = recall_score(self.y_test, y_test_pred, average='weighted', zero_division=0)
+            f1 = f1_score(self.y_test, y_test_pred, average='weighted', zero_division=0)
+
+            self.results['tuned'][model_name].update({
+                "accuracy": acc,
+                "precision": prec,
+                "recall": rec,
+                "f1_score": f1,
+                "train_accuracy": accuracy_score(self.y_train, y_train_pred),
+                "test_accuracy": acc,
+            })
+
+            logging.info(f"{model_name} - Accuracy: {acc:.4f}, Precision: {prec:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
+
+        elif self.task_type == 'regression':
+            mse = mean_squared_error(self.y_test, y_test_pred)
+            mae = mean_absolute_error(self.y_test, y_test_pred)
+            rmse = np.sqrt(mse)
+            r2 = r2_score(self.y_test, y_test_pred)
+            n, p = self.X_test.shape
+            adj_r2 = 1 - (1 - r2) * (n - 1) / (n - p - 1) if n > p + 1 else r2  # fallback if n too small
+
+            self.results['tuned'][model_name].update({
+                "rmse": rmse,
+                "r2": r2,
+                "mse": mse,
+                "mae": mae,
+                "adjusted_r2": adj_r2,
+                "train_r2": r2_score(self.y_train, y_train_pred),
+                "test_r2": r2,
+            })
+
+            logging.info(f"{model_name} - RMSE: {rmse:.4f}, R²: {r2:.4f}, MSE: {mse:.4f}, MAE: {mae:.4f}, Adjusted R²: {adj_r2:.4f}")
+
 
 
     def get_results(self):
