@@ -184,8 +184,7 @@ class ReportingEngine:
             self.add_bullet("Mean Squared Error (MSE) measures the average squared difference between predicted and actual values, quantifying overall prediction error magnitude in regression models.")
             self.add_bullet("Mean Absolute Error (MAE) measures the average absolute difference between predicted and actual values, providing a straightforward metric of prediction accuracy in regression models.")
 
-        col_widths_reg = [60, 30, 30, 30, 30]       
-        self.add_table(headers, data, col_widths_reg)
+        self.add_table(headers, data)
 
         self.subsection("Model Reccomendation")
         best_info = self.modeler.get_best_tuned_model()
@@ -838,17 +837,37 @@ class ReportingEngine:
         self.pdf.set_x(self.pdf.get_x() + 5)
         self.pdf.multi_cell(0, 8, f"- {text}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-    def add_table(self, header, data, col_widths):
+    def add_table(self, headers, data):
         self.pdf.set_font("Helvetica", "B", 10)
-        # Header
-        for i in range(len(header)):
-            self.pdf.cell(col_widths[i], 8, header[i], border=1, new_x=XPos.RIGHT, new_y=YPos.TOP, align="C")
+
+        col_widths = []
+        for col_idx in range(len(headers)):
+            max_width = self.pdf.get_string_width(headers[col_idx]) + 6
+            for row in data:
+                cell_text = str(row[col_idx])
+                cell_width = self.pdf.get_string_width(cell_text) + 6
+                if cell_width > max_width:
+                    max_width = cell_width
+            col_widths.append(max_width)
+
+        total_width = sum(col_widths)
+        page_width = self.pdf.w - 2 * self.pdf.l_margin
+        start_x = self.pdf.l_margin + (page_width - total_width) / 2
+
+        self.pdf.set_x(start_x)
+
+        for i in range(len(headers)):
+            self.pdf.cell(col_widths[i], 8, headers[i], border=1, new_x=XPos.RIGHT, new_y=YPos.TOP, align="C")
         self.pdf.ln()
+
         self.pdf.set_font("Helvetica", "", 10)
-        # Data rows
+
         for row in data:
+            self.pdf.set_x(start_x)
             for i in range(len(row)):
                 self.pdf.cell(col_widths[i], 8, str(row[i]), border=1, new_x=XPos.RIGHT, new_y=YPos.TOP, align="C")
             self.pdf.ln()
+
         self.pdf.ln(5)
+
 
