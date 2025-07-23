@@ -135,54 +135,46 @@ class ReportingEngine:
         # create a table of tuned model results         
         data = []
         tuned_results = self.modeler.results.get('tuned', {})
-        for model_name, info in tuned_results.items():
-            model = info.get('optimized_model')
-            if model is None:
-                continue  # skip if no model present
-
-            y_pred = model.predict(self.modeler.X_test)
-
-            if self.modeler.task_type == 'classification':
-                headers = ["Model", "Accuracy", "Precision", "Recall", "F1 Score"]
-                accuracy = accuracy_score(self.modeler.y_test, y_pred)
-                precision = precision_score(self.modeler.y_test, y_pred, average='weighted', zero_division=0)
-                recall = recall_score(self.modeler.y_test, y_pred, average='weighted', zero_division=0)
-                f1 = f1_score(self.modeler.y_test, y_pred, average='weighted', zero_division=0)
-
-                data.append([
-                    model_name,
-                    f"{accuracy:.2%}",
-                    f"{precision:.2%}",
-                    f"{recall:.2%}",
-                    f"{f1:.2%}"
-                ])
-
-            elif self.modeler.task_type == 'regression':
-                headers = ["Model", "RMSE", "R² Score", "MSE", "MAE"]
-                mse = mean_squared_error(self.modeler.y_test, y_pred)
-                mae = mean_absolute_error(self.modeler.y_test, y_pred)
-                rmse = np.sqrt(mse)
-                r2 = r2_score(self.modeler.y_test, y_pred)
-
-                data.append([
-                    model_name,
-                    f"{rmse:.3f}",
-                    f"{r2:.3f}",
-                    f"{mse:.3f}",
-                    f"{mae:.3f}"
-                ])
 
         if self.modeler.task_type == 'classification':
+            headers = ["Model", "Accuracy", "Precision", "Recall", "F1 Score"]
+            for model_name, info in tuned_results.items():
+                if not all(k in info for k in ["accuracy", "precision", "recall", "f1_score"]):
+                    continue  # skip if required metrics are missing
+
+                data.append([
+                    model_name,
+                    f"{info['accuracy']:.2%}",
+                    f"{info['precision']:.2%}",
+                    f"{info['recall']:.2%}",
+                    f"{info['f1_score']:.2%}"
+                ])
+
             self.add_bullet("Accuracy measures the proportion of correct predictions out of all predictions made by the model.")
             self.add_bullet("Precision indicates the proportion of true positive predictions among all positive predictions, reflecting the model's exactness.")
             self.add_bullet("Recall (Sensitivity) measures the proportion of true positive predictions out of all actual positive cases, reflecting the model's completeness.")
             self.add_bullet("F1 Score is the harmonic mean of precision and recall, balancing both metrics into a single performance measure.")
 
         elif self.modeler.task_type == 'regression':
+            headers = ["Model", "RMSE", "R² Score", "MSE", "MAE", "Adjusted R² Score"]
+            for model_name, info in tuned_results.items():
+                if not all(k in info for k in ["rmse", "r2", "mse", "mae", "adjusted_r2"]):
+                    continue  # skip if required metrics are missing
+
+                data.append([
+                    model_name,
+                    f"{info['rmse']:.3f}",
+                    f"{info['r2']:.3f}",
+                    f"{info['mse']:.3f}",
+                    f"{info['mae']:.3f}",
+                    f"{info['adjusted_r2']:.3f}"
+                ])
+
             self.add_bullet("Root Mean Squared Error (RMSE) is the square root of the Mean Squared Error, providing an error metric in the same units as the target variable and indicating typical prediction error size.")
             self.add_bullet("R-squared (R²) measures the proportion of variance in the target variable explained by the regression model, indicating how well the model fits the data.")
             self.add_bullet("Mean Squared Error (MSE) measures the average squared difference between predicted and actual values, quantifying overall prediction error magnitude in regression models.")
             self.add_bullet("Mean Absolute Error (MAE) measures the average absolute difference between predicted and actual values, providing a straightforward metric of prediction accuracy in regression models.")
+            self.add_bullet("Adjusted R-squared adjusts the R-squared value to account for the number of predictors in the model, providing a more unbiased measure of model fit especially when comparing models with different numbers of features.")
 
         self.add_table(headers, data)
 
@@ -254,16 +246,14 @@ class ReportingEngine:
 
         self.subsection("Residuals Plot")
         self.add_bullet("The residuals plot displays the difference between predicted and actual values, helping to diagnose non-linearity, unequal error variance, and outliers in regression models.")
-            
+
         if self.preprocessor.task_type != 'regression':
             self.add_bullet("Residuals plot: Not applicable for classification task.")
             return
 
-        X_test = self.preprocessor.X_test
         y_test = self.preprocessor.y_test
-
-        if X_test is None or y_test is None:
-            self.add_bullet("Residuals plot: Test data not available.")
+        if y_test is None:
+            self.add_bullet("Residuals plot: Test labels not available.")
             return
 
         tuned_models = self.modeler.results.get('tuned', {})
@@ -272,13 +262,12 @@ class ReportingEngine:
             return
 
         for model_name, info in tuned_models.items():
-            model = info.get('optimized_model')
-            if model is None:
-                self.add_bullet(f"Residuals plot: No model available for {model_name}. Skipping.")
+            y_pred = info.get("y_test_pred")
+            if y_pred is None:
+                self.add_bullet(f"Residuals plot: No test predictions available for {model_name}. Skipping.")
                 continue
 
             try:
-                y_pred = model.predict(X_test)
                 residuals = y_test - y_pred
 
                 plt.figure(figsize=(8, 6))
@@ -297,22 +286,20 @@ class ReportingEngine:
             except Exception as e:
                 self.add_bullet(f"Residuals plot: Error generating residuals plot for {model_name}: {str(e)}")
 
+
     def plot_actual_vs_predicted(self):
         """Plots actual vs predicted values for regression models."""
 
         self.subsection("Actual vs. Predicted Plot")
         self.add_bullet("The actual vs. predicted plot compares the model's predictions to the true values, providing a visual assessment of prediction accuracy and potential bias in regression models.")
 
-
         if self.preprocessor.task_type != 'regression':
             self.add_bullet("Actual vs Predicted plot: Not applicable for classification task.")
             return
 
-        X_test = self.preprocessor.X_test
         y_test = self.preprocessor.y_test
-
-        if X_test is None or y_test is None:
-            self.add_bullet("Actual vs Predicted plot: Test data not available.")
+        if y_test is None:
+            self.add_bullet("Actual vs Predicted plot: Test labels not available.")
             return
 
         tuned_models = self.modeler.results.get('tuned', {})
@@ -321,14 +308,12 @@ class ReportingEngine:
             return
 
         for model_name, info in tuned_models.items():
-            model = info.get('optimized_model')
-            if model is None:
-                self.add_bullet(f"Actual vs Predicted plot: No model available for {model_name}. Skipping.")
+            y_pred = info.get("y_test_pred")
+            if y_pred is None:
+                self.add_bullet(f"Actual vs Predicted plot: No test predictions available for {model_name}. Skipping.")
                 continue
 
             try:
-                y_pred = model.predict(X_test)
-
                 plt.figure(figsize=(8, 6))
                 sns.scatterplot(x=y_test, y=y_pred)
                 plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color='red', linestyle='--')
@@ -346,7 +331,7 @@ class ReportingEngine:
                 self.add_bullet(f"Actual vs Predicted plot: Error generating plot for {model_name}: {str(e)}")
 
     def plot_error_distribution(self):
-        """Plots the distribution of errors for regression models."""
+        """Plots the distribution of errors for regression models using stored predictions."""
 
         self.subsection("Error Distribution Plot")
         self.add_bullet("The error distribution plot shows the frequency distribution of prediction errors, helping to evaluate model bias and detect if errors are normally distributed.")
@@ -355,11 +340,9 @@ class ReportingEngine:
             self.add_bullet("Error distribution plot: Not applicable for classification task.")
             return
 
-        X_test = self.preprocessor.X_test
         y_test = self.preprocessor.y_test
-
-        if X_test is None or y_test is None:
-            self.add_bullet("Error distribution plot: Test data not available.")
+        if y_test is None:
+            self.add_bullet("Error distribution plot: Test labels not available.")
             return
 
         tuned_models = self.modeler.results.get('tuned', {})
@@ -368,13 +351,12 @@ class ReportingEngine:
             return
 
         for model_name, info in tuned_models.items():
-            model = info.get('optimized_model')
-            if model is None:
-                self.add_bullet(f"Error distribution plot: No model available for {model_name}. Skipping.")
+            y_pred = info.get("y_test_pred")
+            if y_pred is None:
+                self.add_bullet(f"Error distribution plot: No test predictions available for {model_name}. Skipping.")
                 continue
 
             try:
-                y_pred = model.predict(X_test)
                 errors = y_test - y_pred
 
                 plt.figure(figsize=(8, 6))
@@ -421,7 +403,7 @@ class ReportingEngine:
         os.remove(tmpfile.name)
 
     def generate_conf_matrix(self):
-        """Generates confusion matrix heatmaps for tuned models."""
+        """Generates confusion matrix heatmaps for tuned classification models using stored predictions."""
 
         self.subsection("Confusion Matrix Heatmap")
         self.add_bullet("A confusion matrix heatmap visualizes the number of correct and incorrect predictions for each class, helping to identify patterns of misclassification.")
@@ -430,25 +412,22 @@ class ReportingEngine:
             self.add_bullet("Confusion matrix heatmap: Not applicable for regression task.")
             return
 
+        y_test = self.preprocessor.y_test
+        if y_test is None:
+            self.add_bullet("Confusion matrix heatmap: Test data not available.")
+            return
+
         tuned_models = self.modeler.results.get('tuned', {})
         if not tuned_models:
             self.add_bullet("Confusion matrix heatmap: No tuned models available to generate matrices.")
             return
 
-        X_test = self.preprocessor.X_test
-        y_test = self.preprocessor.y_test
-
-        if X_test is None or y_test is None:
-            self.add_bullet("Confusion matrix heatmap: Test data not available.")
-            return
-
         for model_name, info in tuned_models.items():
-            model = info.get('optimized_model')
-            if model is None:
-                self.add_bullet(f"Confusion matrix heatmap: No model available for {model_name}. Skipping.")
+            y_pred_encoded = info.get("y_test_pred")
+            if y_pred_encoded is None:
+                self.add_bullet(f"Confusion matrix heatmap: No test predictions available for {model_name}. Skipping.")
                 continue
 
-            y_pred_encoded = model.predict(X_test)
             try:
                 y_pred = self.preprocessor.decode_target(y_pred_encoded)
                 y_true = self.preprocessor.decode_target(y_test)
@@ -456,21 +435,25 @@ class ReportingEngine:
                 y_pred = y_pred_encoded
                 y_true = y_test
 
-            cm = confusion_matrix(y_true, y_pred)
-            labels = sorted(list(set(y_true)))
+            try:
+                cm = confusion_matrix(y_true, y_pred)
+                labels = sorted(list(set(y_true)))
 
-            plt.figure(figsize=(6, 5))
-            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                        xticklabels=labels, yticklabels=labels)
-            plt.xlabel('Predicted')
-            plt.ylabel('Actual')
-            plt.title(f'Confusion Matrix Heatmap: {model_name}')
+                plt.figure(figsize=(6, 5))
+                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                            xticklabels=labels, yticklabels=labels)
+                plt.xlabel('Predicted')
+                plt.ylabel('Actual')
+                plt.title(f'Confusion Matrix Heatmap: {model_name}')
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
-                plt.savefig(tmpfile.name, bbox_inches='tight')
-                plt.close()
-                self.pdf.image(tmpfile.name, x=15, w=180)
-            os.remove(tmpfile.name)
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+                    plt.savefig(tmpfile.name, bbox_inches='tight')
+                    plt.close()
+                    self.pdf.image(tmpfile.name, x=15, w=180)
+                os.remove(tmpfile.name)
+
+            except Exception as e:
+                self.add_bullet(f"Confusion matrix heatmap: Error generating heatmap for {model_name}: {str(e)}")
 
     def plot_roc_curve(self):
         """Plots ROC curve for classification models."""
@@ -510,20 +493,22 @@ class ReportingEngine:
                 continue
 
             try:
-                # Predict probabilities for all classes if multiclass, else use [:,1] for positive class
-                y_score = model.predict_proba(X_test)
+                proba = self.modeler.results.get('tuned', {}).get(model_name, {}).get("y_test_proba")
+
+                if proba is None:
+                    self.add_bullet(f"ROC curve: No stored predicted probabilities for {model_name}. Skipping.")
+                    continue
 
                 plt.figure(figsize=(8, 6))
                 if n_classes == 2:
                     # Binary classification
-                    fpr, tpr, _ = roc_curve(y_test, y_score[:, 1])
+                    fpr, tpr, _ = roc_curve(y_test, proba[:, 1])
                     roc_auc = auc(fpr, tpr)
                     plt.plot(fpr, tpr, color='blue', label=f'ROC curve (area = {roc_auc:.2f})')
-
                 else:
                     # Multiclass classification: One-vs-rest ROC curves
                     for i in range(n_classes):
-                        fpr, tpr, _ = roc_curve(y_test_bin[:, i], y_score[:, i])
+                        fpr, tpr, _ = roc_curve(y_test_bin[:, i], proba[:, i])
                         roc_auc = auc(fpr, tpr)
                         plt.plot(fpr, tpr, label=f'Class {classes[i]} (area = {roc_auc:.2f})')
 
@@ -549,7 +534,7 @@ class ReportingEngine:
 
         self.subsection("Precision-Recall Curve")
         self.add_bullet("The Precision-Recall curve shows the tradeoff between precision and recall for different decision thresholds, helping assess model performance on imbalanced classification tasks.")
-        
+
         if self.preprocessor.task_type != 'classification':
             self.add_bullet("Precision-Recall curve plot: Not applicable for regression task.")
             return
@@ -572,7 +557,7 @@ class ReportingEngine:
         if n_classes > 2:
             y_test_bin = label_binarize(y_test, classes=classes)
         else:
-            y_test_bin = None  # not needed for binary
+            y_test_bin = None 
 
         for model_name, info in tuned_models.items():
             model = info.get('optimized_model')
@@ -581,18 +566,19 @@ class ReportingEngine:
                 continue
 
             try:
-                # Try to get scores: prefer predict_proba, else decision_function if available
-                if hasattr(model, "predict_proba"):
-                    y_score = model.predict_proba(X_test)
-                elif hasattr(model, "decision_function"):
-                    y_score = model.decision_function(X_test)
-                    # decision_function might be shape (n_samples,) for binary
-                    # make sure to reshape if needed
-                    if n_classes == 2 and y_score.ndim == 1:
-                        y_score = np.vstack([1 - y_score, y_score]).T
+                proba = info.get("y_test_proba")
+                decision = info.get("y_test_decision")
+
+                if proba is not None:
+                    y_score = proba
+                elif decision is not None:
+                    y_score = decision
                 else:
-                    self.add_bullet(f"Precision-Recall curve plot: Model {model_name} has no method to get scores. Skipping.")
+                    self.add_bullet(f"Precision-Recall curve plot: Model {model_name} has no stored probabilities or decision scores. Skipping.")
                     continue
+
+                if n_classes == 2 and y_score.ndim == 1:
+                    y_score = np.vstack([1 - y_score, y_score]).T
 
                 plt.figure(figsize=(8, 6))
 
@@ -639,14 +625,14 @@ class ReportingEngine:
         metrics = []
 
         for model_name, info in tuned_models.items():
-            train_score = info.get('train', None)
-            test_score = info.get('test', None)
-            if train_score is not None and test_score is not None:
+            train_acc = info.get('train_accuracy')
+            test_acc = info.get('test_accuracy')
+            if train_acc is not None and test_acc is not None:
                 model_names.append(model_name)
-                metrics.append((train_score, test_score))
+                metrics.append((train_acc, test_acc))
 
         if not model_names:
-            self.add_bullet("Metrics bar chart: No scores available for tuned models.")
+            self.add_bullet("Metrics bar chart: No accuracy scores available for tuned models.")
             return
 
         train_scores, test_scores = zip(*metrics)
@@ -665,7 +651,8 @@ class ReportingEngine:
             plt.savefig(tmpfile.name, bbox_inches='tight')
             plt.close()
             self.pdf.image(tmpfile.name, x=15, w=180)
-        os.remove(tmpfile.name)    
+        os.remove(tmpfile.name)
+  
 
     # ------------------Plots for both regression and classification-----------------
 
