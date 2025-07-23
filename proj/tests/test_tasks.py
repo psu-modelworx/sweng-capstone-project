@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from django.core.exceptions import ObjectDoesNotExist
 from automodeler.tasks import start_preprocessing_task, start_modeling_task, run_model_task,reconstruct_ppe, obj_to_pkl_file, pkl_file_to_obj
 
-from automodeler.models import Dataset, DatasetModel
+from automodeler.models import Dataset, DatasetModel, ModelingReport
 from django.core.files.base import ContentFile
 import pandas as pd
 import pickle
@@ -102,6 +102,7 @@ def test_start_modeling_success(mock_obj_to_pkl, mock_modeling_engine_cls, mock_
 
     mock_pp_ds = MagicMock()
     mock_pp_ds_get.return_value = mock_pp_ds
+    mock_pp_ds.model_type = 'classification'
 
     mock_reconstruct_ppe.return_value = MagicMock(
         task_type='classification',
@@ -118,6 +119,7 @@ def test_start_modeling_success(mock_obj_to_pkl, mock_modeling_engine_cls, mock_
         }
     }
     mock_modeling_engine_cls.return_value = mock_engine
+    mock_engine.task_type = 'classification'
 
     mock_task = MagicMock()
     mock_user_task_filter.return_value.first.return_value = mock_task
