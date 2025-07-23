@@ -1,5 +1,6 @@
 from celery import shared_task
 
+from django.core.files import File
 from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import get_user_model
@@ -8,14 +9,20 @@ from .models import Dataset
 from .models import PreprocessedDataSet
 from .models import DatasetModel
 from .models import UserTask
+from .models import ModelingReport
 
 from engines.preprocessing_engine import PreprocessingEngine
 from engines.modeling_engine import ModelingEngine
+from engines.reporting_engine import ReportingEngine
+
+from io import BytesIO
 
 import pandas as pd
 import os
 import pickle
 
+import logging
+logger = logging.getLogger(__name__)
 
 @shared_task(bind=True)
 def start_preprocessing_task(self, dataset_id, user_id):
@@ -237,6 +244,31 @@ def start_modeling_task(self, dataset_id, user_id):
             original_dataset=dataset)
         tuned_ds_model.save()
     
+    # Check and see if report exists, if it does delete it
+    try:
+        report = ModelingReport.objects.get()
+        report.delete()
+    except ObjectDoesNotExist:
+        logger.exception("Report does not exist")
+
+    logger.info("Creating report...")
+    re = ReportingEngine(ppe, moe)
+    re.generate_full_report()
+
+    pdf = re.pdf
+    pdf_encoded = pdf.output(dest="S")
+    
+    report_filename = "Dataset_{0}_modeling_report.pdf".format(dataset.id)
+
+    report = ModelingReport(
+        name=''.join([dataset.name, '_modeling_report']),
+        report_file=ContentFile(bytes(pdf_encoded), name=report_filename),
+        file_size=len(bytes(pdf_encoded)),
+        original_dataset=dataset,
+        user=user
+    )
+    report.save()
+
     if task_record:
         task_record.status = "SUCCESS"
         task_record.result_message = "Modeling completed!"

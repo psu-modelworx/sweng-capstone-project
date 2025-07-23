@@ -47,7 +47,10 @@
         <div class="col">
             <button class="col btn btn-success" onclick="modeling_fetch_request({{ ds_details.ds.ds_id }})">Start Modeling!</button>
         </div>
-        
+        <div class="col">
+            <a class="btn btn-secondary" href="{% url 'report_download' dataset_id=ds_details.ds.ds_id %}">Download Report</a>
+        </div>
+
         <form class="col" method="post" action="{% url 'dataset_delete' dataset_id=ds_details.ds.ds_id %}">
             {% csrf_token %}
             <button class="col btn btn-danger" type="Submit">Delete</button>
