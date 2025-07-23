@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from django.core.exceptions import ObjectDoesNotExist
 from automodeler.tasks import start_preprocessing_task, start_modeling_task, run_model_task,reconstruct_ppe, obj_to_pkl_file, pkl_file_to_obj
 
-from automodeler.models import Dataset, DatasetModel, ModelingReport
+from automodeler.models import Dataset, DatasetModel
 from django.core.files.base import ContentFile
 import pandas as pd
 import pickle

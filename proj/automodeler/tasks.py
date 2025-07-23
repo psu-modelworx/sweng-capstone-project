@@ -243,7 +243,7 @@ def start_modeling_task(self, dataset_id, user_id):
     
     
     try:
-        generate_report(ppe, moe, dataset)
+        generate_report(ppe, moe, dataset, user)
     except Exception as e:
         msg = 'Internal Error generating report:  {0}'.format(e)
         logger.exception(msg)
@@ -375,7 +375,7 @@ def pkl_file_to_obj(file_obj):
     data_obj = pickle.load(file_obj)
     return data_obj
 
-def generate_report(ppe, moe, dataset):
+def generate_report(ppe, moe, dataset, user):
     # Check and see if report exists, if it does delete it
     try:
         report = ModelingReport.objects.get(original_dataset=dataset)
