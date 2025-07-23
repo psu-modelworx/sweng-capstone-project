@@ -217,7 +217,6 @@ class ReportingEngine:
             self.plot_feature_importance()
             self.plot_roc_curve()
             self.plot_precision_recall_curve()
-            self.plot_classification_report()
             self.plot_classification_model_performance_bar_chart()
             self.plot_cv_score_boxplots()
 
@@ -620,55 +619,6 @@ class ReportingEngine:
 
             except Exception as e:
                 self.add_bullet(f"Precision-Recall curve plot: Error generating Precision-Recall curve for {model_name}: {str(e)}")
-
-    def plot_classification_report(self):
-        """Plots classification report for tuned models."""
-
-        self.subsection("Classification Report Heatmap")
-        self.add_bullet("The classification report heatmap visualizes key metrics like precision, recall, and F1-score for each class, making it easier to compare performance across categories.")
-
-        if self.preprocessor.task_type != 'classification':
-            self.add_bullet("Classification report plot: Not applicable for regression task.")
-            return
-
-        tuned_models = self.modeler.results.get('tuned', {})
-        if not tuned_models:
-            self.add_bullet("Classification report plot: No tuned models available.")
-            return
-
-        X_test = self.preprocessor.X_test
-        y_test = self.preprocessor.y_test
-
-        if X_test is None or y_test is None:
-            self.add_bullet("Classification report plot: Test data not available.")
-            return
-
-        for model_name, info in tuned_models.items():
-            model = info.get('optimized_model')
-            if model is None:
-                self.add_bullet(f"Classification report plot: No model available for {model_name}. Skipping.")
-                continue
-
-            try:
-                y_pred_encoded = model.predict(X_test)
-                y_pred = self.preprocessor.decode_target(y_pred_encoded)
-                y_true = self.preprocessor.decode_target(y_test)
-
-                report = classification_report(y_true, y_pred, output_dict=True)
-                sns.heatmap(pd.DataFrame(report).iloc[:-1, :].T, annot=True, cmap='Blues')
-
-                plt.title(f'Classification Report: {model_name}')
-                plt.xlabel('Metrics')
-                plt.ylabel('Classes')
-
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
-                    plt.savefig(tmpfile.name, bbox_inches='tight')
-                    plt.close()
-                    self.pdf.image(tmpfile.name, x=15, w=180)
-                os.remove(tmpfile.name)
-
-            except Exception as e:
-                self.add_bullet(f"Classification report plot: Error generating classification report for {model_name}: {str(e)}")
 
     def plot_classification_model_performance_bar_chart(self):
         """Plots a bar chart of classification train and test scores."""
