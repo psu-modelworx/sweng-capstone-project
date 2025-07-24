@@ -35,6 +35,18 @@
             <p>Dataset has not yet been preprocessed</p>
             {% endif %}
         </div>
+        <div class="col">
+            <h2>Available Models</h2>
+            {% if not ds_details.pp_ds %}
+                You must first preprocess your dataset to view available models!
+            {% elif not ds_details.available_models %}
+                No models currently available for selection
+            {% else %}
+                
+            {% endif %}
+
+            <button type="submit">Update model selection</button>
+        </div>
     </div>
 
     <div class="row">
