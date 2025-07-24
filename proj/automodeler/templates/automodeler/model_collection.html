@@ -39,6 +39,7 @@
                         <input type="hidden" name="model_id" id="model_id" value="{{ model.id }}"/>
                         <button type="Submit" class="btn btn-danger">Delete model</button>
                     </form>
+                    <a class="btn btn-success" href="{% url 'model_download' model_id=model.id %}">Download Model</a>
                 </td>
             </tr>
             {% endfor %}        

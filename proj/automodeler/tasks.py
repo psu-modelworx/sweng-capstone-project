@@ -1,4 +1,5 @@
 from celery import shared_task
+
 from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import get_user_model
@@ -6,7 +7,6 @@ from django.contrib.auth import get_user_model
 from .models import Dataset
 from .models import PreprocessedDataSet
 from .models import DatasetModel
-from .models import TunedDatasetModel
 from .models import UserTask
 
 from engines.preprocessing_engine import PreprocessingEngine
@@ -50,7 +50,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         print('Exception {0}'.format(e))
         if task_record:
             task_record.status = "FAILURE"
-            task_record.result_message = "Target teature not selected"
+            task_record.result_message = "Target feature not selected"
             task_record.save()
         return {"message": "Target feature not selected", "status": 500}
 
@@ -65,7 +65,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         print('Exception {0}'.format(e))
         if task_record:
             task_record.status = "FAILURE"
-            task_record.result_message = "Target teature not selected"
+            task_record.result_message = "Target feature not selected"
             task_record.save()
         return {"message": "Target feature not selected", "status": 500}
 
@@ -131,15 +131,24 @@ def start_preprocessing_task(self, dataset_id, user_id):
     pp_ds.name = pp_ds_name
     pp_ds.csv_file = temp_file
 
+    pp_ds.file_size = temp_file.size
+    pp_ds.number_of_removed_rows = len(ppe.dropped_columns)
+    pp_ds.number_of_rows = dataset.number_of_rows - pp_ds.number_of_removed_rows
+    pp_ds.removed_features = ppe.dropped_columns
+    pp_ds.model_type = ppe.task_type
+    
+
     # Get important objects from PPE, pickle them, and create ContentFiles for storage
     pp_ds.feature_encoder = obj_to_pkl_file(ppe.feature_encoder, f"{pp_ds_name}_fe_enc.bin")
     pp_ds.scaler = obj_to_pkl_file(ppe.scaler, f"{pp_ds_name}_sca.bin")
     pp_ds.label_encoder = obj_to_pkl_file(ppe.label_encoder, f"{pp_ds_name}_la_enc.bin")
     
     pp_ds.original_dataset = dataset
-    
     pp_ds.meta_data = ppe.to_meta_dict()
     
+    # Available models
+    
+
     # Save the object
     pp_ds.save()
     msg = "Preprocessing completed..."
@@ -205,13 +214,27 @@ def start_modeling_task(self, dataset_id, user_id):
         model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_untuned'])
         model_file_name = ''.join([model_name, '.bin'])
         model_file = obj_to_pkl_file(model_results['model'], model_file_name)
-        ds_model = DatasetModel(name = model_name, model_file=model_file, model_method=model_method, model_type=task_type, user=user, original_dataset=dataset)
+        ds_model = DatasetModel(
+            name = model_name, 
+            model_file=model_file, 
+            model_method=model_method, 
+            model_type=task_type, 
+            user=user, 
+            tuned=False,
+            original_dataset=dataset)
         ds_model.save()
 
         tuned_model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_tuned'])
         tuned_model_file_name = ''.join([tuned_model_name, '.bin'])
         tuned_model_file = obj_to_pkl_file(tuned_models[model_method]['optimized_model'], tuned_model_file_name)
-        tuned_ds_model = TunedDatasetModel(name = tuned_model_name, model_file=tuned_model_file, model_method=model_method, model_type=task_type, untuned_model=ds_model, user=user, original_dataset=dataset)
+        tuned_ds_model = DatasetModel(
+            name = tuned_model_name, 
+            model_file=tuned_model_file, 
+            model_method=model_method, 
+            model_type=task_type, 
+            user=user, 
+            tuned=True,
+            original_dataset=dataset)
         tuned_ds_model.save()
     
     if task_record:
@@ -240,8 +263,8 @@ def run_model_task(self, model_id, user_id, data_dict):
     
     # Get the tuned model and verify it exists
     try:
-        tuned_model = TunedDatasetModel.objects.get(id=model_id, user_id=user_id)
-    except TunedDatasetModel.DoesNotExist as e:
+        tuned_model = DatasetModel.objects.get(id=model_id, user_id=user_id, tuned=True)
+    except DatasetModel.DoesNotExist as e:
         # return {"message": "Tuned model not found.", "status": 404}
         print(f"TunedDatasetModel not found: {e}")
         if task_record:

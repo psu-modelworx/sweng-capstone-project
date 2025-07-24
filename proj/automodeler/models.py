@@ -70,7 +70,6 @@ class PreprocessedDataSet(models.Model):
     scaler = models.FileField(upload_to='pp_ds_bins/')
     label_encoder = models.FileField(upload_to='pp_ds_bins/')
     meta_data = models.JSONField(default=dict)
-    
     original_dataset = models.OneToOneField(Dataset, on_delete=models.CASCADE, blank=True, null=True)
     
     def filename(self):
