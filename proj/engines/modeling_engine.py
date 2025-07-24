@@ -49,13 +49,13 @@ class ModelingEngine:
         }
     }
 
-    def __init__(self, X_train, y_train, X_test, y_test, task_type='classification'):
+    def __init__(self, X_train, y_train, X_test, y_test, task_type='classification', desired_models=None):
         """
         Initializes the ModelingEngine with task type and datasets.
         """
         self.X_train, self.y_train, self.X_test, self.y_test = X_train, y_train, X_test, y_test
         self.task_type = task_type
-        self.models = self.get_models(task_type)
+        self.models = self.get_models(task_type, desired_models)
         self.results = {}
 
     def run_modeling_engine(self):
@@ -65,7 +65,7 @@ class ModelingEngine:
         self.fit_tuned_models()
         self.evaluate_tuned_models()
 
-    def get_models(self, task_type):
+    def get_models(self, task_type, desired_models=None):
         """ Returns a dictionary of models based on task type. """
         classifiers = {
             'LogisticRegression': LogisticRegression(max_iter=1000),
@@ -79,7 +79,26 @@ class ModelingEngine:
             'GradientBoostingRegressor': GradientBoostingRegressor(),
             'SVR': SVR()
         }
-        return classifiers if task_type == 'classification' else regressors
+        all_models = classifiers if task_type == 'classification' else regressors
+
+        if desired_models is not None:
+            valid_models = {name: model for name, model in all_models.items() if name in desired_models}
+            invalid_models = [name for name in desired_models if name not in all_models]
+
+            if valid_models:
+                if invalid_models:
+                    logging.warning(
+                        f"Some desired models are not valid for task type '{task_type}': {invalid_models}. "
+                        f"Proceeding with valid models only: {list(valid_models.keys())}"
+                    )
+                return valid_models
+            else:
+                logging.warning(
+                    f"No desired models are valid for task type '{task_type}': {desired_models}. "
+                    f"Using all default models: {list(all_models.keys())}"
+                )
+
+        return all_models
 
     def tune_model(self, model=None):
         """ Tunes hyperparameters for the given model using GridSearchCV. """
