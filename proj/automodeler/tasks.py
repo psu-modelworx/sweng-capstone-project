@@ -102,7 +102,11 @@ def start_preprocessing_task(self, dataset_id, user_id):
             task_record.save()
         return {"message": "Error running preprocessing engine. Did you select Target Variable?", "status": 500}
 
-     # Try to run the ppe; if there is an error, return internal server error 500
+    # Add excluded features to columns_to_remove
+    logger.info("Will remove the following columns from features: {0}".format(dataset.excluded_features))
+    ppe.columns_to_remove = dataset.excluded_features
+     
+    # Try to run the ppe; if there is an error, return internal server error 500
     try:
         #x_train, x_test, y_train, y_test, ppe_task = ppe.run_preprocessing_engine()
         ppe.run_preprocessing_engine()

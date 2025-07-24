@@ -19,6 +19,7 @@ class Dataset(models.Model):
     csv_file = models.FileField(upload_to='dataset_uploads/')
     file_size = models.FloatField(null=True)
     number_of_rows = models.IntegerField(null=True)
+    excluded_features = models.JSONField(default=dict, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def filename(self):
