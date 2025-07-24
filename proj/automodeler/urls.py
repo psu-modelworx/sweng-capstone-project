@@ -20,6 +20,7 @@ urlpatterns = [
     path("model_details/<int:model_id>", views.model_details, name="model_details"),
     path("model_download/<int:model_id>", views.model_download, name="model_download"),
     path("model_delete/", views.model_delete, name="model_delete"),
+    path("report_download/<int:dataset_id>", views.report_download, name="report_download"),
     path("task_collection/", views.task_collection, name="task_collection"),
     path("account/", views.account, name="account"),
     path("account_delete/", views.account_delete, name='account_delete'),

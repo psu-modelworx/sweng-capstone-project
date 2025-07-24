@@ -47,7 +47,10 @@
         <div class="col">
             <button class="col btn btn-success" onclick="modeling_fetch_request({{ ds_details.ds.ds_id }})">Start Modeling!</button>
         </div>
-        
+        <div class="col">
+            <a class="btn btn-secondary" href="{% url 'report_download' dataset_id=ds_details.ds.ds_id %}">Download Report</a>
+        </div>
+
         <form class="col" method="post" action="{% url 'dataset_delete' dataset_id=ds_details.ds.ds_id %}">
             {% csrf_token %}
             <button class="col btn btn-danger" type="Submit">Delete</button>
@@ -132,6 +135,7 @@
                                             <form method="POST" action="{% url 'model_delete' %}">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="model_id" id="model_id" value="{{ model.id }}"/>
+                                                <input type="hidden" name="prev_page" value="dataset_details" >
                                                 <button type="Submit" class="btn btn-danger">Delete model</button>
                                             </form>
                                             <a class="btn btn-success" href="{% url 'model_download' model_id=model.id %}">Download Model</a>

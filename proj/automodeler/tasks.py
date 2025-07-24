@@ -8,14 +8,18 @@ from .models import Dataset
 from .models import PreprocessedDataSet
 from .models import DatasetModel
 from .models import UserTask
+from .models import ModelingReport
 
 from engines.preprocessing_engine import PreprocessingEngine
 from engines.modeling_engine import ModelingEngine
+from engines.reporting_engine import ReportingEngine
 
 import pandas as pd
 import os
 import pickle
 
+import logging
+logger = logging.getLogger(__name__)
 
 @shared_task(bind=True)
 def start_preprocessing_task(self, dataset_id, user_id):
@@ -237,6 +241,18 @@ def start_modeling_task(self, dataset_id, user_id):
             original_dataset=dataset)
         tuned_ds_model.save()
     
+    
+    try:
+        generate_report(ppe, moe, dataset, user)
+    except Exception as e:
+        msg = 'Internal Error generating report:  {0}'.format(e)
+        logger.exception(msg)
+        if task_record:
+            task_record.status = "FAILURE"
+            task_record.result_message = msg
+            task_record.save()
+        return {"message": msg, "status": 500}
+
     if task_record:
         task_record.status = "SUCCESS"
         task_record.result_message = "Modeling completed!"
@@ -358,3 +374,29 @@ def obj_to_pkl_file(data_obj, file_name):
 def pkl_file_to_obj(file_obj):
     data_obj = pickle.load(file_obj)
     return data_obj
+
+def generate_report(ppe, moe, dataset, user):
+    # Check and see if report exists, if it does delete it
+    try:
+        report = ModelingReport.objects.get(original_dataset=dataset)
+        report.delete()
+    except ObjectDoesNotExist:
+        logger.exception("Report does not exist")
+
+    logger.info("Creating report...")
+    re = ReportingEngine(ppe, moe)
+    re.generate_full_report()
+
+    pdf = re.pdf
+    pdf_encoded = pdf.output(dest="S")
+    
+    report_filename = "Dataset_{0}_modeling_report.pdf".format(dataset.id)
+
+    report = ModelingReport(
+        name=''.join([dataset.name, '_modeling_report']),
+        report_file=ContentFile(bytes(pdf_encoded), name=report_filename),
+        file_size=len(bytes(pdf_encoded)),
+        original_dataset=dataset,
+        user=user
+    )
+    report.save()

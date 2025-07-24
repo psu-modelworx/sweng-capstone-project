@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authtoken.models import Token
 
 
-from .models import Dataset, PreprocessedDataSet, DatasetModel, UserTask
+from .models import Dataset, PreprocessedDataSet, DatasetModel, UserTask, ModelingReport
 from .forms import DatasetForm
 from . import helper_functions
 
@@ -246,8 +246,12 @@ def model_delete(request):
         return HttpResponse("Empty model id!")
 
     ds_model = DatasetModel.objects.get(id=model_id)
+
+    if request.POST.get('prev_page'):
+        url = reverse(request.POST.get('prev_page'), args=(ds_model.original_dataset.id,))
+    else:
+        url = reverse("model_collection")
     ds_model.delete()
-    url = reverse("model_collection")
     return redirect(url)
 
 @login_required
@@ -284,7 +288,17 @@ def model_download(request, model_id):
     file_path = ds_model.model_file.path
     response = FileResponse(open(file_path, 'rb'))
     response['Content-Type'] = 'application/octet-stream'
-    response['Content-Disposition'] = 'attachment; filename="{0}"'.format(ds_model.name)
+    response['Content-Disposition'] = 'attachment; filename="{0}.bin"'.format(ds_model.name)
+    return response
+
+@login_required
+def report_download(request, dataset_id):
+    dataset = get_object_or_404(Dataset, pk=dataset_id, user=request.user)
+    report_model = get_object_or_404(ModelingReport, original_dataset=dataset, user=request.user)
+    file_path = report_model.report_file.path
+    response = FileResponse(open(file_path, 'rb'))
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment; filename="{0}.pdf"'.format(report_model.name)
     return response
 
 @login_required

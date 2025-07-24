@@ -122,7 +122,15 @@ class DatasetModel(models.Model):
     tuned = models.BooleanField(null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
-    
+
+
+class ModelingReport(models.Model):
+    name = models.CharField(max_length=100)
+    report_file = models.FileField(upload_to='reports/')  
+    file_size = models.FloatField(null=True)
+    original_dataset = models.OneToOneField(Dataset, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
     
 class TunedDatasetModel(models.Model):
     MODEL_METHODS = {
