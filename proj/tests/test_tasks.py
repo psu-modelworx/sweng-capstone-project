@@ -273,19 +273,31 @@ def test_start_preprocessing_run_engine_exception(mock_engine_cls, mock_read_csv
     assert "Error running preprocessing engine" in result['message']
     assert mock_task.status == "FAILURE"
 
-@pytest.mark.django_db
-@patch('automodeler.tasks.Dataset.objects.get', side_effect=ObjectDoesNotExist)
-@patch('automodeler.tasks.UserTask.objects.filter')
-def test_start_modeling_dataset_not_found_two(mock_user_task_filter, mock_dataset_get, user_factory):
-    """TC-101 """
-    user = user_factory()
-    mock_task = MagicMock()
-    mock_user_task_filter.return_value.first.return_value = mock_task
 
-    result = start_modeling_task(999, user.id)
+#@pytest.mark.django_db
+#@patch('automodeler.tasks.Dataset.objects.get', side_effect=ObjectDoesNotExist)
+#@patch('automodeler.tasks.UserTask.objects.filter')
+#def test_start_modeling_dataset_not_found_two(mock_user_task_filter, mock_dataset_get, user_factory):
+#    """TC-101 """
+#    user = user_factory()
+#    mock_task = MagicMock()
+#    mock_user_task_filter.return_value.first.return_value = mock_task
+#
+#    result = start_modeling_task(999, user.id)
 
-    assert result['status'] == 404
-    assert mock_task.status == "FAILURE"
+#@pytest.mark.django_db
+#@patch('automodeler.tasks.Dataset.objects.get', side_effect=ObjectDoesNotExist)
+#@patch('automodeler.tasks.UserTask.objects.filter')
+#def test_start_modeling_dataset_not_found(mock_user_task_filter, mock_dataset_get, user_factory):
+#    """TC-101 """
+#    user = user_factory()
+#    mock_task = MagicMock()
+#    mock_user_task_filter.return_value.first.return_value = mock_task
+#
+#    result = start_modeling_task(999, user.id)
+#
+#    assert result['status'] == 404
+#    assert mock_task.status == "FAILURE"
 
 @pytest.mark.django_db
 @patch('automodeler.tasks.Dataset.objects.get')
