@@ -118,9 +118,8 @@ def test_add_table(tmp_path):
 
     header = ["Name", "Score"]
     data = [["Dan", 90], ["Jean", 85]]
-    col_widths = [40, 30]
 
-    report.add_table(header, data, col_widths)
+    report.add_table(header, data)
     output_path = tmp_path / "table_test.pdf"
     report.pdf.output(str(output_path))
 
@@ -270,7 +269,6 @@ def test_write_visuals_section_classification():
     report.plot_feature_importance = MagicMock()
     report.plot_roc_curve = MagicMock()
     report.plot_precision_recall_curve = MagicMock()
-    report.plot_classification_report = MagicMock()
     report.plot_classification_model_performance_bar_chart = MagicMock()
     report.plot_cv_score_boxplots = MagicMock()
 
@@ -281,7 +279,6 @@ def test_write_visuals_section_classification():
     report.plot_feature_importance.assert_called_once()
     report.plot_roc_curve.assert_called_once()
     report.plot_precision_recall_curve.assert_called_once()
-    report.plot_classification_report.assert_called_once()
     report.plot_classification_model_performance_bar_chart.assert_called_once()
     report.plot_cv_score_boxplots.assert_called_once()
 
@@ -326,7 +323,8 @@ def test_plot_residuals():
     report.modeler.results = {
         'tuned': {
             'LinearRegression': {
-                'optimized_model': MagicMock(predict=MagicMock(return_value=np.array([1.8, 4.2, 5.9])))
+                'optimized_model': MagicMock(),
+                'y_test_pred': np.array([1.8, 4.2, 5.9])
             }
         }
     }
@@ -348,7 +346,14 @@ def test_plot_actual_vs_predicted():
     report.preprocessor.X_test = np.array([[1], [2], [3]])
     report.preprocessor.y_test = np.array([1.5, 2.5, 3.5])
     report.modeler.results = {'tuned': {'LinearRegression': {'optimized_model': MagicMock()}}}
-    report.modeler.results['tuned']['LinearRegression']['optimized_model'].predict.return_value = np.array([1.4, 2.6, 3.6])
+    report.modeler.results = {
+        'tuned': {
+            'LinearRegression': {
+                'optimized_model': MagicMock(),
+                'y_test_pred': np.array([1.4, 2.6, 3.6])
+            }
+        }
+    }
     report.pdf = MagicMock()
     report.add_bullet = MagicMock()
     report.subsection = MagicMock()
@@ -364,10 +369,14 @@ def test_plot_error_distribution():
     """TC-90: Ensure error distribution plot is generated for regression tasks."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'regression'
-    report.preprocessor.X_test = np.array([[1], [2], [3]])
     report.preprocessor.y_test = np.array([1.5, 2.5, 3.5])
-    report.modeler.results = {'tuned': {'LinearRegression': {'optimized_model': MagicMock()}}}
-    report.modeler.results['tuned']['LinearRegression']['optimized_model'].predict.return_value = np.array([1.4, 2.6, 3.6])
+    report.modeler.results = {
+        'tuned': {
+            'LinearRegression': {
+                'y_test_pred': np.array([1.4, 2.6, 3.6])
+            }
+        }
+    }
     report.pdf = MagicMock()
     report.add_bullet = MagicMock()
     report.subsection = MagicMock()
@@ -402,7 +411,14 @@ def test_generate_conf_matrix():
     report.preprocessor.y_test = np.array([0, 1])
     report.preprocessor.decode_target = MagicMock(side_effect=lambda x: x)
     report.modeler.results = {'tuned': {'ModelA': {'optimized_model': MagicMock()}}}
-    report.modeler.results['tuned']['ModelA']['optimized_model'].predict.return_value = np.array([0, 1])
+    report.modeler.results = {
+        'tuned': {
+            'ModelA': {
+                'optimized_model': MagicMock(),
+                'y_test_pred': np.array([0, 1])
+            }
+        }
+    }
     report.pdf = MagicMock()
     report.add_bullet = MagicMock()
     report.subsection = MagicMock()
@@ -419,15 +435,20 @@ def test_plot_roc_curve():
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.preprocessor.X_test = np.array([[1], [2], [3], [4]])
-    report.preprocessor.y_test = np.array([0, 1, 0, 1])
-    report.modeler.results = {'tuned': {'ModelA': {'optimized_model': MagicMock()}}}
-    
-    report.modeler.results['tuned']['ModelA']['optimized_model'].predict_proba.return_value = np.array([
-        [0.6, 0.4],
-        [0.3, 0.7],
-        [0.8, 0.2],
-        [0.1, 0.9]
-    ])
+    report.preprocessor.y_test = np.array([0, 1, 0, 1])    
+    report.modeler.results = {
+        'tuned': {
+            'ModelA': {
+                'optimized_model': MagicMock(),
+                'y_test_proba': np.array([
+                    [0.6, 0.4],
+                    [0.3, 0.7],
+                    [0.8, 0.2],
+                    [0.1, 0.9]
+                ])
+            }
+        }
+    }
     
     report.pdf = MagicMock()
     report.add_bullet = MagicMock()
@@ -446,15 +467,19 @@ def test_plot_precision_recall_curve():
     report.preprocessor.task_type = 'classification'
     report.preprocessor.X_test = np.array([[1], [2], [3], [4]])
     report.preprocessor.y_test = np.array([0, 1, 0, 1])
-    report.modeler.results = {'tuned': {'ModelA': {'optimized_model': MagicMock()}}}
-
-    model = report.modeler.results['tuned']['ModelA']['optimized_model']
-    model.predict_proba.return_value = np.array([
-        [0.6, 0.4],
-        [0.3, 0.7],
-        [0.8, 0.2],
-        [0.1, 0.9]
-    ])
+    report.modeler.results = {
+        'tuned': {
+            'ModelA': {
+                'optimized_model': MagicMock(),
+                'y_test_proba': np.array([
+                    [0.6, 0.4],
+                    [0.3, 0.7],
+                    [0.8, 0.2],
+                    [0.1, 0.9]
+                ])
+            }
+        }
+    }
     report.pdf = MagicMock()
     report.add_bullet = MagicMock()
     report.subsection = MagicMock()
@@ -466,44 +491,14 @@ def test_plot_precision_recall_curve():
     report.add_bullet.assert_any_call("The Precision-Recall curve shows the tradeoff between precision and recall for different decision thresholds, helping assess model performance on imbalanced classification tasks.")
     report.pdf.image.assert_called_once()
 
-
-def test_plot_classification_report():
-    """TC-95: Ensure classification report heatmap is generated for classification tasks."""
-    report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
-    report.preprocessor.task_type = 'classification'
-    report.preprocessor.X_test = np.array([[1], [2]])
-    report.preprocessor.y_test = np.array([0, 1])
-    report.preprocessor.decode_target = MagicMock(side_effect=lambda x: x)
-    report.modeler.results = {'tuned': {'ModelA': {'optimized_model': MagicMock()}}}
-    model = report.modeler.results['tuned']['ModelA']['optimized_model']
-    model.predict.return_value = np.array([0, 1])
-    report.pdf = MagicMock()
-    report.add_bullet = MagicMock()
-    report.subsection = MagicMock()
-
-    with patch('matplotlib.pyplot.savefig'), patch('matplotlib.pyplot.close'), patch('seaborn.heatmap'), patch('os.remove'), patch('sklearn.metrics.classification_report') as mock_cr:
-        mock_cr.return_value = {
-            '0': {'precision': 1.0, 'recall': 1.0, 'f1-score': 1.0, 'support': 1},
-            '1': {'precision': 1.0, 'recall': 1.0, 'f1-score': 1.0, 'support': 1},
-            'accuracy': 1.0,
-            'macro avg': {'precision': 1.0, 'recall': 1.0, 'f1-score': 1.0, 'support': 2},
-            'weighted avg': {'precision': 1.0, 'recall': 1.0, 'f1-score': 1.0, 'support': 2}
-        }
-        report.plot_classification_report()
-
-    report.subsection.assert_called_once_with("Classification Report Heatmap")
-    report.add_bullet.assert_any_call("The classification report heatmap visualizes key metrics like precision, recall, and F1-score for each class, making it easier to compare performance across categories.")
-    report.pdf.image.assert_called_once()
-
-
 def test_plot_classification_model_performance_bar_chart():
     """TC-96: Ensure classification model performance bar chart is generated."""
     report = ReportingEngine(preprocessor=MagicMock(), modeler=MagicMock())
     report.preprocessor.task_type = 'classification'
     report.modeler.results = {
         'tuned': {
-            'ModelA': {'train': 0.9, 'test': 0.85},
-            'ModelB': {'train': 0.92, 'test': 0.88},
+            'ModelA': {'train_accuracy': 0.9, 'test_accuracy': 0.85},
+            'ModelB': {'train_accuracy': 0.92, 'test_accuracy': 0.88},
         }
     }
     report.pdf = MagicMock()
