@@ -84,6 +84,7 @@ def upload(request):
         url = reverse("login")
         return HttpResponseRedirect(url)
 
+@login_required
 def dataset(request, dataset_id):
     """
     dataset is the details page of the requested dataset. Requires authentication.  POSTing to this page allows modification of
@@ -93,18 +94,23 @@ def dataset(request, dataset_id):
     :param dataset_id: Integer ID of the dataset to be retrieved
     """
     if request.user.is_authenticated:
-        dataset = get_object_or_404(Dataset, pk=dataset_id)
+        dataset = get_object_or_404(Dataset, pk=dataset_id, user=request.user)
         if request.user.id != dataset.user_id:
             return redirect(reverse("index"))
         if request.method == 'POST':
             inputFeatures = {}
+            excludeFeatures = {}
             targetFeature = request.POST.get('target_radio')
             for f in dataset.features:
                 f_val = 'nc_radio_{feature}'.format(feature=f)
                 inputFeatures[f] = request.POST.get(f_val)
+                e_val = 'exclude_check_{feature}'.format(feature=f)
+                excludeFeatures[f] = request.POST.get(e_val)
                 
             dataset.features = inputFeatures
             dataset.target_feature = targetFeature
+            dataset.excluded_features = [ key for (key, value) in excludeFeatures.items() if value is not None ]
+
             dataset.save()
             url = reverse('dataset_details', kwargs={'dataset_id': dataset_id})
             return redirect(url)
@@ -204,7 +210,8 @@ def dataset_details(request, dataset_id):
     ds["target_feature"] = dataset.target_feature
     ds["file_size"] = helper_functions.file_size_for_humans(dataset.file_size)
     ds["number_of_rows"] = dataset.number_of_rows
-    ds["features"] = dataset.features
+    ds["features"] = { key:value for (key,value) in dataset.features.items() if key not in dataset.excluded_features }
+    ds["removed_features"] = { key:value for (key,value) in dataset.features.items() if key in dataset.excluded_features }
     ds_details["ds"] = ds
 
     try:
