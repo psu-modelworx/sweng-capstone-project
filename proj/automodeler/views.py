@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authtoken.models import Token
 
 
-from .models import Dataset, PreprocessedDataSet, DatasetModel, UserTask, ModelingReport
+from .models import Dataset, PreprocessedDataSet, DatasetModel, UserTask, ModelingReport, TunedDatasetModel
 from .forms import DatasetForm
 from . import helper_functions
 
@@ -258,6 +258,14 @@ def model_delete(request):
         url = reverse(request.POST.get('prev_page'), args=(ds_model.original_dataset.id,))
     else:
         url = reverse("model_collection")
+    
+    # first delete the TunedDatasetModel before deleting DatasetModel
+    try:
+        tuned_model = TunedDatasetModel.objects.get(untuned_model=ds_model)
+        tuned_model.delete()
+    except TunedDatasetModel.DoesNotExist:
+        pass  # No tuned model linked, so nothing to delete
+
     ds_model.delete()
     return redirect(url)
 
@@ -292,8 +300,8 @@ def model_details(request, model_id):
 @login_required
 def model_download(request, model_id):
     ds_model = get_object_or_404(DatasetModel, pk=model_id, user=request.user)
-    file_path = ds_model.model_file.path
-    response = FileResponse(open(file_path, 'rb'))
+    file_obj = ds_model.model_file.open("rb")
+    response = FileResponse(file_obj, as_attachment=True)
     response['Content-Type'] = 'application/octet-stream'
     response['Content-Disposition'] = 'attachment; filename="{0}.bin"'.format(ds_model.name)
     return response
@@ -302,8 +310,8 @@ def model_download(request, model_id):
 def report_download(request, dataset_id):
     dataset = get_object_or_404(Dataset, pk=dataset_id, user=request.user)
     report_model = get_object_or_404(ModelingReport, original_dataset=dataset, user=request.user)
-    file_path = report_model.report_file.path
-    response = FileResponse(open(file_path, 'rb'))
+    file_obj = report_model.report_file.open("rb")
+    response = FileResponse(file_obj, as_attachment=True)
     response['Content-Type'] = 'application/octet-stream'
     response['Content-Disposition'] = 'attachment; filename="{0}.pdf"'.format(report_model.name)
     return response
