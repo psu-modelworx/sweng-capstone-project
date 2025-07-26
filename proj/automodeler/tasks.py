@@ -224,7 +224,15 @@ def start_modeling_task(self, dataset_id, user_id):
     task_type = ppe.task_type
     x_train, x_test, y_train, y_test = ppe.split_data()
 
-    moe = ModelingEngine(X_train=x_train, X_test=x_test, y_train=y_train, y_test=y_test, task_type=task_type)
+    moe = ModelingEngine(
+        X_train=x_train, 
+        X_test=x_test, 
+        y_train=y_train,
+        y_test=y_test,
+        task_type=task_type, 
+        desired_models=pp_ds.selected_models)
+        
+    moe.desired_models = pp_ds.selected_models
     moe.run_modeling_engine()
 
     moe_results = moe.results
