@@ -67,6 +67,7 @@ class PreprocessedDataSet(models.Model):
     removed_features = models.JSONField(default=dict, null=True)
     model_type = models.CharField(max_length=15, choices=MODEL_TYPES, null=True)
     available_models = models.JSONField(default=list, null=True)
+    selected_models = models.JSONField(default=list, null=True)
     feature_encoder = models.FileField(upload_to='pp_ds_bins/')
     scaler = models.FileField(upload_to='pp_ds_bins/')
     label_encoder = models.FileField(upload_to='pp_ds_bins/')

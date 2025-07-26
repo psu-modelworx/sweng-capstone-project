@@ -314,3 +314,9 @@ def task_collection(request):
     #return render(request, "automodeler/task_collection.html", {"user_tasks": user_tasks})
     user_tasks = UserTask.objects.filter(user=request.user).select_related('dataset').order_by('-created_at')
     return render(request, 'automodeler/task_collection.html', {'user_tasks': user_tasks})
+
+
+def test(request, dataset_id):
+    dataset = get_object_or_404(Dataset, pk=dataset_id, user=request.user)
+    pp_ds = get_object_or_404(PreprocessedDataSet, original_dataset=dataset)
+    return HttpResponse("Hello world!  This is the testing page!")
