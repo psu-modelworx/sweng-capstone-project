@@ -223,6 +223,8 @@ def dataset_details(request, dataset_id):
         pp_ds['removed_features'] = pp_dataset.removed_features
         pp_ds['new_target_feature'] = pp_dataset.meta_data['target_column']
         pp_ds['task_type'] = pp_dataset.meta_data['task_type']
+        pp_ds['available_models'] = pp_dataset.available_models
+        pp_ds['selected_models'] = pp_dataset.selected_models
         ds_details["pp_ds"] = pp_ds
     except Exception as e:
         print("Exception e: {0}".format(e))
@@ -235,7 +237,6 @@ def dataset_details(request, dataset_id):
         print("Exception e: {0}".format(e))
 
     return render(request, "automodeler/dataset_details.html", { "ds_details": ds_details })
-
 
 @login_required
 def model_collection(request):
@@ -315,6 +316,38 @@ def task_collection(request):
     user_tasks = UserTask.objects.filter(user=request.user).select_related('dataset').order_by('-created_at')
     return render(request, 'automodeler/task_collection.html', {'user_tasks': user_tasks})
 
+@login_required
+def update_selected_models(request):
+    if request.method != "POST":
+        return HttpResponse("Invalid request method")
+    
+    dataset_id = request.POST.get('dataset_id')
+    if not dataset_id:
+        return HttpResponse("Empty dataset id!")
+
+    selected_models = []
+    for key, value in request.POST.items():
+        if "model_" in key:
+            if value:
+                s_model = key.replace('model_', '')
+                selected_models.append(s_model)
+
+    if len(selected_models) == 0:
+        return HttpResponse("Models to update cannot be empty!")
+
+    dataset = get_object_or_404(Dataset, pk=dataset_id, user=request.user)
+    pp_ds = get_object_or_404(PreprocessedDataSet, original_dataset=dataset)
+
+    # Verify that the selected models are in the pp_ds available models
+    for s_model in selected_models:
+        if s_model not in pp_ds.available_models:
+            return HttpResponse("Invalid models selected")
+    
+    pp_ds.selected_models = selected_models
+    pp_ds.save()
+
+    url = reverse('dataset_details', kwargs={'dataset_id': dataset_id})
+    return redirect(url)
 
 def test(request, dataset_id):
     dataset = get_object_or_404(Dataset, pk=dataset_id, user=request.user)

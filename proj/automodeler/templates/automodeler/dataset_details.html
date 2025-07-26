@@ -39,13 +39,30 @@
             <h2>Available Models</h2>
             {% if not ds_details.pp_ds %}
                 You must first preprocess your dataset to view available models!
-            {% elif not ds_details.available_models %}
+            {% elif not ds_details.pp_ds.available_models %}
                 No models currently available for selection
             {% else %}
-                
+                <form method="POST" action="{% url 'update_selected_models' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="dataset_id" value="{{ ds_details.ds.ds_id }}"/>
+                    <ul>
+                {% for a_model in ds_details.pp_ds.available_models %}
+                    <li>
+                        <div class="form-check form-switch">
+                            <label class="form-check-label" for="id_a_model_{{ a_model }}">{{ a_model }}</label>
+                        
+                    {% if a_model in ds_details.pp_ds.selected_models %}
+                            <input class="form-check-input" type="checkbox" role="switch" name="model_{{ a_model }}" id="id_a_model_{{ a_model }}" checked>
+                    {% else %}
+                            <input class="form-check-input" type="checkbox" role="switch" name="model_{{ a_model }}" id="id_a_model_{{ a_model }}">
+                    {% endif %}
+                    </div>
+                    </li>
+                {% endfor %}
+                    </ul>
+                    <button type="submit">Update model selection</button>
+                </form>
             {% endif %}
-
-            <button type="submit">Update model selection</button>
         </div>
     </div>
 
@@ -197,8 +214,6 @@ function preprocess_fetch_request(dataset_id) {
     });
 }
 
-
-
 function modeling_fetch_request(dataset_id) {
     var url = '{% url 'ame' %}';
     var CSRF_TOKEN = '{{ csrf_token }}';
@@ -227,9 +242,6 @@ function modeling_fetch_request(dataset_id) {
         console.error('Fetch error:', error);
     })
 }
-
-
-
 
 
 $(document).ready( function () {
