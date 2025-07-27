@@ -7,7 +7,9 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.authtoken.models import Token
-
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
 from .models import Dataset, PreprocessedDataSet, DatasetModel, UserTask, ModelingReport, TunedDatasetModel
 from .forms import DatasetForm
@@ -306,7 +308,9 @@ def model_download(request, model_id):
     response['Content-Disposition'] = 'attachment; filename="{0}.bin"'.format(ds_model.name)
     return response
 
-@login_required
+@api_view(["GET", "POST"])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def report_download(request, dataset_id):
     dataset = get_object_or_404(Dataset, pk=dataset_id, user=request.user)
     report_model = get_object_or_404(ModelingReport, original_dataset=dataset, user=request.user)
