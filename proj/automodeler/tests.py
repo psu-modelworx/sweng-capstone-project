@@ -309,6 +309,34 @@ def test_api_check_task_result(client):
     assert response.status_code == 200
 
 @pytest.mark.django_db
+def test_api_dataset_report_download(client):
+    '''
+    The test is for an API request to download a dataset report.
+    There are tests to ensure a user needs to be authenticated and to verify the case when a dataset doesn't exist.
+
+    parm client: The client is used to make an API request and send back a response with the status code.
+
+    :Test Cases: TC-110 & TC-111
+    '''
+    # Setting up the URL to the API endpoint and including the dataset ID as an argument in the URL.
+    url = reverse('report_download', args=[3])
+
+    # Making an API request with the URL and asserting the response is 403 because the user isn't authenticated.
+    response = client.post(url) 
+    assert response.status_code == 403
+    
+    # Defining a test user and assigning them and authentication token.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Adding the authentication token to the header and makking an API request to download a dataset.
+    headers = { "Authorization": "Token " + userToken.key}
+    response = client.post(url, headers=headers)
+
+    # Asserting that the status code response is 404 because the dataset ID wasn't found for the user.
+    assert response.status_code == 404
+
+@pytest.mark.django_db
 def test_account_page(client):
     # Defining the url that will be navigated to.
     url = reverse('account')
