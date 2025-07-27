@@ -180,18 +180,19 @@ class ModelingEngine:
                     "y_test_decision": y_test_scores,
                 })
             acc = accuracy_score(self.y_test, y_test_pred)
+            train_acc = accuracy_score(self.y_train, y_train_pred)
             prec = precision_score(self.y_test, y_test_pred, average='weighted', zero_division=0)
             rec = recall_score(self.y_test, y_test_pred, average='weighted', zero_division=0)
             f1 = f1_score(self.y_test, y_test_pred, average='weighted', zero_division=0)
 
-            self.results['tuned'][model_name].update({
+            self.results['tuned'][model_name]['final_scores'] = {
                 "accuracy": acc,
                 "precision": prec,
                 "recall": rec,
                 "f1_score": f1,
-                "train_accuracy": accuracy_score(self.y_train, y_train_pred),
-                "test_accuracy": acc,
-            })
+                "train_accuracy": train_acc,
+                "test_accuracy": acc
+            }
 
             logging.info(f"{model_name} - Accuracy: {acc:.4f}, Precision: {prec:.4f}, Recall: {rec:.4f}, F1: {f1:.4f}")
 
@@ -200,18 +201,19 @@ class ModelingEngine:
             mae = mean_absolute_error(self.y_test, y_test_pred)
             rmse = np.sqrt(mse)
             r2 = r2_score(self.y_test, y_test_pred)
+            train_r2 = r2_score(self.y_train, y_train_pred)
             n, p = self.X_test.shape
             adj_r2 = 1 - (1 - r2) * (n - 1) / (n - p - 1) if n > p + 1 else r2  # fallback if n too small
 
-            self.results['tuned'][model_name].update({
+            self.results['tuned'][model_name]['final_scores'] = {
                 "rmse": rmse,
                 "r2": r2,
                 "mse": mse,
                 "mae": mae,
                 "adjusted_r2": adj_r2,
-                "train_r2": r2_score(self.y_train, y_train_pred),
-                "test_r2": r2,
-            })
+                "train_r2": train_r2,
+                "test_r2": r2
+            }
 
             logging.info(f"{model_name} - RMSE: {rmse:.4f}, R²: {r2:.4f}, MSE: {mse:.4f}, MAE: {mae:.4f}, Adjusted R²: {adj_r2:.4f}")
 
@@ -354,8 +356,6 @@ class ModelingEngine:
         if 'tuned' not in self.results or not self.results['tuned']:
             logging.error("No tuned models found. Run tune_all_models() first.")
             return
-
-        self.results['final_scores'] = {}
 
         for model_name, model_info in self.results['tuned'].items():
             model = model_info.get('optimized_model')

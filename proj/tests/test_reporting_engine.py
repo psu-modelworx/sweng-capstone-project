@@ -497,8 +497,8 @@ def test_plot_classification_model_performance_bar_chart():
     report.preprocessor.task_type = 'classification'
     report.modeler.results = {
         'tuned': {
-            'ModelA': {'train_accuracy': 0.9, 'test_accuracy': 0.85},
-            'ModelB': {'train_accuracy': 0.92, 'test_accuracy': 0.88},
+            'ModelA': {'final_scores': {'train_accuracy': 0.9, 'test_accuracy': 0.85}},
+            'ModelB': {'final_scores': {'train_accuracy': 0.92, 'test_accuracy': 0.88}},
         }
     }
     report.pdf = MagicMock()
@@ -509,7 +509,9 @@ def test_plot_classification_model_performance_bar_chart():
         report.plot_classification_model_performance_bar_chart()
 
     report.subsection.assert_called_once_with("Metrics Bar Chart")
-    report.add_bullet.assert_any_call("The metrics bar chart compares train and test scores for each classification model, helping assess potential overfitting and generalization performance.")
+    report.add_bullet.assert_any_call(
+        "The metrics bar chart compares train and test scores for each classification model, helping assess potential overfitting and generalization performance."
+    )
     report.pdf.image.assert_called_once()
 
 def test_plot_feature_importance():

@@ -93,10 +93,10 @@ def test_evaluate_model(sample_data_classification):
 
     tuned_model_info = engine.results['tuned'][model_name]
 
-    assert "train_accuracy" in tuned_model_info
-    assert "test_accuracy" in tuned_model_info
-    assert 0.0 <= tuned_model_info["train_accuracy"] <= 1.0
-    assert 0.0 <= tuned_model_info["test_accuracy"] <= 1.0
+    assert "train_accuracy" in tuned_model_info["final_scores"]
+    assert "test_accuracy" in tuned_model_info["final_scores"]
+    assert 0.0 <= tuned_model_info["final_scores"]["train_accuracy"] <= 1.0
+    assert 0.0 <= tuned_model_info["final_scores"]["test_accuracy"] <= 1.0
 
 
 def test_get_best_untuned_model():
@@ -229,7 +229,7 @@ def test_evaluate_tuned_models(sample_data_classification):
 
     tuned_model_info = engine.results['tuned']['LogisticRegression']
 
-    assert "train_accuracy" in tuned_model_info
-    assert "test_accuracy" in tuned_model_info
-    assert 0.0 <= tuned_model_info["train_accuracy"] <= 1.0
-    assert 0.0 <= tuned_model_info["test_accuracy"] <= 1.0
+    assert "train_accuracy" in tuned_model_info["final_scores"]
+    assert "test_accuracy" in tuned_model_info["final_scores"]
+    assert 0.0 <= tuned_model_info["final_scores"]["train_accuracy"] <= 1.0
+    assert 0.0 <= tuned_model_info["final_scores"]["test_accuracy"] <= 1.0
