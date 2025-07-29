@@ -115,7 +115,10 @@ def test_start_modeling_success(mock_obj_to_pkl, mock_modeling_engine_cls, mock_
             'modelA': {'model': MagicMock(name='UntunedModel')},
         },
         'tuned': {
-            'modelA': {'optimized_model': MagicMock(name='TunedModel')},
+            'modelA': {
+                'optimized_model': MagicMock(name='TunedModel'),
+                'final_scores': dict({'f1_score': 1})
+                },
         }
     }
     mock_modeling_engine_cls.return_value = mock_engine
