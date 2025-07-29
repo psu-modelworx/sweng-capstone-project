@@ -132,22 +132,22 @@ class ReportingEngine:
             self.add_bullet("SVR: C (regularization), kernel, gamma")
         
         self.subsection("Model Evaluation")
-        # create a table of tuned model results         
         data = []
         tuned_results = self.modeler.results.get('tuned', {})
 
         if self.modeler.task_type == 'classification':
             headers = ["Model", "Accuracy", "Precision", "Recall", "F1 Score"]
             for model_name, info in tuned_results.items():
-                if not all(k in info for k in ["accuracy", "precision", "recall", "f1_score"]):
+                scores = info.get("final_scores", {})
+                if not all(k in scores for k in ["accuracy", "precision", "recall", "f1_score"]):
                     continue  # skip if required metrics are missing
 
                 data.append([
                     model_name,
-                    f"{info['accuracy']:.2%}",
-                    f"{info['precision']:.2%}",
-                    f"{info['recall']:.2%}",
-                    f"{info['f1_score']:.2%}"
+                    f"{scores['accuracy']:.2%}",
+                    f"{scores['precision']:.2%}",
+                    f"{scores['recall']:.2%}",
+                    f"{scores['f1_score']:.2%}"
                 ])
 
             self.add_bullet("Accuracy measures the proportion of correct predictions out of all predictions made by the model.")
@@ -158,16 +158,17 @@ class ReportingEngine:
         elif self.modeler.task_type == 'regression':
             headers = ["Model", "RMSE", "R² Score", "MSE", "MAE", "Adjusted R² Score"]
             for model_name, info in tuned_results.items():
-                if not all(k in info for k in ["rmse", "r2", "mse", "mae", "adjusted_r2"]):
+                scores = info.get("final_scores", {})
+                if not all(k in scores for k in ["rmse", "r2", "mse", "mae", "adjusted_r2"]):
                     continue  # skip if required metrics are missing
 
                 data.append([
                     model_name,
-                    f"{info['rmse']:.3f}",
-                    f"{info['r2']:.3f}",
-                    f"{info['mse']:.3f}",
-                    f"{info['mae']:.3f}",
-                    f"{info['adjusted_r2']:.3f}"
+                    f"{scores['rmse']:.3f}",
+                    f"{scores['r2']:.3f}",
+                    f"{scores['mse']:.3f}",
+                    f"{scores['mae']:.3f}",
+                    f"{scores['adjusted_r2']:.3f}"
                 ])
 
             self.add_bullet("Root Mean Squared Error (RMSE) is the square root of the Mean Squared Error, providing an error metric in the same units as the target variable and indicating typical prediction error size.")
@@ -177,6 +178,7 @@ class ReportingEngine:
             self.add_bullet("Adjusted R-squared adjusts the R-squared value to account for the number of predictors in the model, providing a more unbiased measure of model fit especially when comparing models with different numbers of features.")
 
         self.add_table(headers, data)
+
 
         self.subsection("Model Reccomendation")
         best_info = self.modeler.get_best_tuned_model()
@@ -625,11 +627,13 @@ class ReportingEngine:
         metrics = []
 
         for model_name, info in tuned_models.items():
-            train_acc = info.get('train_accuracy')
-            test_acc = info.get('test_accuracy')
+            final_scores = info.get("final_scores", {})
+            train_acc = final_scores.get('train_accuracy')
+            test_acc = final_scores.get('test_accuracy')
             if train_acc is not None and test_acc is not None:
                 model_names.append(model_name)
                 metrics.append((train_acc, test_acc))
+
 
         if not model_names:
             self.add_bullet("Metrics bar chart: No accuracy scores available for tuned models.")
