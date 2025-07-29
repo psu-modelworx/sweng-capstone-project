@@ -154,11 +154,24 @@ def start_preprocessing_task(self, dataset_id, user_id):
     pp_ds.original_dataset = dataset
     pp_ds.meta_data = ppe.to_meta_dict()
     
-    # Available models
-    
+
 
     # Save the object
     pp_ds.save()
+    
+    # Set default selected models
+    logger.info("Setting the default selected models...")
+    try:
+        pp_ds.selected_models = pp_ds.available_models
+    except Exception as e:
+        msg = "Error setting selected models.  Exception {0}".format(e)
+        logger.error(msg)
+        raise Exception("Error setting the selected models")
+    logger.info("Successfully set the default selected models!")
+
+    pp_ds.save()
+
+
     msg = "Preprocessing completed..."
     if task_record:
         task_record.status = "SUCCESS"
@@ -211,7 +224,15 @@ def start_modeling_task(self, dataset_id, user_id):
     task_type = ppe.task_type
     x_train, x_test, y_train, y_test = ppe.split_data()
 
-    moe = ModelingEngine(X_train=x_train, X_test=x_test, y_train=y_train, y_test=y_test, task_type=task_type)
+    moe = ModelingEngine(
+        X_train=x_train, 
+        X_test=x_test, 
+        y_train=y_train,
+        y_test=y_test,
+        task_type=task_type, 
+        desired_models=pp_ds.selected_models)
+        
+    moe.desired_models = pp_ds.selected_models
     moe.run_modeling_engine()
 
     moe_results = moe.results
@@ -247,6 +268,7 @@ def start_modeling_task(self, dataset_id, user_id):
     
     
     try:
+        logger.info("Generationg report")
         generate_report(ppe, moe, dataset, user)
     except Exception as e:
         msg = 'Internal Error generating report:  {0}'.format(e)
@@ -273,14 +295,6 @@ def run_model_task(self, model_id, user_id, data_dict):
         task_record.status = "STARTED"
         task_record.save()
 
-    # Get the model and verify it exists
-    #try:
-    #    ds_model = DatasetModel.objects.get(id=model_id)
-    #except ObjectDoesNotExist:
-    #    msg = "Error finding model with model ID: {0}".format(model_id)
-    #    print(msg)
-    #    return HttpResponseNotFound(msg)
-    
     # Get the tuned model and verify it exists
     try:
         tuned_model = DatasetModel.objects.get(id=model_id, user_id=user_id, tuned=True)
@@ -383,9 +397,11 @@ def generate_report(ppe, moe, dataset, user):
     # Check and see if report exists, if it does delete it
     try:
         report = ModelingReport.objects.get(original_dataset=dataset)
+        logger.info("Original report found.  Deleting original report...")
         report.delete()
+        logger.info("Original report deleted successfully!")
     except ObjectDoesNotExist:
-        logger.exception("Report does not exist")
+        logger.error("Report does not exist")
 
     logger.info("Creating report...")
     re = ReportingEngine(ppe, moe)

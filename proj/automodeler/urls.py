@@ -16,6 +16,7 @@ urlpatterns = [
     path("dataset/<int:dataset_id>", views.dataset, name="dataset"),
     path("dataset_details/<int:dataset_id>", views.dataset_details, name="dataset_details"),
     path("dataset_collection/", views.dataset_collection, name="dataset_collection"),
+    path("update_selected_models/", views.update_selected_models, name="update_selected_models"),
     path("model_collection/", views.model_collection, name="model_collection"),
     path("model_details/<int:model_id>", views.model_details, name="model_details"),
     path("model_download/<int:model_id>", views.model_download, name="model_download"),
@@ -28,6 +29,7 @@ urlpatterns = [
     path("mod/start_modeling_request/", engine_manager.start_modeling_request, name="ame"), # ame = automated model engine
     path("mod/run_model/", engine_manager.run_model, name="run_model"),
     path('check_task/<str:task_id>/', engine_manager.check_task_result, name='check_task_result'),
+    path('test/<int:dataset_id>', views.test, name='test'),
     #path('check_ppe_task/<str:task_id>/', engine_manager.check_preprocessing_task_result, name='check_preprocessing_task_result'),
     #path('check_run_model_task/<str:task_id>/', engine_manager.check_run_model_task_result, name='check_run_model_task_result')
 ]
