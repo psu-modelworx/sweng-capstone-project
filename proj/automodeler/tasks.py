@@ -218,6 +218,8 @@ def start_modeling_task(self, dataset_id, user_id):
     untuned_models = moe_results['untuned']
     tuned_models = moe_results['tuned']
 
+    #logger.info(tuned_models)
+
     for model_method, model_results in untuned_models.items():
         model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_untuned'])
         model_file_name = ''.join([model_name, '.bin'])
@@ -242,6 +244,7 @@ def start_modeling_task(self, dataset_id, user_id):
             model_type=task_type, 
             user=user, 
             tuned=True,
+            scores=tuned_models[model_method]['final_scores'],
             original_dataset=dataset)
         tuned_ds_model.save()
     
