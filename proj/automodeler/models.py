@@ -123,6 +123,7 @@ class DatasetModel(models.Model):
     model_type = models.CharField(max_length=15, choices=MODEL_TYPES)
     tuned = models.BooleanField(null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    scores = models.JSONField(default=dict, null=True)
     original_dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
 
 
