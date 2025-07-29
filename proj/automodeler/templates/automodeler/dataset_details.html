@@ -118,9 +118,7 @@
                                     <tr>
                                         <th scope="col">Model Name</th>
                                         <th scope="col">Model Method</th>
-                                        {% for key, value in ds_details.models.0.scores.items %}
-                                        <th scope="col">{{ key }}</th>
-                                        {% endfor %}
+                                        <th scope="col">Model Scores</th>
                                         <th scope="col">Actions</th>
                                     </tr>
                                 </thead>
@@ -129,9 +127,13 @@
                                     <tr>
                                         <td>{{ model.name }}</td>
                                         <td>{{ model.model_method }}</td>
-                                        {% for key, value in model.scores.items %}
-                                        <td>{{ value }}</td>
-                                        {% endfor %}
+                                        <td>
+                                            <ul>
+                                            {% for key, value in model.scores.items %}
+                                            <li>{{ key}} - {{ value }}</li>
+                                            {% endfor %}
+                                            </ul>
+                                        </td>
                                         <td>
                                             <a class="btn btn-primary" href="{% url 'model_details' model_id=model.id %}">View Details</a>
                                             <form method="POST" action="{% url 'model_delete' %}">
