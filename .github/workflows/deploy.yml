@@ -82,6 +82,7 @@ jobs:
           cd proj/
 
           python manage.py collectstatic --noinput
+          python manage.py makemigrations
           python manage.py migrate --noinput
 
           sudo systemctl restart gunicorn
