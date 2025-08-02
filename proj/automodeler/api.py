@@ -65,7 +65,7 @@ def api_upload(request):
                 number_of_rows = 0
                 try:
                     number_of_rows = helper_functions.sanitize_dataset(csv_file)
-                except Exception as e:
+                except Exception:
                     return Response(data="The number of rows in the file could not be found.", status=status.HTTP_400_BAD_REQUEST)
 
                 # Making a datset object and saving it to the user.
