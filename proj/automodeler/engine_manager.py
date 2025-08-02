@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.http import JsonResponse
 from celery.result import AsyncResult
 
-from .models import TunedDatasetModel
+from .models import DatasetModel
 from .models import UserTask
 
 from .tasks import start_preprocessing_task, start_modeling_task, run_model_task
@@ -93,9 +93,9 @@ def run_model(request):
 
     # Get dataset_id from model FK before launching the task
     try:
-        tuned_model = TunedDatasetModel.objects.get(id=model_id, user=request.user)
+        tuned_model = DatasetModel.objects.get(id=model_id, user=request.user)
         dataset_id = tuned_model.original_dataset_id
-    except TunedDatasetModel.DoesNotExist:
+    except DatasetModel.DoesNotExist:
         return JsonResponse({"error": "Tuned model not found"}, status=404)
 
 
