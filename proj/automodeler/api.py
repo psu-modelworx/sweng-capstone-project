@@ -33,6 +33,7 @@ def api_upload(request):
             input_features = json.loads(request.POST.get("input_features"))
             file_target_variable = request.POST.get("target_variable")
             csv_file = request.FILES['csv_file']
+            file_size = csv_file.size
             user_id = request.user.id
         except Exception as e:
             print("Exception: {0}".format(e))
@@ -60,8 +61,15 @@ def api_upload(request):
                 if (results != "Valid Features"):
                     return Response(data=results, status=status.HTTP_400_BAD_REQUEST)
 
+                # Getting the number of rows in the dataset.
+                number_of_rows = 0
+                try:
+                    number_of_rows = helper_functions.sanitize_dataset(csv_file)
+                except Exception as e:
+                    return Response(data="The number of rows in the file could not be found.", status=status.HTTP_400_BAD_REQUEST)
+
                 # Making a datset object and saving it to the user.
-                dataset_model = Dataset.objects.create(name=file_name, features=input_features, target_feature=file_target_variable, csv_file=csv_file, user_id=user_id)
+                dataset_model = Dataset.objects.create(name=file_name, features=input_features, csv_file=csv_file, file_size=file_size, target_feature=file_target_variable, number_of_rows=number_of_rows, user_id=user_id)
                 dataset_model.save()
             else:
                 # Telling the user their file name is too long.
