@@ -93,7 +93,7 @@ def run_model(request):
 
     # Get dataset_id from model FK before launching the task
     try:
-        tuned_model = DatasetModel.objects.get(id=model_id, user=request.user)
+        tuned_model = DatasetModel.objects.get(id=model_id, user=request.user, tuned=True)
         dataset_id = tuned_model.original_dataset_id
     except DatasetModel.DoesNotExist:
         return JsonResponse({"error": "Tuned model not found"}, status=404)
