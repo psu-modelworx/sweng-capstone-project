@@ -1,6 +1,6 @@
 ﻿import pytest
 from django.urls import reverse
-from automodeler.models import Dataset, DatasetModel, TunedDatasetModel
+from automodeler.models import Dataset, DatasetModel
 from django.contrib.auth import get_user_model
 from unittest.mock import patch, MagicMock
 import json
@@ -63,12 +63,12 @@ def test_run_model_system(client, user_factory):
 
     dataset = Dataset.objects.create(name="Test", user=user, features={"f1": "N"})
 
-    untuned_model = DatasetModel.objects.create(
-        user=user,
-        original_dataset=dataset,
-        model_type="classification",
-        model_file="dummy_untuned_model.pkl"
-    )
+    #untuned_model = DatasetModel.objects.create(
+    #    user=user,
+    #    original_dataset=dataset,
+    #    model_type="classification",
+    #    model_file="dummy_untuned_model.pkl"
+    #)
 
     tuned_model = DatasetModel.objects.create(
         user=user,
