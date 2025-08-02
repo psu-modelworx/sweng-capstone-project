@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Dataset, PreprocessedDataSet, TunedDatasetModel
+from .models import Dataset, PreprocessedDataSet, DatasetModel
 from .forms import DatasetForm
 from . import helper_functions
 
@@ -133,7 +133,7 @@ def api_request_models(request):
     :param request: The request parameter is used to get the user's models.
     '''
     # Getting the user's models.
-    user_models = TunedDatasetModel.objects.filter(user=request.user)
+    user_models = DatasetModel.objects.filter(user=request.user)
     
     # Setting up a list to format the response. It contains the model ID which will be helpful in running the model.
     model_information = ["Model Name, " + "Model File Name, " + "Model Method, " + "Model Type" + "Model ID"]
