@@ -361,7 +361,3 @@ def update_selected_models(request):
     url = reverse('dataset_details', kwargs={'dataset_id': dataset_id})
     return redirect(url)
 
-def test(request, dataset_id):
-    dataset = get_object_or_404(Dataset, pk=dataset_id, user=request.user)
-    pp_ds = get_object_or_404(PreprocessedDataSet, original_dataset=dataset)
-    return HttpResponse("Hello world!  This is the testing page!")
