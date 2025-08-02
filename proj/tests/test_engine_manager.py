@@ -70,12 +70,12 @@ def test_run_model_system(client, user_factory):
         model_file="dummy_untuned_model.pkl"
     )
 
-    tuned_model = TunedDatasetModel.objects.create(
+    tuned_model = DatasetModel.objects.create(
         user=user,
         original_dataset=dataset,
         model_type="classification",
         model_file="dummy_model.pkl",
-        untuned_model=untuned_model  
+        tuned=True  
     )
 
     response = client.post(
