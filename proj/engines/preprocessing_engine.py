@@ -134,7 +134,7 @@ class PreprocessingEngine:
 
         return df_cleaned
 
-    def drop_missing_columns(self, df, threshold=0.6):
+    def drop_missing_columns(self, df, threshold=0.3):
         """ Drops columns in the input DataFrame that have more than the given threshold of missing values. """
         df_cleaned = df.copy()
         missing_percentage = df_cleaned.isnull().mean()
@@ -148,25 +148,32 @@ class PreprocessingEngine:
 
         return df_cleaned, columns_to_drop
 
-    def drop_missing_rows(self, df, threshold=0.4):
-        """ Drops rows from the input DataFrame that are missing the target or have excessive missing values. """
+    def drop_missing_rows(self, df, column_threshold=0.05):
+        """
+        Drops rows from the input DataFrame that are:
+        1. Missing the target variable
+        2. Missing values in any column that has ≥ column_threshold missing
+        """
         df_cleaned = df.copy()
         initial_row_count = len(df_cleaned)
 
-        # Drop rows missing the target
         df_cleaned.dropna(subset=[self.target_column], inplace=True)
-        target_dropped = initial_row_count - len(df_cleaned)
+        after_target_drop_count = len(df_cleaned)
+        target_dropped = initial_row_count - after_target_drop_count
 
-        # Drop rows with excessive missing data (excluding target)
-        row_missing_percentage = df_cleaned.drop(columns=[self.target_column]).isnull().mean(axis=1)
-        df_cleaned = df_cleaned.loc[row_missing_percentage < threshold]
-        excessive_missing_dropped = initial_row_count - target_dropped - len(df_cleaned)
+        missing_pct = df_cleaned.isnull().mean()
+        high_missing_cols = missing_pct[missing_pct >= column_threshold].index.tolist()
+
+        df_cleaned.dropna(subset=high_missing_cols, inplace=True)
+        final_row_count = len(df_cleaned)
+        row_dropped_due_to_high_missing_cols = after_target_drop_count - final_row_count
 
         if target_dropped > 0:
             logging.info(f"Dropped {target_dropped} rows missing the target variable ({self.target_column}).")
-        if excessive_missing_dropped > 0:
-            logging.info(f"Dropped {excessive_missing_dropped} rows with excessive missing values.")
-        if target_dropped == 0 and excessive_missing_dropped == 0:
+        if row_dropped_due_to_high_missing_cols > 0:
+            logging.info(f"Dropped {row_dropped_due_to_high_missing_cols} rows with missing values "
+                        f"in columns exceeding {column_threshold*100:.1f}% missing: {high_missing_cols}")
+        if target_dropped == 0 and row_dropped_due_to_high_missing_cols == 0:
             logging.info("No rows dropped due to missing values.")
 
         return df_cleaned
@@ -362,7 +369,7 @@ class PreprocessingEngine:
     def summary(self):
         return {
             "task_type": self.task_type,
-            "features": list(self.final_df.columns.difference([self.target_column])),
+            "features": list(self.final_columns),
             "missing_values": self.df.isnull().sum().sum(),
             "label_mapping": self.label_mapping_df if self.label_mapping_df is not None else "N/A"
         }
