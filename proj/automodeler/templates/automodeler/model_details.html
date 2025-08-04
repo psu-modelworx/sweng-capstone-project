@@ -3,33 +3,57 @@
 
 {% if model %}
 
-Model Name: {{ model.name }}
-<br />
-Model Method: {{ model.method }}
-<br />
-Model Type: {{ model.type }}
-<br />
+<div class="container">
 
-<form id="model_parameters_form">
-    
-    <div class="col-md-2 mb-2">
-
-    
-{% for f in model.features %}
-    <label for="{{ f }}" class="form-label">{{ f }}</label>
-    <input type="text" class="form-control" id="{{ f }}" name="{{ f }}" />
-    
-{% endfor %}
+    <div class="row">
+        <div class="col">
+            <ul class="list-inline">
+                <li class="list-inline-item"><strong>Model Name:</strong></li>
+                <li class="list-inline-item">{{ model.name }}</li>
+            </ul>
+            <ul class="list-inline">
+                <li class="list-inline-item"><strong>Model Method:</strong></li>
+                <li class="list-inline-item">{{ model.method }}</li>
+            </ul>
+            <ul class="list-inline">
+                <li class="list-inline-item"><strong>Model Type:</strong></li>
+                <li class="list-inline-item">{{ model.type }}</li>
+            </ul>
+        </div>
+        <div class="col">
+            <ul>
+            <p><strong>Scores</strong></p>
+            {% for key,value in model.scores.items %}
+            <li>{{ key }}: {{ value }} </li>
+            {% endfor %}
+            </ul>
+        </div> 
     </div>
-</form>
 
-<button class="btn btn-success" onclick="run_model_request( {{ model.id }} )">Run Model!</button>
+<div class="row">
 
-<br />
-<br />
+    <h1>Model Testing</h1>
+    <form id="model_parameters_form">
 
-<h3 class="text-success-emphasis" id="result_text"></h3>
+        <div class="col-md-2 mb-2">
 
+        
+    {% for f in model.features %}
+        <label for="{{ f }}" class="form-label">{{ f }}</label>
+        <input type="text" class="form-control" id="{{ f }}" name="{{ f }}" />
+        
+    {% endfor %}
+        </div>
+    </form>
+
+    <button class="btn btn-success w-25" onclick="run_model_request( {{ model.id }} )">Run Model!</button>
+
+    <br />
+    <br />
+
+    <h3 class="text-success-emphasis" id="result_text"></h3>
+    </div>
+    </div>
 {% else %}
 <h2>No model id provided</h2>
 {% endif %}

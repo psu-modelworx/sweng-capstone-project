@@ -3,15 +3,14 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
 <!-- DataTables -->
-<link rel="stylesheet" href="https://cdn.datatables.net/2.3.1/css/dataTables.dataTables.min.css" />
-<script src="https://cdn.datatables.net/2.3.1/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/2.3.1/css/dataTables.dataTables.css" />
+<script src="https://cdn.datatables.net/2.3.1/js/dataTables.js"></script>
 
 {% include "base/navbar.html" %}
 
-<h1>Task Collection Page</h1>
-<h2>Task History</h2>
+<h1>Task Collection</h1>
 
-<table id="tasks_table" class="display" style="width:100%">
+<table id="tasks_table" name="tasks_table" class="display" style="width:100%">
     <thead>
         <tr>
             <th>Type</th>

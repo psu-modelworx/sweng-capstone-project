@@ -296,6 +296,7 @@ def model_details(request, model_id):
         "name": dataset_model.name,
         "method": dataset_model.model_method,
         "type": dataset_model.model_type,
+        "scores": dataset_model.scores,
         "features": ds_features
     }
     return render(request, "automodeler/model_details.html", { "model": model_details })
