@@ -133,6 +133,7 @@ class ReportingEngine:
         
         self.subsection("Model Evaluation")
         data = []
+        headers =[]
         tuned_results = self.modeler.results.get('tuned', {})
 
         if self.modeler.task_type == 'classification':
@@ -149,6 +150,9 @@ class ReportingEngine:
                     f"{scores['recall']:.2%}",
                     f"{scores['f1_score']:.2%}"
                 ])
+
+                if scores['accuracy'] < 0.7:
+                    self.add_bullet(f"Warning: {model_name} has low accuracy ({scores['accuracy']:.2%}). Consider further feature engineering.")
 
             self.add_bullet("Accuracy measures the proportion of correct predictions out of all predictions made by the model.")
             self.add_bullet("Precision indicates the proportion of true positive predictions among all positive predictions, reflecting the model's exactness.")
@@ -177,8 +181,8 @@ class ReportingEngine:
             self.add_bullet("Mean Absolute Error (MAE) measures the average absolute difference between predicted and actual values, providing a straightforward metric of prediction accuracy in regression models.")
             self.add_bullet("Adjusted R-squared adjusts the R-squared value to account for the number of predictors in the model, providing a more unbiased measure of model fit especially when comparing models with different numbers of features.")
 
-        self.add_table(headers, data)
-
+        if data:
+            self.add_table(headers, data)
 
         self.subsection("Model Reccomendation")
         best_info = self.modeler.get_best_tuned_model()
