@@ -486,12 +486,6 @@ class ReportingEngine:
         classes = np.unique(y_test)
         n_classes = len(classes)
 
-        # Binarize the output for multiclass
-        if n_classes > 2:
-            y_test_bin = label_binarize(y_test, classes=classes)
-        else:
-            y_test_bin = None  # not needed for binary
-
         for model_name, info in tuned_models.items():
             model = info.get('optimized_model')
             if model is None:
@@ -514,6 +508,7 @@ class ReportingEngine:
                 else:
                     # Multiclass classification: One-vs-rest ROC curves
                     for i in range(n_classes):
+                        y_test_bin = label_binarize(y_test, classes=classes)
                         fpr, tpr, _ = roc_curve(y_test_bin[:, i], proba[:, i])
                         roc_auc = auc(fpr, tpr)
                         plt.plot(fpr, tpr, label=f'Class {classes[i]} (area = {roc_auc:.2f})')
@@ -560,11 +555,6 @@ class ReportingEngine:
         classes = np.unique(y_test)
         n_classes = len(classes)
 
-        if n_classes > 2:
-            y_test_bin = label_binarize(y_test, classes=classes)
-        else:
-            y_test_bin = None 
-
         for model_name, info in tuned_models.items():
             model = info.get('optimized_model')
             if model is None:
@@ -593,6 +583,7 @@ class ReportingEngine:
                     avg_prec = average_precision_score(y_test, y_score[:, 1])
                     plt.plot(recall, precision, color='blue', label=f'PR curve (AP = {avg_prec:.2f})')
                 else:
+                    y_test_bin = label_binarize(y_test, classes=classes)
                     for i in range(n_classes):
                         precision, recall, _ = precision_recall_curve(y_test_bin[:, i], y_score[:, i])
                         avg_prec = average_precision_score(y_test_bin[:, i], y_score[:, i])
