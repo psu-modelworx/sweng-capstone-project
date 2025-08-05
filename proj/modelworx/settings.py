@@ -296,5 +296,6 @@ LOGVIEWER_REFRESH_INTERVAL = config('LOGVIEWER_REFRESH_INTERVAL', default=1000)
 # Two Factor App Name
 ADMIN_TWO_FACTOR_NAME = 'Modelworx'
 
-
+# Maximum File size for Datasets
+MAX_UPLOAD_SIZE = int(config('MAX_UPLOAD_SIZE')) * 1024 * 1024 # num * kb * mb
 
