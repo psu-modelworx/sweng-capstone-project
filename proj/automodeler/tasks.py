@@ -1,8 +1,11 @@
 from celery import shared_task
 
+from django.conf import settings
+
 from django.core.files.base import ContentFile
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import get_user_model
+from celery.exceptions import SoftTimeLimitExceeded
 
 from .models import Dataset
 from .models import PreprocessedDataSet
@@ -23,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(bind=True)
 def start_preprocessing_task(self, dataset_id, user_id):
-    print("in task preprocessing")
+    logger.info("in task preprocessing")
 
     ## Update Tasks
     #task_record = UserTask.objects.get(task_id=self.request.id)
@@ -33,10 +36,10 @@ def start_preprocessing_task(self, dataset_id, user_id):
         task_record.save()
 
     try:
-        print("about to get dataset")
+        logger.info("about to get dataset")
         dataset = Dataset.objects.get(id=dataset_id, user_id=user_id)
     except ObjectDoesNotExist:
-        print("Original Dataset not found in database!")
+        logger.error("Original Dataset not found in database!")
         if task_record:
             task_record.status = "FAILURE"
             task_record.result_message = "Original Dataset not found in database!"
@@ -51,7 +54,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         if len(target_feature) == 0:
             raise Exception("Target_feature is empty")
     except Exception as e:
-        print('Exception {0}'.format(e))
+        logger.error('Exception {0}'.format(e))
         if task_record:
             task_record.status = "FAILURE"
             task_record.result_message = "Target feature not selected"
@@ -66,7 +69,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         if len(target_feature) == 0:
             raise Exception("Target_feature is empty")
     except Exception as e:
-        print('Exception {0}'.format(e))
+        logger.error('Exception {0}'.format(e))
         if task_record:
             task_record.status = "FAILURE"
             task_record.result_message = "Target feature not selected"
@@ -74,7 +77,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         return {"message": "Target feature not selected", "status": 500}
 
     except Exception as e:
-        print('Exception {0}'.format(e))
+        logger.error('Exception {0}'.format(e))
     # First, see if there is a preprocessed dataset already; if not, create one
     try:
         pp_ds = PreprocessedDataSet.objects.get(original_dataset_id=dataset.id)
@@ -83,7 +86,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         pp_ds.delete()
         pp_ds = PreprocessedDataSet()
     except ObjectDoesNotExist:
-        print("No PP_DS related to original dataset, creating new one...")
+        logger.error("No PP_DS related to original dataset, creating new one...")
         pp_ds = PreprocessedDataSet()
 
     df = pd.read_csv(dataset.csv_file)
@@ -95,7 +98,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         ppe = PreprocessingEngine(df=df, target_column=target_column, categorical_columns=categorical_columns)
     except Exception as e:
         msg = "Potential TypeError: {0}".format(e)
-        print(msg)
+        logger.error(msg)
         if task_record:
             task_record.status = "FAILURE"
             task_record.result_message = msg
@@ -112,7 +115,7 @@ def start_preprocessing_task(self, dataset_id, user_id):
         ppe.run_preprocessing_engine()
     except Exception as e:
         msg = "Error running preprocessing engine {0}".format(e)
-        print(msg)
+        logger.error(msg)
         if task_record:
             task_record.status = "FAILURE"
             task_record.result_message = msg
@@ -181,113 +184,124 @@ def start_preprocessing_task(self, dataset_id, user_id):
     return {"filename": pp_ds_name, "status": 200}
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, time_limit=settings.CELERY_TIME_LIMIT)
 def start_modeling_task(self, dataset_id, user_id):
-    print("Starting modeling")
-
-    # Get User object from user_id
-    User = get_user_model()
-    user = User.objects.get(id=user_id)
-
-    ## Update Tasks
-    #task_record = UserTask.objects.get(task_id=self.request.id)
-    task_record = UserTask.objects.filter(task_id=self.request.id).first()
-    if task_record:
-        task_record.status = "STARTED"
-        task_record.save()
-
     try:
-        dataset = Dataset.objects.get(id=dataset_id, user_id=user_id)
-    except ObjectDoesNotExist:
-        print("Original Dataset not found in database!")
-        if task_record:
-            task_record.status = "FAILURE"
-            task_record.result_message = "Original Dataset not found in database!"
-            task_record.save()
-        return {"message": "Dataset not found", "status": 404}
-    
-    # Verify dataset has been preprocessed
-    try:
-        pp_ds = PreprocessedDataSet.objects.get(original_dataset_id=dataset.id)
-    except ObjectDoesNotExist:
-        print("Dataset has not yet been preprocessed...")
-        if task_record:
-            task_record.status = "FAILURE"
-            task_record.result_message = "Dataset has not yet been preprocessed..."
-            task_record.save()
-        return {"message": "Dataset must be preprocessed first.", "status": 412}
 
-    # dataset & pp_ds are now available
-    # Prior to modeling, we need x_train, x_test, y_train, y_test, and task type of the preprocessed set
-    
-    ppe = reconstruct_ppe(pp_ds)
-    task_type = ppe.task_type
-    x_train, x_test, y_train, y_test = ppe.split_data()
+        logger.info("Starting modeling with timeout: " + str(settings.CELERY_TIME_LIMIT))
 
-    moe = ModelingEngine(
-        X_train=x_train, 
-        X_test=x_test, 
-        y_train=y_train,
-        y_test=y_test,
-        task_type=task_type, 
-        desired_models=pp_ds.selected_models)
+        # Get User object from user_id
+        User = get_user_model()
+        user = User.objects.get(id=user_id)
+
+        ## Update Tasks
+        #task_record = UserTask.objects.get(task_id=self.request.id)
+        task_record = UserTask.objects.filter(task_id=self.request.id).first()
+        if task_record:
+            task_record.status = "STARTED"
+            task_record.save()
+
+        try:
+            dataset = Dataset.objects.get(id=dataset_id, user_id=user_id)
+        except ObjectDoesNotExist:
+            logger.error("Original Dataset not found in database!")
+            if task_record:
+                task_record.status = "FAILURE"
+                task_record.result_message = "Original Dataset not found in database!"
+                task_record.save()
+            return {"message": "Dataset not found", "status": 404}
+    
+        # Verify dataset has been preprocessed
+        try:
+            pp_ds = PreprocessedDataSet.objects.get(original_dataset_id=dataset.id)
+        except ObjectDoesNotExist:
+            logger.error("Dataset has not yet been preprocessed...")
+            if task_record:
+                task_record.status = "FAILURE"
+                task_record.result_message = "Dataset has not yet been preprocessed..."
+                task_record.save()
+            return {"message": "Dataset must be preprocessed first.", "status": 412}
+
+        # dataset & pp_ds are now available
+        # Prior to modeling, we need x_train, x_test, y_train, y_test, and task type of the preprocessed set
+    
+        ppe = reconstruct_ppe(pp_ds)
+        task_type = ppe.task_type
+        x_train, x_test, y_train, y_test = ppe.split_data()
+
+        moe = ModelingEngine(
+            X_train=x_train, 
+            X_test=x_test, 
+            y_train=y_train,
+            y_test=y_test,
+            task_type=task_type, 
+            desired_models=pp_ds.selected_models)
         
-    moe.desired_models = pp_ds.selected_models
-    moe.run_modeling_engine()
+        moe.desired_models = pp_ds.selected_models
+        moe.run_modeling_engine()
 
-    moe_results = moe.results
-    untuned_models = moe_results['untuned']
-    tuned_models = moe_results['tuned']
+        moe_results = moe.results
+        untuned_models = moe_results['untuned']
+        tuned_models = moe_results['tuned']
 
-    #logger.info(tuned_models)
+        #logger.info(tuned_models)
 
-    for model_method, model_results in untuned_models.items():
-        model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_untuned'])
-        model_file_name = ''.join([model_name, '.bin'])
-        model_file = obj_to_pkl_file(model_results['model'], model_file_name)
-        ds_model = DatasetModel(
-            name = model_name, 
-            model_file=model_file, 
-            model_method=model_method, 
-            model_type=task_type, 
-            user=user, 
-            tuned=False,
-            original_dataset=dataset)
-        ds_model.save()
+        for model_method, model_results in untuned_models.items():
+            model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_untuned'])
+            model_file_name = ''.join([model_name, '.bin'])
+            model_file = obj_to_pkl_file(model_results['model'], model_file_name)
+            ds_model = DatasetModel(
+                name = model_name, 
+                model_file=model_file, 
+                model_method=model_method, 
+                model_type=task_type, 
+                user=user, 
+                tuned=False,
+                original_dataset=dataset)
+            ds_model.save()
 
-        tuned_model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_tuned'])
-        tuned_model_file_name = ''.join([tuned_model_name, '.bin'])
-        tuned_model_file = obj_to_pkl_file(tuned_models[model_method]['optimized_model'], tuned_model_file_name)
-        tuned_ds_model = DatasetModel(
-            name = tuned_model_name, 
-            model_file=tuned_model_file, 
-            model_method=model_method, 
-            model_type=task_type, 
-            user=user, 
-            tuned=True,
-            scores=tuned_models[model_method]['final_scores'],
-            original_dataset=dataset)
-        tuned_ds_model.save()
+            tuned_model_name = ''.join([dataset.name, '_', str(dataset.id), '_', str(model_method), '_tuned'])
+            tuned_model_file_name = ''.join([tuned_model_name, '.bin'])
+            tuned_model_file = obj_to_pkl_file(tuned_models[model_method]['optimized_model'], tuned_model_file_name)
+            tuned_ds_model = DatasetModel(
+                name = tuned_model_name, 
+                model_file=tuned_model_file, 
+                model_method=model_method, 
+                model_type=task_type, 
+                user=user, 
+                tuned=True,
+                scores=tuned_models[model_method]['final_scores'],
+                original_dataset=dataset)
+            tuned_ds_model.save()
     
     
-    try:
-        logger.info("Generationg report")
-        generate_report(ppe, moe, dataset, user)
-    except Exception as e:
-        msg = 'Internal Error generating report:  {0}'.format(e)
-        logger.exception(msg)
+        try:
+            logger.info("Generationg report")
+            generate_report(ppe, moe, dataset, user)
+        except Exception as e:
+            msg = 'Internal Error generating report:  {0}'.format(e)
+            logger.exception(msg)
+            if task_record:
+                task_record.status = "FAILURE"
+                task_record.result_message = msg
+                task_record.save()
+            return {"message": msg, "status": 500}
+
+        if task_record:
+            task_record.status = "SUCCESS"
+            task_record.result_message = "Modeling completed!"
+            task_record.save()
+
+        return {"message": "Modeling completed!", "status": 200}
+    except SoftTimeLimitExceeded:
+        msg = "Task exceeded time limit and was terminated."
+        logger.error(msg)
+        task_record = UserTask.objects.filter(task_id=self.request.id).first()
         if task_record:
             task_record.status = "FAILURE"
             task_record.result_message = msg
             task_record.save()
-        return {"message": msg, "status": 500}
-
-    if task_record:
-        task_record.status = "SUCCESS"
-        task_record.result_message = "Modeling completed!"
-        task_record.save()
-
-    return {"message": "Modeling completed!", "status": 200}
+        return {"message": msg, "status": 504}
 
 @shared_task(bind=True)
 def run_model_task(self, model_id, user_id, data_dict):
@@ -316,7 +330,7 @@ def run_model_task(self, model_id, user_id, data_dict):
         pp_ds = PreprocessedDataSet.objects.get(original_dataset=dataset)
     except ObjectDoesNotExist:
         msg = "Error retrieving preprocessed dataset from model."
-        print(msg)
+        logger.error(msg)
         if task_record:
             task_record.status = "FAILURE"
             task_record.result_message = msg
@@ -328,7 +342,7 @@ def run_model_task(self, model_id, user_id, data_dict):
         data_values = data_dict['values']
     except KeyError:
         msg = "Missing values field"
-        print(msg)
+        logger.error(msg)
         if task_record:
             task_record.status = "FAILURE"
             task_record.result_message = msg
@@ -343,7 +357,7 @@ def run_model_task(self, model_id, user_id, data_dict):
     # Verify that the number of values sent is equal to the number of features
     if len(ds_features) != len(data_values):
         msg = "Invalid number of input features"
-        print(msg)
+        logger.error(msg)
         if task_record:
             task_record.status = "FAILURE"
             task_record.result_message = msg
