@@ -133,6 +133,7 @@ class ReportingEngine:
         
         self.subsection("Model Evaluation")
         data = []
+        headers =[]
         tuned_results = self.modeler.results.get('tuned', {})
 
         if self.modeler.task_type == 'classification':
@@ -149,6 +150,9 @@ class ReportingEngine:
                     f"{scores['recall']:.2%}",
                     f"{scores['f1_score']:.2%}"
                 ])
+
+                if scores['accuracy'] < 0.7:
+                    self.add_bullet(f"Warning: {model_name} has low accuracy ({scores['accuracy']:.2%}). Consider further feature engineering.")
 
             self.add_bullet("Accuracy measures the proportion of correct predictions out of all predictions made by the model.")
             self.add_bullet("Precision indicates the proportion of true positive predictions among all positive predictions, reflecting the model's exactness.")
@@ -177,8 +181,8 @@ class ReportingEngine:
             self.add_bullet("Mean Absolute Error (MAE) measures the average absolute difference between predicted and actual values, providing a straightforward metric of prediction accuracy in regression models.")
             self.add_bullet("Adjusted R-squared adjusts the R-squared value to account for the number of predictors in the model, providing a more unbiased measure of model fit especially when comparing models with different numbers of features.")
 
-        self.add_table(headers, data)
-
+        if data:
+            self.add_table(headers, data)
 
         self.subsection("Model Reccomendation")
         best_info = self.modeler.get_best_tuned_model()
@@ -482,12 +486,6 @@ class ReportingEngine:
         classes = np.unique(y_test)
         n_classes = len(classes)
 
-        # Binarize the output for multiclass
-        if n_classes > 2:
-            y_test_bin = label_binarize(y_test, classes=classes)
-        else:
-            y_test_bin = None  # not needed for binary
-
         for model_name, info in tuned_models.items():
             model = info.get('optimized_model')
             if model is None:
@@ -510,6 +508,7 @@ class ReportingEngine:
                 else:
                     # Multiclass classification: One-vs-rest ROC curves
                     for i in range(n_classes):
+                        y_test_bin = label_binarize(y_test, classes=classes)
                         fpr, tpr, _ = roc_curve(y_test_bin[:, i], proba[:, i])
                         roc_auc = auc(fpr, tpr)
                         plt.plot(fpr, tpr, label=f'Class {classes[i]} (area = {roc_auc:.2f})')
@@ -556,11 +555,6 @@ class ReportingEngine:
         classes = np.unique(y_test)
         n_classes = len(classes)
 
-        if n_classes > 2:
-            y_test_bin = label_binarize(y_test, classes=classes)
-        else:
-            y_test_bin = None 
-
         for model_name, info in tuned_models.items():
             model = info.get('optimized_model')
             if model is None:
@@ -589,6 +583,7 @@ class ReportingEngine:
                     avg_prec = average_precision_score(y_test, y_score[:, 1])
                     plt.plot(recall, precision, color='blue', label=f'PR curve (AP = {avg_prec:.2f})')
                 else:
+                    y_test_bin = label_binarize(y_test, classes=classes)
                     for i in range(n_classes):
                         precision, recall, _ = precision_recall_curve(y_test_bin[:, i], y_score[:, i])
                         avg_prec = average_precision_score(y_test_bin[:, i], y_score[:, i])
