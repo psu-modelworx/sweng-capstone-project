@@ -49,7 +49,6 @@ def upload(request):
                 print("valid form")
                 file_name = request.POST.get('name')
                 csv_file = request.FILES['csv_file']
-                #file_size = csv_file.size / 1073741824 # This will convert to Gigabytes
                 file_size = csv_file.size
                 
                 if not helper_functions.valid_file_size(file_size):
@@ -369,4 +368,3 @@ def update_selected_models(request):
 
     url = reverse('dataset_details', kwargs={'dataset_id': dataset_id})
     return redirect(url)
-
