@@ -1,6 +1,8 @@
 import csv
 import io
 import pandas as pd
+from django.conf import settings
+
 
 def extract_features(dataset_fileName):
     """
@@ -58,3 +60,10 @@ def file_size_for_humans(filesize, suffix="B"):
             return f"{filesize:3.1f}{unit}{suffix}"
         filesize /= 1024.0
     return f"{filesize:.1f}Yi{suffix}"
+
+def valid_file_size(file_size):
+    MAX_UPLOAD_SIZE = settings.MAX_UPLOAD_SIZE
+    if file_size > int(MAX_UPLOAD_SIZE):
+        return False
+    else:
+        return True
