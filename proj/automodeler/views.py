@@ -10,6 +10,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from django.conf import settings
 
 from .models import Dataset, PreprocessedDataSet, DatasetModel, UserTask, ModelingReport, TunedDatasetModel
 from .forms import DatasetForm
@@ -50,6 +51,13 @@ def upload(request):
                 csv_file = request.FILES['csv_file']
                 #file_size = csv_file.size / 1073741824 # This will convert to Gigabytes
                 file_size = csv_file.size
+                
+                if not helper_functions.valid_file_size(file_size):
+                    url = reverse('upload')
+                    msg = "File is too large.  Please ensure it is no larger than {0}".format(helper_functions.file_size_for_humans(settings.MAX_UPLOAD_SIZE))
+                    logger.error(msg)
+                    return render(request, "automodeler/upload.html", {"form": form, "err_msg": msg})
+
                 user_id = request.user.id
 
                 number_of_rows = 0
@@ -58,7 +66,7 @@ def upload(request):
                 except Exception as e:
                     url = reverse('upload')
                     print("Exception: {0}".format(e))
-                    return render(request, url, {"form": form, "err_msg": "CSV File failed sanitation!"})
+                    return render(request, "automodeler/upload.html", {"form": form, "err_msg": "CSV File failed sanitation!"})
                 features = helper_functions.extract_features_from_inMemoryUploadedFile(csv_file)
 
                 dataset_model = Dataset.objects.create(
