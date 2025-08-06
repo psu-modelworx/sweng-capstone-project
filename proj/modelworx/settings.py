@@ -210,6 +210,8 @@ CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='amqp://localhost')
 # Celery Result Backend: support django-db or rabbitmq
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='django-db')
 
+CELERY_TIME_LIMIT = config('CELERY_TIME_LIMIT', default=43200) 
+
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
