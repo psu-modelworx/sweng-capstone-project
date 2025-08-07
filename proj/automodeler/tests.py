@@ -394,7 +394,7 @@ def test_api_request_delete_model(client):
     response = client.post(url, headers=headers, data=data)
 
     # Asserting that there was a 404 status code response because the model wasn't found.
-    assert response.status_code == 404;
+    assert response.status_code == 404
 
 @pytest.mark.django_db
 def test_account_page(client):
