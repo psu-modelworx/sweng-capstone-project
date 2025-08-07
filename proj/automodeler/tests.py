@@ -337,6 +337,66 @@ def test_api_dataset_report_download(client):
     assert response.status_code == 404
 
 @pytest.mark.django_db
+def test_api_request_delete_dataset(client):
+    '''
+    There is a test to ensure the user must be authenticated to make the API request.
+    A second test is used to ensure a dataset can be deleted successfully.
+
+    parm client: Used to make an API request and get a response with the status code.
+
+    :Test Cases: TC-118 & TC-119
+    '''
+    # Setting up the URL to the delete dataset URL enpoint with the dataset ID.
+    url = reverse('dataset_delete', args=[4])
+
+    # Getting the response after the API request and asserting that the user doesn't have access.
+    response = client.post(url) 
+    assert response.status_code == 403
+    
+    # Defining a test user and the authentication token to authenticate the user.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Putting the authentication token in the header and makeing a request with it.
+    headers = { "Authorization": "Token " + userToken.key}
+    response = client.post(url, headers=headers)
+
+    # Asserting that the response has a status code of 302 because the user would be redirceted to the dataset collection.
+    assert response.status_code == 302
+
+@pytest.mark.django_db
+def test_api_request_delete_model(client):
+    '''
+    Has a test to ensure a user must be authenticated.
+    Theres another test to verify a model can be deleted.
+
+    parm client: Used to make the API request and get a response.
+
+    :Test Cases: TC-120 & TC-121
+    '''
+    # The URL for the API endpoint to delete a model.
+    url = reverse('model_delete')
+
+    # Making the API request and asserting that the user wasn't authenticated.
+    response = client.post(url) 
+    assert response.status_code == 403
+    
+    # Making a test user and assigning them an authentication token.
+    user = User.objects.create_user(username='testuser', password='testpassword')
+    userToken, tokenExists = Token.objects.get_or_create(user=user)
+
+    # Created a model ID and assigned it to the data object.
+    model_id = 5
+    data = {"model_id": model_id}
+
+    # Putting the authentication token in the header and making an API request to delete a model.
+    headers = { "Authorization": "Token " + userToken.key}
+    response = client.post(url, headers=headers, data=data)
+
+    # Asserting that there was a 404 status code response because the model wasn't found.
+    assert response.status_code == 404;
+
+@pytest.mark.django_db
 def test_account_page(client):
     # Defining the url that will be navigated to.
     url = reverse('account')
