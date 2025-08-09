@@ -8,7 +8,6 @@ from django.http import JsonResponse
 from .forms import UserRegisterForm
 from .forms import UserLoginForm
 
-from django.core.mail import EmailMessage
 from django.conf import settings
 
 from .models import EmailTask
