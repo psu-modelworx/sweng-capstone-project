@@ -196,15 +196,21 @@ def dataset_collection(request):
     print("Found Datasets: " + str(pp_datasets))
     return render(request, "automodeler/dataset_collection.html", {'combined_datasets': combined_datasets})
 
-@login_required
+@api_view(["GET", "POST"])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def dataset_delete(request, dataset_id):
     if request.method != 'POST':
         return HttpResponse("Invalid request method")
     else:
-        dataset = Dataset.objects.get(id = dataset_id)
-        dataset.delete()
-        url = reverse("dataset_collection")
-        return redirect(url)
+        try:
+            dataset = Dataset.objects.get(id = dataset_id)
+            dataset.delete()
+            url = reverse("dataset_collection")
+            return redirect(url)
+        except Exception:
+            url = reverse("dataset_collection")
+            return redirect(url)
 
 
 @login_required
@@ -254,7 +260,9 @@ def model_collection(request):
     user_models = DatasetModel.objects.filter(user=auth_user, tuned=True)
     return render(request, "automodeler/model_collection.html", {"models": user_models})
 
-@login_required
+@api_view(["GET", "POST"])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def model_delete(request):
     if request.method != 'POST':
         return HttpResponse("Invalid request method")
@@ -262,7 +270,11 @@ def model_delete(request):
     if not model_id:
         return HttpResponse("Empty model id!")
 
-    ds_model = DatasetModel.objects.get(id=model_id)
+    try:
+        ds_model = DatasetModel.objects.get(id=model_id)
+    except Exception:
+        return HttpResponse("Invalid model id!", status=404)
+
 
     if request.POST.get('prev_page'):
         url = reverse(request.POST.get('prev_page'), args=(ds_model.original_dataset.id,))
