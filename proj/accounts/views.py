@@ -3,6 +3,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.contrib.auth.views import LoginView
 from django.contrib.messages.views import SuccessMessageMixin
+from django.http import JsonResponse
 
 from .forms import UserRegisterForm
 from .forms import UserLoginForm
@@ -10,7 +11,8 @@ from .forms import UserLoginForm
 from django.core.mail import EmailMessage
 from django.conf import settings
 
-
+from .models import EmailTask
+from .tasks import send_account_creation_email_task
 
 class SignUpView(SuccessMessageMixin, CreateView):
   template_name = 'registration/signup.html'
@@ -40,25 +42,19 @@ class LoginView(LoginView):
 
 
 
-
 def send_account_create_request_email(useremail, username):
-  msg_body = """
-  The following user has requested Modelworx access:
-  User Email Address:  {0}
-  Username:  {1}
-  """.format(useremail, username)
+    # Launch celery task async
+    async_results = send_account_creation_email_task.apply_async(args=[useremail, username])
+    
+    # Create UserTask
+    email_task = EmailTask.objects.create( 
+        task_id=async_results.id,
+        task_type='emailing', 
+        status='PENDING',
+    )
 
-  email_admins = settings.EMAIL_ADMINS.split(',')
-  email_sender = settings.EMAIL_SENDER
+    email_task.save() # Saving email to DB as ruff said it wasn't being used
+    
+    return JsonResponse({"task id": async_results.id})
 
-  message = EmailMessage(
-    'Modelworx Account Request',
-    msg_body,
-    email_sender,
-    email_admins
-  )
-  try:
-    message.send()
-  except Exception as e:
-    print("Message send failed! Exception: {0}".format(e))
   
